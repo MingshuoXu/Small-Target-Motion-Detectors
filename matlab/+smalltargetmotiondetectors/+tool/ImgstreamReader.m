@@ -102,16 +102,19 @@ classdef ImgstreamReader < handle
             %       - startImgName: Name of the selected start frame file.
             %       - endImgName: Name of the selected end frame file.
 
-            % Get the full path of the current file
+            % Get the full path of this file
             filePath = mfilename('fullpath');
-
-            % Find the index of the directory containing "Small-Target-Motion-Detectors"
-            indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
+            %   Find the index of 'Small-Target-Motion-Detectors'
+            % in the file path
+            indexPath = strfind(filePath, ...
+                '\matlab\+smalltargetmotiondetectors\');
+            % Add the path to the package containing the models
+            addpath(filePath(1:indexPath(end)+7));
 
             % Open file dialog for selecting the start frame
             [startImgName, pathName] = uigetfile(...
                 {'*.*'}, 'Pick the start frame from image stream', ...
-                [filePath(1:indexPath(end)+29), '/demodata/']);
+                [filePath(1:indexPath-1), '/demodata/imgstream/']);
 
             % Find the index of the dot in the start image name
             dotIndex = strfind(startImgName, '.');

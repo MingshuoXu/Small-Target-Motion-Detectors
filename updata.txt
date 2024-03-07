@@ -1,0 +1,20 @@
+08 March, 2024
+
+Version Update: v2.0.1
+
+Updates:
+
+1. Renamed the download package from "Small-Target-Motion-Detectors" to "Small-Target-Motion-Detectors-main" to resolve addpath errors.
+
+2. By changing the format of the demo dataset from TIFF to JPG, the size of the demodata has been reduced from 70MB to 10MB.
+
+------------------------------------------
+
+版本更新：v2.0.1
+
+更新内容：
+
+1、将下载包的名称从"Small-Target-Motion-Detectors"更改为"Small-Target-Motion-Detectors-main"，以解决在添加路径时出现的错误。
+
+2、通过将演示数据集的格式从TIFF改为JPG，将demodata的大小从70MB减小到了10MB。
+

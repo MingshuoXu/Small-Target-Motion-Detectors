@@ -66,13 +66,20 @@ classdef VidstreamReader < handle
             %       vidReader - VidstreamReader object.
             
             self.create_waitbar_handle();
-            
+
             if nargin == 0
+                % Get the full path of this file
                 filePath = mfilename('fullpath');
-                indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
+                %   Find the index of 'Small-Target-Motion-Detectors'
+                % in the file path
+                indexPath = strfind(filePath, ...
+                    '\matlab\+smalltargetmotiondetectors\');
+                % Add the path to the package containing the models
+                addpath(filePath(1:indexPath(end)+7));
+
                 [fileName, pathName] = uigetfile(...
                     {'*.*'}, 'Selecting a input video', ...
-                    [filePath(1:indexPath(end)+29),'/demodata/demo_video.avi']);
+                    [filePath(1:indexPath-1),'/demodata/RIST_GX010290.mp4']);
                 vidName =  fullfile(pathName, fileName);
             end
             

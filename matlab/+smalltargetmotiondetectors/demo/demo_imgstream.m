@@ -2,10 +2,14 @@
 
 clc, clear, close all;
 
-% Determine the file path of the current script
+% Get the full path of this file
 filePath = mfilename('fullpath');
-indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
-addpath(filePath(1:indexPath(end)+35));
+%   Find the index of 'Small-Target-Motion-Detectors'
+% in the file path
+indexPath = strfind(filePath, ...
+    '\matlab\+smalltargetmotiondetectors\');
+% Add the path to the package containing the models
+addpath(filePath(1:indexPath(end)+7));
 
 % Import necessary modules
 import smalltargetmotiondetectors.*;
@@ -34,40 +38,26 @@ STMDv2          -indevelopment
 %% Input
 
 % Create an image stream reader
-hImgSteam = ImgstreamReader();
+hSteam = ImgstreamReader();
 
-% Alternatively, uncomment one of the following options for different inputs:
+% Alternatively, uncomment the following options for different inputs:
 
 % % Demo images
-% hImgSteam = ImgstreamReader( ...
-%     [filePath(1:indexPath(end)+28),'/demodata/DemoFig*.tif'], ...
+% hSteam = ImgstreamReader( ...
+%     [filePath(1:indexPath(end)-1),'/demodata/imgstream/DemoFig*.jpg'], ...
 %     10, 100 );
 
-% % Real-world images
-% hImgSteam = ImgstreamReader( ...
-%     ['I:/Dataset/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-%     'GX010290-1/Real-Image*.jpg'], ...
-%     10, 1000 );
-
-% % Simulated images
-% hImgSteam = ImgstreamReader( ...
-%     ['I:/Dataset/STMD_Dataset/Simulated-DataSet/White-Background/', ...
-%     'BV-250-Leftward/SingleTarget-TW-5-TH-5-TV-250-TL-0-Rightward', ...
-%     '-Amp-0-Theta-0-TemFre-2-SamFre-1000/', ...
-%     'GeneratingDataSet*.tif'], ...
-%     10, 1000 );
-
+%% Get visualization handle and initiate model
 % Get visualization handle
 hVisual = get_visualize_handle(class(model));
-% Visualization(class(model));
 
 % Initialize the model
 model.init();
 
 %% Run
-while hImgSteam.hasFrame && hVisual.hasFigHandle
+while hSteam.hasFrame && hVisual.hasFigHandle
     % Read the next frame from the image stream
-    [grayImg, colorImg] = hImgSteam.get_next_frame();
+    [grayImg, colorImg] = hSteam.get_next_frame();
     
     % Perform inference using the model
     result = inference(model, grayImg);

@@ -1,9 +1,13 @@
 %test_GammaBankPassFilter
 
-clc,clear,close all;
+% Get the full path of this file
 filePath = mfilename('fullpath');
-indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
-addpath(filePath(1 : indexPath(end)+35));
+%   Find the index of 'Small-Target-Motion-Detectors'
+% in the file path
+indexPath = strfind(filePath, ...
+    '\matlab\+smalltargetmotiondetectors\');
+% Add the path to the package containing the models
+addpath(filePath(1:indexPath(end)+7));
 import smalltargetmotiondetectors.core.estmd_core.*;
 
 %%

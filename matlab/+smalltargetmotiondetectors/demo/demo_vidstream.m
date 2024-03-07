@@ -2,10 +2,14 @@
 
 clc, clear, close all;
 
-% Determine the file path of the current script
+% Get the full% Get the full path of this file
 filePath = mfilename('fullpath');
-indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
-addpath(filePath(1:indexPath(end)+35));
+%   Find the index of 'Small-Target-Motion-Detectors'
+% in the file path
+indexPath = strfind(filePath, ...
+    '\matlab\+smalltargetmotiondetectors\');
+% Add the path to the package containing the models
+addpath(filePath(1:indexPath(end)+7));
 
 % Import necessary modules
 import smalltargetmotiondetectors.*;
@@ -38,18 +42,16 @@ STMDv2          -indevelopment
 
 hSteam = VidstreamReader();
 
-% Real-world video
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)+28),'/demodata/GX010290-1.mp4']);
+% Alternatively, uncomment the following options for different inputs:
 
-% Demo video
+% Demo video (RIST)
 % hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)+28),'/demodata/demo_video.avi'], ...
-%      10, 1000 );
+%     [filePath(1:indexPath(end)-1),'/demodata/RIST_GX010290.mp4']);
 
+
+%% Get visualization handle and initiate model
 % Get visualization handle
 hVisual = get_visualize_handle(class(model));
-% Visualization(class(model));
 
 % Initialize the model
 model.init();

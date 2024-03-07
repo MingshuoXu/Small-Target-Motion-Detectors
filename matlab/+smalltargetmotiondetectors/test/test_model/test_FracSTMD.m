@@ -3,10 +3,14 @@
 % Clear command window, workspace, and close all figures
 clc, clear, close all;
 
-% Add necessary paths
+% Get the full path of this file
 filePath = mfilename('fullpath');
-indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
-addpath(filePath(1:indexPath(end)+35));
+%   Find the index of 'Small-Target-Motion-Detectors'
+% in the file path
+indexPath = strfind(filePath, ...
+    '\matlab\+smalltargetmotiondetectors\');
+% Add the path to the package containing the models
+addpath(filePath(1:indexPath(end)+7));
 
 % Import necessary packages
 import smalltargetmotiondetectors.*;
@@ -14,50 +18,39 @@ import smalltargetmotiondetectors.api.*;
 import smalltargetmotiondetectors.tool.*;
 
 %% Model instantiation
-
 % Instantiate the FracSTMD model
 model = instancing_model('FracSTMD');
 
-%% Input source
+%% input
 
-% Define input source (e.g., image stream or video stream)
-
-% Example 1: Image stream
 % hSteam = ImgstreamReader();
 
-% Example 2: Image stream from demo data
+% Demo images
 % hSteam = ImgstreamReader( ...
-%     [filePath(1:indexPath(end)+28),'/demodata/DemoFig*.tif'], ...
-%      10, 100 );
+%     [filePath(1:indexPath(end)-1),'/demodata/imgstream/DemoFig*.jpg'], ...
+%     10, 100 );
 
-% Example 3: Image stream from real-world scene
-% hSteam = ImgstreamReader( ...
-%     ['I:/Dataset/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-%     'GX010241-1/Real-Image*.jpg'], ...
-%     100, 1000 );
+% Demo video (RIST)
+% hSteam = VidstreamReader( ...
+%     [filePath(1:indexPath(end)-1),'/demodata/RIST_GX010290.mp4']);
 
-% Example 4: Video stream from real-world scene
-hSteam = VidstreamReader( ...
-    ['D:/Dataset/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-     'GX010290-1/GX010290-1.mp4']);
-
-% Example 5: Image stream from simulated data
-% hSteam = ImgstreamReader( ...
-%     ['I:/Dataset/STMD_Dataset/Simulated-DataSet/White-Background/', ...
-%     'BV-250-Leftward/SingleTarget-TW-5-TH-5-TV-250-TL-0-Rightward', ...
-%     '-Amp-0-Theta-0-TemFre-2-SamFre-200/', ...
-%     'GeneratingDataSet*.tif'], ...
-%     100, 1000 );
-
-% Example 6: Image stream with a single image
-% hSteam = ImgstreamReader( ...
+% RIST
+% hSteam = VidstreamReader( ...
 %     ['D:/Dataset/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-%     'GX010290-1/Real-Image*.jpg'], ...
-%     1, 4000 );
+%      'GX010290-1/GX010290-1.mp4']);
 
-% Instantiate visualization handle
+% simulate
+hSteam = ImgstreamReader( ...
+    ['I:/Dataset/STMD_Dataset/Simulated-DataSet/White-Background/', ...
+    'BV-250-Leftward/SingleTarget-TW-5-TH-5-TV-250-TL-0-Rightward', ...
+    '-Amp-0-Theta-0-TemFre-2-SamFre-1000/', ...
+    'GeneratingDataSet*.tif'], ...
+    100, 1000 );
+
+%% visualization and model init
+
+% Get visualization handle
 hVisual = get_visualize_handle(class(model));
-% Visualization(class(model));
 
 % Initialize the model
 model.init();
