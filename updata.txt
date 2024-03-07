@@ -4,9 +4,9 @@ Version Update: v2.0.1
 
 Updates:
 
-1. Renamed the download package from "Small-Target-Motion-Detectors" to "Small-Target-Motion-Detectors-main" to resolve addpath errors.
+1. GitHub renaming the download package from "Small-Target-Motion-Detectors" to "Small-Target-Motion-Detectors-main" caused issues with addpath. In this update, I have addressed this problem by ensuring that addpath is not reliant on the name "Small-Target-Motion-Detectors". Instead, it now identifies "/matlab/smalltargetmotiondetectors/" to prevent addpath from being affected by GitHub's changes.
 
-2. By changing the format of the demo dataset from TIFF to JPG, the size of the demodata has been reduced from 70MB to 10MB.
+2. By changing the format of the demo dataset from TIFF to JPG, the size of the demodata has been reduced from 70MB to 12MB.
 
 ------------------------------------------
 
@@ -14,7 +14,7 @@ Updates:
 
 更新内容：
 
-1、将下载包的名称从"Small-Target-Motion-Detectors"更改为"Small-Target-Motion-Detectors-main"，以解决在添加路径时出现的错误。
+1、GitHub将下载包从“Small-Target-Motion-Detectors”重命名为“Small-Target-Motion-Detectors-main”导致addpath出现了问题。在这次更新中，我解决了这个问题，使addpath不再依赖于“Small-Target-Motion-Detectors”这个名称，而是通过识别“/matlab/smalltargetmotiondetectors/”来避免受到GitHub更改的影响。
 
 2、通过将演示数据集的格式从TIFF改为JPG，将demodata的大小从70MB减小到了10MB。
 
