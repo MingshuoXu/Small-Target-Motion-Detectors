@@ -13,13 +13,13 @@ Add the repository's folders to MATLAB's search path.
 ### Examples: 
 STMD provides two DEMO files demonstrating how to perform small target motion detection using the package:
 
-#### demo_imgstream.m: 
+#### 1. demo_imgstream.m: 
 This DEMO file demonstrates how to read images from an image stream and perform target detection using the STMD model.
 
-#### demo_vidstream.m: 
+#### 2. demo_vidstream.m: 
 This DEMO file demonstrates how to read videos from a video stream and perform target detection using the STMD model.
 
-## Steps
+### Steps
 1. Instantiate the STMD model.
 
 2. Create an image or video stream reader.
@@ -30,40 +30,40 @@ This DEMO file demonstrates how to read videos from a video stream and perform t
 
 5. Display the inference results.
 
-## Parameter Adjustments
-You can choose different input sources as needed, including demo images, real-world images, and simulated images. 
+### Parameter Adjustments
+1. You can choose different input sources as needed, including demo images, real-world images, and simulated images. 
 
-You can adjust the parameters of the model, such as the maximum region size, input resolution, etc.
+2. You can adjust the parameters of the model, such as the maximum region size, input resolution, etc.
 
 ## Notes
-Before running the DEMO files, make sure you have MATLAB installed and have  set up MATLAB's environment correctly.
+1. Before running the DEMO files, make sure you have MATLAB installed and have  set up MATLAB's environment correctly.
 
-Ensure that you have added the repository to MATLAB's search path as per the installation instructions.
+2. Ensure that you have added the repository to MATLAB's search path as per the installation instructions.
 
-You are free to modify and extend the DEMO files according to your needs and specific application requirements and scenarios.
+3. You are free to modify and extend the DEMO files according to your needs and specific application requirements and scenarios.
 
 ## Package Structure
 +api: Contains API functions and classes for interacting with the STMD package.
 
 +core: Contains core algorithms and utilities for motion detection and analysis.
 
-+model: Contains models and neural networks used in small target motion detection.
++model: Contains models and neural networks used in small target motion detection, including 
 
-|  ESTMD           	(2008, S.D. Wiederman, PLoS ONE)
+    ESTMD           	(2008, S.D. Wiederman, PLoS ONE)
 
-|  DSTMD           	(2020, H. Wang, IEEE T--Cybernetics)
+    DSTMD           	(2020, H. Wang, IEEE T--Cybernetics)
 
-|  STMDPlus        	(2020, H. Wang, IEEE T-NNLS)
+    STMDPlus        	(2020, H. Wang, IEEE T-NNLS)
 
-|  FeedbackSTMD    	(2021, H. Wang, IEEE T-NNLS)
+    FeedbackSTMD    	(2021, H. Wang, IEEE T-NNLS)
 
-|  FSTMD           	(2021, Ling J, Front. Neurorobot)
+    FSTMD           	(2021, Ling J, Front. Neurorobot)
 
-|  ApgSTMD         	(2022, H. Wang, IEEE T--Cybernetics)
+    ApgSTMD         	(2022, H. Wang, IEEE T--Cybernetics)
 
-|  FracSTMD        	(2023, Xu, M., Neurocomputing)
+    FracSTMD        	(2023, Xu, M., Neurocomputing)
 
-|  STMDv2          	--indevelopment
+    STMDv2          	--indevelopment
 
 +tool: Contains additional tools and utilities for data processing and visualization.
 
@@ -111,13 +111,13 @@ STMD 是一个用于检测图像或视频中小目标运动的 MATLAB 包。
 ### 示例: 
 STMD 提供了两个 DEMO 文件，演示了如何使用该包进行小目标运动检测：
 
-#### demo_imgstream.m: 
+#### 1. demo_imgstream.m: 
 这个 DEMO 文件演示了如何从图像流中读取图像，并使用 STMD 模型进行目标检测。
 
-#### demo_vidstream.m: 
+#### 2. demo_vidstream.m: 
 这个 DEMO 文件演示了如何从视频流中读取视频，并使用 STMD 模型进行目标检测。
 
-## 步骤
+### 步骤
 1. 实例化 STMD 模型。
 
 2. 创建图像或视频流阅读器。
@@ -128,24 +128,40 @@ STMD 提供了两个 DEMO 文件，演示了如何使用该包进行小目标运
 
 5. 显示推理结果。
 
-## 参数调整
-您可以根据需要选择不同的输入源，包括演示图像、真实世界图像和模拟图像。
+### 参数调整
+1. 您可以根据需要选择不同的输入源，包括演示图像、真实世界图像和模拟图像。
 
-您可以调整模型的参数，例如最大区域大小、输入分辨率等。
+2. 您可以调整模型的参数，例如最大区域大小、输入分辨率等。
 
-## 注意事项
-在运行 DEMO 文件之前，请确保您已安装了 MATLAB 并正确设置了 MATLAB 的环境。
+### 注意事项
+1. 在运行 DEMO 文件之前，请确保您已安装了 MATLAB 并正确设置了 MATLAB 的环境。
 
-确保您已按照安装说明将存储库添加到 MATLAB 的搜索路径中。
+2. 确保您已按照安装说明将存储库添加到 MATLAB 的搜索路径中。
 
-根据您的需求和场景，您可以自由修改和扩展 DEMO 文件，以满足特定的应用需求和场景要求。
+3. 根据您的需求和场景，您可以自由修改和扩展 DEMO 文件，以满足特定的应用需求和场景要求。
 
 ## 包结构
 +api：包含与STMD包交互的API函数和类。
 
 +core：包含用于运动检测和分析的核心算法和实用程序。
 
-+model：包含用于小目标运动检测的模型和神经网络。
++model：包含用于小目标运动检测的模型和神经网络，其中模型有
+
+    ESTMD           	(2008, S.D. Wiederman, PLoS ONE)
+
+    DSTMD           	(2020, H. Wang, IEEE T--Cybernetics)
+
+    STMDPlus        	(2020, H. Wang, IEEE T-NNLS)
+
+    FeedbackSTMD    	(2021, H. Wang, IEEE T-NNLS)
+
+    FSTMD           	(2021, Ling J, Front. Neurorobot)
+
+    ApgSTMD         	(2022, H. Wang, IEEE T--Cybernetics)
+
+    FracSTMD        	(2023, Xu, M., Neurocomputing)
+
+    STMDv2          	--indevelopment
 
 +tool：包含用于数据处理和可视化的附加工具和实用程序。
 
