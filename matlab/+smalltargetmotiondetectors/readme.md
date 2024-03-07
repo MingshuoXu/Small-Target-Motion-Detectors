@@ -35,7 +35,7 @@ This DEMO file demonstrates how to read videos from a video stream and perform t
 
 2. You can adjust the parameters of the model, such as the maximum region size, input resolution, etc.
 
-## Notes
+### Notes
 1. Before running the DEMO files, make sure you have MATLAB installed and have  set up MATLAB's environment correctly.
 
 2. Ensure that you have added the repository to MATLAB's search path as per the installation instructions.
