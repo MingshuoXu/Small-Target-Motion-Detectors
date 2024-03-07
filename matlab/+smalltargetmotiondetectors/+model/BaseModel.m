@@ -25,16 +25,15 @@ classdef BaseModel < handle
     
     methods
         function self = BaseModel()
-            % BASEMODEL Constructor method
-            %   Initializes an instance of the BaseModel class.
-            
+            % BASEMODEL Constructor 
             % Get the full path of this file
             filePath = mfilename('fullpath');
-            %   Find the index of 'Small-Target-Motion-Detectors' 
+            %   Find the index of '\matlab\+smalltargetmotiondetectors\' 
             % in the file path
-            indexPath = strfind(filePath, 'Small-Target-Motion-Detectors');
+            indexPath = strfind(filePath, ...
+                '\matlab\+smalltargetmotiondetectors\');
             % Add the path to the package containing the models
-            addpath(filePath(1:indexPath(end)+35));
+            addpath(filePath(1:indexPath(end)+7));
 
             % Import necessary packages
             import smalltargetmotiondetectors.*;
