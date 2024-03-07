@@ -19,29 +19,29 @@ The package is structured to accommodate different programming languages, includ
 6. Offers unit tests to ensure the correctness and reliability of algorithms.
 
 ## Package Structure:
-    api: Contains API functions and classes for interacting with the package.
+api: Contains API functions and classes for interacting with the package.
 
-    core: Includes core algorithms and utilities for motion detection and analysis.
+core: Includes core algorithms and utilities for motion detection and analysis.
 
-    model: Contains models and neural networks used in small target motion detection.
+model: Contains models and neural networks used in small target motion detection.
 
-    tool: Provides additional tools and utilities for data processing and visualization.
+tool: Provides additional tools and utilities for data processing and visualization.
 
-    config: Contains configuration files for setting up parameters and options.
+config: Contains configuration files for setting up parameters and options.
 
-    demo: Includes demonstration scripts showcasing the usage of the package.
+demo: Includes demonstration scripts showcasing the usage of the package.
 
-    test: Contains unit tests to verify the correctness of algorithms.
+test: Contains unit tests to verify the correctness of algorithms.
 
 ## How to Use:
 
-#### Installation: 
+### Installation: 
 Clone or download the repository and follow the setup instructions for your preferred programming language.
 
-#### Examples: 
+### Examples: 
 Refer to the demo scripts provided in the demo folder for examples on how to use the package for small target motion detection.
 
-#### Parameter 
+### Parameter 
 Adjustment: Adjust parameters as needed for different input sources and application scenarios.
 
 ## Support and Feedback
@@ -71,29 +71,29 @@ STMD 是一个综合性的包，旨在检测各种环境中的小目标运动。
 6.提供单元测试，以确保算法的正确性和可靠性。
 
 ## 包结构：
-    api：包含与该包交互的 API 函数和类。
+api：包含与该包交互的 API 函数和类。
 
-    core：包含用于运动检测和分析的核心算法和实用程序。
+core：包含用于运动检测和分析的核心算法和实用程序。
 
-    model：包含用于小目标运动检测的模型和神经网络。
+model：包含用于小目标运动检测的模型和神经网络。
 
-    tool：提供额外的数据处理和可视化工具和实用程序。
+tool：提供额外的数据处理和可视化工具和实用程序。
 
-    config：包含用于设置参数和选项的配置文件。
+config：包含用于设置参数和选项的配置文件。
 
-    demo：包含演示脚本，展示该包的使用方法。
+demo：包含演示脚本，展示该包的使用方法。
 
-    test：包含单元测试，验证算法的正确性。
+test：包含单元测试，验证算法的正确性。
 
 ## 如何使用：
 
-#### 安装：
+### 安装：
 克隆或下载存储库，并按照所选编程语言的设置说明进行设置。
 
-#### 示例：
+### 示例：
 参考 demo 文件夹中提供的演示脚本，了解如何使用该包进行小目标运动检测。
 
-#### 参数调整：
+### 参数调整：
 根据不同的输入源和应用场景调整参数。
 
 ## 支持和反馈
