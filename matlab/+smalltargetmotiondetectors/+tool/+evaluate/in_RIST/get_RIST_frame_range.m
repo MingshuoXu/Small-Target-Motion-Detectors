@@ -1,5 +1,6 @@
 function frameRange = get_RIST_frame_range(datasetName)
-    % get_RIST_frame_range: Returns the frame range for the specified dataset.
+    %get_RIST_frame_range: Returns the frame range for the specified 
+    % dataset to exclude frames where the target is stationary.
     %
     %   INPUT:
     %       datasetName: Name of the dataset.
@@ -26,7 +27,7 @@ function frameRange = get_RIST_frame_range(datasetName)
         case 'GX010241-1'
             frameRange = [1:3600]';
         case 'GX010250-1' % <2000
-            frameRange = [1:2000]';%[550:1150]'
+            frameRange = [1:2000]';
         case 'GX010266-1'
             frameRange = [1:2400]';
         case 'GX010290-1'
