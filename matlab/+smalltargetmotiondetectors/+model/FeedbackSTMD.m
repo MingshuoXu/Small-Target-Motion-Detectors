@@ -31,7 +31,8 @@ classdef FeedbackSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             import smalltargetmotiondetectors.core.feedbackstmd_core.*;
 
             % Customize Lobula component
-            self.hLobula = smalltargetmotiondetectors.core.estmd_backbone.Lobula();
+            self.hLobula = ...
+                smalltargetmotiondetectors.core.feedbackstmd_core.Lobula();
 
             % Customize Lamina's GammaBankPassFilter properties
             self.hLamina.hGammaBankPassFilter.hGammaDelay1.order = 4;
@@ -76,11 +77,15 @@ classdef FeedbackSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             
             % Process input matrix through model components
             self.retinaOpt = self.hRetina.process(iptMatrix);
+
             self.laminaOpt = self.hLamina.process(self.retinaOpt);
+
             self.hMedulla.process(self.laminaOpt);
-            % self.lobulaOpt = self.hLobula.process(self.medullaOpt);
             self.medullaOpt = self.hMedulla.Opt;
+
             self.lobulaOpt = self.hLobula.process(self.medullaOpt);
+
+            %%
             self.modelOpt.response = self.lobulaOpt;
         end
 

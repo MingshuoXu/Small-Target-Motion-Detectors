@@ -47,23 +47,31 @@ classdef AttentionModule < smalltargetmotiondetectors.core.BaseCore
                 mapRetinaOpt = retinaOpt .* predictionMap;
                 
                 for i = 1:r
-                    A_j = conv2(mapRetinaOpt, self.attentionKernal{i, 1}, 'same');
-                    for j = 2:s
-                        A_j = min(A_j, ...
-                            conv2(mapRetinaOpt, self.attentionKernal{i, j}, 'same'));
+                    for j = 1:s
+                        if j == 1
+                            attentionResponseWithJ = ...
+                                conv2(mapRetinaOpt, self.attentionKernal{i, 1}, 'same');
+                        else
+                            attentionResponseWithJ = min( ...
+                                attentionResponseWithJ, ...
+                                conv2(mapRetinaOpt, self.attentionKernal{i, j}, 'same') ...
+                                );
+                        end
                     end
-                    
+
                     if i == 1
-                        attentionResponse = A_j;
+                        attentionResponse = attentionResponseWithJ;
                     else
-                        attentionResponse = max(attentionResponse, A_j);
+                        attentionResponse = ...
+                            max(attentionResponse, attentionResponseWithJ);
                     end
                 end
                 
-                attentionOpt = retinaOpt + self.alpha * attentionResponse;
-                
-                self.Opt = attentionOpt;
+                attentionOpt = retinaOpt + ...
+                    self.alpha * max(attentionResponse, 0);
             end
+
+            self.Opt = attentionOpt;
         end
     end
 end

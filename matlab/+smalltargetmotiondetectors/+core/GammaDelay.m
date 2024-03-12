@@ -80,9 +80,13 @@ classdef GammaDelay < smalltargetmotiondetectors.core.BaseCore
             end
             self.cellInputHist{end} = iptMatrix;
             
-            optMatrix = compute_temporal_conv(...
-                self.cellInputHist, ...
-                self.gammaKernel);
+            if nargout == 1
+                optMatrix = compute_temporal_conv(...
+                    self.cellInputHist, ...
+                    self.gammaKernel);
+            elseif nargout == 0
+                return
+            end
         end
     end
 end

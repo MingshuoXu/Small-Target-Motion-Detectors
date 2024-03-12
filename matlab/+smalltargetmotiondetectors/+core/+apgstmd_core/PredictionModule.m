@@ -10,7 +10,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
         zeta = 2;           % Zeta parameter
         eta = 2.5;          % Eta parameter
         kappa = 0.02;       % Kappa parameter
-        mu = 0.25;          % Mu parameter
+        mu = 0.75;          % Mu parameter
         beta = 1;           % Beta parameter
     end
 
@@ -56,31 +56,33 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             [imgH, imgW] = size(lobulaOpt{1});
 
             % Prediction Gain
+            self.cellPredictionGain = circshift(self.cellPredictionGain, -1);
             predictionGain = cell(numDict, 1);
-            self.cellPredictionGain(1) = [];
             for idx = 1:numDict
                 if isempty(self.cellPredictionGain{1})
                     predictionGain{idx} = conv2(...
                         self.mu * lobulaOpt{idx},...
                         self.predictionKernel{idx},...
-                        'same');
+                        'same' ...
+                        );
                 else
                     predictionGain{idx} = conv2(...
-                        (self.mu) * lobulaOpt{idx} + ...
-                        (1 - self.mu) * self.cellPredictionGain{1}{idx}, ...
+                        self.mu * lobulaOpt{idx} ...
+                        + (1 - self.mu) * self.cellPredictionGain{1}{idx}, ...
                         self.predictionKernel{idx}, ...
-                        'same');
+                        'same' ...
+                        );
                 end
             end
-            self.cellPredictionGain{end + 1} = predictionGain;
+
+            self.cellPredictionGain{end} = predictionGain;
 
             % Prediction Map
             tobePredictionMap = zeros(imgH, imgW);
             for idx = 1:numDict
                 tobePredictionMap = tobePredictionMap + predictionGain{idx};
             end
-            maxTobe = max(tobePredictionMap, [], 'all');
-            tobePredictionMap(tobePredictionMap < maxTobe / 5) = 0;
+
 
             % Facilitated STMD Output
             facilitatedOpt = cell(numDict, 1);
@@ -97,8 +99,10 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             end
 
             % Memorizer update
-            self.cellPredictionMap(1) = [];
-            self.cellPredictionMap{end + 1} = logical(tobePredictionMap);
+            maxTobePreMap = max(tobePredictionMap, [], 'all');
+            self.cellPredictionMap = circshift(self.cellPredictionMap, -1);
+            self.cellPredictionMap{end} = ...
+                ( tobePredictionMap > maxTobePreMap*1e-2 );
 
             % Output
             predictionMap = self.cellPredictionMap{1};

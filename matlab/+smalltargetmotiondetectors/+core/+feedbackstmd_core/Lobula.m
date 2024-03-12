@@ -16,9 +16,9 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
         paraGaussKernel = struct('eta', 1.5, 'size', 3);  
     end
     properties(Hidden)
-        cellDplusE;  % Cell array for storing intermediate results
         gammaKernel;  % Gamma kernel
         gaussKernel;  % Gaussian kernel
+        hGammaDelay;
     end
 
 
@@ -28,10 +28,11 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lobula object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
+            import smalltargetmotiondetectors.core.*;
             
             % Initialize the SurroundInhibition component
             self.hSubInhi = SurroundInhibition();
+            self.hGammaDelay = GammaDelay(10, 25);
         end
     end
 
@@ -43,18 +44,10 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.tool.kernel.*;
             
             % Initialize parameters and kernels
-            if isempty(self.paraGammaKernel.len)
-                self.paraGammaKernel.len = ...
-                    3 * ceil(self.paraGammaKernel.tau);
-            end
-
-            self.gammaKernel = create_gamma_kernel( ...
-                self.paraGammaKernel.order, ...
-                self.paraGammaKernel.tau, ...
-                self.paraGammaKernel.len);
-
             self.hSubInhi.init();
-            self.cellDplusE = cell(self.paraGammaKernel.len, 1);
+
+            self.hGammaDelay.init();
+
             self.gaussKernel = fspecial(...
                 'gaussian', ...
                 self.paraGaussKernel.size, ...
@@ -73,21 +66,22 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             offSignal = varagein{2};
 
             % Formula (9)
-            self.cellDplusE(1) = [];
-            self.cellDplusE{end+1} = zeros(size(onSignal));
             feedbackSignal = self.alpha * ...
-                compute_temporal_conv(self.cellDplusE, self.gammaKernel);
-
+                self.hGammaDelay.process( zeros(size(onSignal)) );
+            
             % Formula (8)
             correlationD = ...
-                (onSignal - feedbackSignal) ...
-                .* (offSignal - feedbackSignal);
+                max( (onSignal - feedbackSignal), 0) .* ...
+                max( (offSignal - feedbackSignal), 0);
             
             % Formula (10)
             correlationE = ...
                 conv2(onSignal.*offSignal, self.gaussKernel, 'same');
 
-            self.cellDplusE{end} = correlationD + correlationE;
+            % only record correlationD + correlationE
+            self.hGammaDelay.isCircshift = false;
+            self.hGammaDelay.process( correlationD + correlationE );
+            self.hGammaDelay.isCircshift = true;
 
             % Formula (14)
             lobulaOpt = self.hSubInhi.process(correlationD);

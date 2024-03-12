@@ -1,6 +1,6 @@
 function [TP,FN,FP] = compute_metrics( ...
         Prediction,...
-        P_type,...
+        Prediction_type,...
         GroundTruth,...
         GT_type,...
         varargin)
@@ -25,7 +25,7 @@ function [TP,FN,FP] = compute_metrics( ...
     
     % Define default values
     ROI_threshold = 0.5;
-    SpatialDistance_threshold = 5;
+    SpatialDistance_threshold = 1;
     
     % Check if there are additional input arguments
     if ~isempty(varargin)
@@ -38,7 +38,7 @@ function [TP,FN,FP] = compute_metrics( ...
     FN = 0;
     FP = 0;
 
-    if strcmp(P_type,'bbox')
+    if strcmp(Prediction_type,'bbox')
         isFP = true(size(Prediction, 1),1);
         for ll = 1:size(GroundTruth, 1)
             isFN = true;
@@ -64,7 +64,7 @@ function [TP,FN,FP] = compute_metrics( ...
         end % end for
         FP = FP + sum(isFP);
 
-    elseif strcmp(P_type,'logic_matrix')
+    elseif strcmp(Prediction_type,'logic_matrix')
         FP = sum(sum(Prediction>0));
         for ll = 1:size(GroundTruth, 1)
             isTP = compute_spatial_distance(...
@@ -115,28 +115,28 @@ function ROI = compute_ROI(rect1, rect2)
 end
 
 function isaTP = compute_spatial_distance(...
-        Prediction_,...
-        GroundTruth_,...
-        Spa_Distance_threshold)
+        optMatrix,...
+        groundTruth,...
+        spatialThres)
     %COMPUTE_SPATIAL_DISTANCE Computes spatial distance between prediction and ground truth.
     %   Prediction_: Predicted data.
     %   GroundTruth_: Ground truth data.
-    %   Spa_Distance_threshold: Threshold for spatial distance.
+    %   spatialThreshold: Threshold for spatial distance.
     
-    [H,W] = size(Prediction_);
-    GroundTruth_ = round(GroundTruth_);
-    if size(GroundTruth_,2) == 2
-        x1 = max(1,GroundTruth_(1)-Spa_Distance_threshold);
-        x2 = min(W,GroundTruth_(1)+Spa_Distance_threshold);
-        y1 = max(1,GroundTruth_(2)-Spa_Distance_threshold);
-        y2 = min(H,GroundTruth_(2)+Spa_Distance_threshold);
-    elseif size(GroundTruth_,2) == 4
-        x1 = max(1,GroundTruth_(1)-Spa_Distance_threshold);
-        x2 = min(W,GroundTruth_(1)+GroundTruth_(3)+Spa_Distance_threshold);
-        y1 = max(1,GroundTruth_(2)-Spa_Distance_threshold);
-        y2 = min(H,GroundTruth_(2)+GroundTruth_(4)+Spa_Distance_threshold);
+    [H,W] = size(optMatrix);
+    groundTruth = round(groundTruth);
+    if size(groundTruth,2) == 2
+        x1 = max(1,groundTruth(1)-spatialThres);
+        x2 = min(W,groundTruth(1)+spatialThres);
+        y1 = max(1,groundTruth(2)-spatialThres);
+        y2 = min(H,groundTruth(2)+spatialThres);
+    elseif size(groundTruth,2) == 4
+        x1 = max(1,groundTruth(1)-spatialThres);
+        x2 = min(W,groundTruth(1)+groundTruth(3)+spatialThres);
+        y1 = max(1,groundTruth(2)-spatialThres);
+        y2 = min(H,groundTruth(2)+groundTruth(4)+spatialThres);
     end
-    temp_slice = Prediction_(y1:y2,x1:x2);
+    temp_slice = optMatrix(y1:y2,x1:x2);
 
     isaTP = any(temp_slice(:)); % There is no response around Ground True
 end

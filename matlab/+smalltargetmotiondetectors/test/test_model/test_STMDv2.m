@@ -3,7 +3,7 @@
 % Clear command window, workspace, and close all figures
 clc, clear, close all;
 
-
+%%
 % Get the full path of this file
 filePath = mfilename('fullpath');
 %   Find the index of 'Small-Target-Motion-Detectors'
@@ -31,14 +31,16 @@ model = instancing_model('STMDv2');
 %     [filePath(1:indexPath(end)-1),'/demodata/imgstream/DemoFig*.jpg'], ...
 %     10, 100 );
 
-% Demo video (RIST)
+Demo video (RIST)
 hSteam = VidstreamReader( ...
     [filePath(1:indexPath(end)-1),'/demodata/RIST_GX010290.mp4']);
 
 % RIST
-% hSteam = VidstreamReader( ...
-%     ['D:/Dataset/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-%      'GX010290-1/GX010290-1.mp4']);
+% hSteam = VidstreamReader('E:/RIST/GX010290-1/GX010290-1.mp4');
+
+% RIST in 60 Hz
+% hSteam = VidstreamReader('E:/RIST/video_in_60Hz/GX010290-1_60Hz.mp4');
+
 
 % simulate
 % hSteam = ImgstreamReader( ...
