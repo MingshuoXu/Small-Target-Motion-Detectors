@@ -70,6 +70,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 self.hGammaDelay.process( zeros(size(onSignal)) );
             
             % Formula (8)
+            % There must have the max operation here
             correlationD = ...
                 max( (onSignal - feedbackSignal), 0) .* ...
                 max( (offSignal - feedbackSignal), 0);

@@ -1,4 +1,4 @@
-v2.0.1(updata -version 2.02) in 12 March, 2024
+updata -version 2.0.2 (in 12 March, 2024)
 
 1. Corrected the implementation of the FeedbackSTMD model.
 (更正了FeedbackSTMD模型的实现。)
@@ -18,7 +18,7 @@ Next Version Preview:
 (增加在extremely dark条件下检查小目标运动的模型。由于文章还在审稿，为了保密起见我们只能发布P文件。)
 
 ------------------------------------------
-v2.0.1(updata -version 2.0.1) in 08 March, 2024
+updata -version 2.0.1 (in 08 March, 2024)
 
 1. GitHub renaming the download package from "Small-Target-Motion-Detectors" to "Small-Target-Motion-Detectors-main" caused issues with addpath. In this update, this problem have been addressed by ensuring that addpath is not reliant on the name "Small-Target-Motion-Detectors". Instead, it now identifies "/matlab/smalltargetmotiondetectors/" to prevent addpath from being affected by GitHub's changes.
 (GitHub将下载包从“Small-Target-Motion-Detectors”重命名为“Small-Target-Motion-Detectors-main”导致addpath出现了问题。在这次更新中解决了这个问题，使addpath不再依赖于“Small-Target-Motion-Detectors”这个名称，而是通过识别“/matlab/smalltargetmotiondetectors/”来避免受到GitHub更改的影响。)
@@ -28,7 +28,7 @@ v2.0.1(updata -version 2.0.1) in 08 March, 2024
 
 ------------------------------------------
 
-v2.0.0(first commit -version 2.00) in 07 March, 2024
+first commit -version 2.00 (in 07 March, 2024)
 
 This project is a comprehensive upgrate of the previous version (Version 1, https://github.com/MingshuoXu/ClassSTMD), mainly changing the implementation framework by separating the model from the core functionality, making it more convenient for combination.
 (本项目是对上一个版本（Version 1）的全面更新，主要改变了实现框架，将模型和核心功能分离，使得组合更加方便。)

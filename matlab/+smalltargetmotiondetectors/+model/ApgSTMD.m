@@ -79,7 +79,7 @@ classdef ApgSTMD < smalltargetmotiondetectors.model.STMDPlus
             %   Processes the input matrix through the ApgSTMD model
             %   components and generates the model's response.
 
-            % Import necessary packages
+            % Import compute function
             import smalltargetmotiondetectors.tool.compute.*;
 
             % Preprocessing Module

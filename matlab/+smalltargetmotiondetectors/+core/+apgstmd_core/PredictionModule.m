@@ -4,7 +4,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
     properties
         % Parameters
         vel = 0.25;         % Velocity
-        deltaT = 25;        % Delta time
+        intDeltaT = 25;     % Delta time
         sizeFilter = 25;    % Size of filter
         numFilter = 8;      % Number of filters
         zeta = 2;           % Zeta parameter
@@ -38,13 +38,13 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.tool.kernel.*;
             self.predictionKernel = create_prediction_kernel(...
                 self.vel, ...
-                self.deltaT, ...
+                self.intDeltaT, ...
                 self.sizeFilter, ...
                 self.numFilter, ...
                 self.zeta, ...
                 self.eta);
-            self.cellPredictionGain = cell(self.deltaT + 1, 1);
-            self.cellPredictionMap = cell(self.deltaT + 1, 1);
+            self.cellPredictionGain = cell(self.intDeltaT + 1, 1);
+            self.cellPredictionMap = cell(self.intDeltaT + 1, 1);
         end
 
         function [facilitatedOpt, predictionMap] = process(self, lobulaOpt)
@@ -88,7 +88,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             facilitatedOpt = cell(numDict, 1);
             for idx = 1:numDict
                 facilitatedOpt{idx} = lobulaOpt{idx};
-                for ss = 0:self.deltaT
+                for ss = 0:self.intDeltaT
                     ids = ss + 1;
                     if ~isempty(self.cellPredictionGain{ids})
                         facilitatedOpt{idx} = facilitatedOpt{idx} ...

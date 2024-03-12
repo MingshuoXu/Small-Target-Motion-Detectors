@@ -47,8 +47,7 @@ classdef FeedbackSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
 
         
         function init(self)
-            % INIT Method
-            %   Initializes the FeedbackSTMD components.
+            %INIT Initializes the FeedbackSTMD components.
             %
             % Syntax:
             %   obj.init()
