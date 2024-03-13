@@ -36,6 +36,12 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             % Initializes the prediction module
             
             import smalltargetmotiondetectors.tool.kernel.*;
+            if self.intDeltaT < 1
+                self.intDeltaT = 1;
+            elseif ~isinteger(self.intDeltaT)
+                self.intDeltaT = round(self.intDeltaT);
+            end
+            
             self.predictionKernel = create_prediction_kernel(...
                 self.vel, ...
                 self.intDeltaT, ...

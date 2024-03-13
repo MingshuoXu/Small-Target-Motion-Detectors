@@ -55,8 +55,14 @@ classdef GammaDelay < smalltargetmotiondetectors.core.BaseCore
             % Creates the gamma filter kernel and initializes input history
             import smalltargetmotiondetectors.tool.kernel.*;
 
+            if self.order < 1
+                self.order = 1;
+            elseif ~isinteger(self.order)
+                self.order = round(self.order);
+            end
+
             if isempty(self.lenKernal)
-                self.lenKernal = 3 * ceil(self.tau);
+                self.lenKernal = ceil(3 * self.tau);
             end
 
             if isempty(self.gammaKernel)

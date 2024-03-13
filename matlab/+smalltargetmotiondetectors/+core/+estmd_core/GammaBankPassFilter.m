@@ -29,7 +29,10 @@ classdef GammaBankPassFilter < smalltargetmotiondetectors.core.BaseCore
         function init(self)
             % Initialization method
             % Initializes gamma delays
-            
+            if self.hGammaDelay1.tau < self.hGammaDelay2.tau
+                self.hGammaDelay2.tau = self.hGammaDelay1.tau + 1;
+            end
+
             self.hGammaDelay1.init();  % Initialize gamma delay 1
             self.hGammaDelay2.init();  % Initialize gamma delay 2
         end

@@ -38,8 +38,10 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
             import smalltargetmotiondetectors.core.stmdplus_core.*;
 
             % Initialize contrast pathway and mushroom body components
-            self.hContrastPathway = smalltargetmotiondetectors.core.stmdplus_core.ContrastPathway();
-            self.hMushroomBody = smalltargetmotiondetectors.core.stmdplus_core.MushroomBody();
+            self.hContrastPathway = ...
+                smalltargetmotiondetectors.core.stmdplus_core.ContrastPathway();
+            self.hMushroomBody = ...
+                smalltargetmotiondetectors.core.stmdplus_core.MushroomBody();
         end
         
         function init(self)
@@ -89,7 +91,8 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
             self.lobulaOpt = self.hLobula.process(self.medullaOpt);
 
             %% C. Contrast Pathway
-            self.direContrastOpt = self.hContrastPathway.process(self.retinaOpt);
+            self.direContrastOpt = ...
+                self.hContrastPathway.process(self.retinaOpt);
 
             %% D. Mushroom Body
             self.mushroomBodyOpt = self.hMushroomBody.process( ...

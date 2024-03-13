@@ -71,11 +71,11 @@ for datasetCell = datasetList
         mTP = eval([modelName, 'Result.mTP']);
         mFP = eval([modelName, 'Result.mFP']);
         index_FP = 1;
-        while mFP(index_FP) > 40
-            index_FP = index_FP + 1;%mFP < 40;
+        while mFP(index_FP) > 10 
+            index_FP = index_FP + 1;
         end
 
-        h_mTP = (mTP(index_FP:end-1)+mTP(index_FP+1:end))/2;
+        h_mTP = (mTP(index_FP:end-1)+mTP(index_FP+1:end)) / 2;
         area_mFP = mFP(index_FP:end-1) - mFP(index_FP+1:end);
         %AUC_
         AUC = dot(h_mTP, area_mFP)/(mFP(index_FP)-mFP(end));

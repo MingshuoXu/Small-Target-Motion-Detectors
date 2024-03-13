@@ -41,8 +41,8 @@ Clone or download the repository and follow the setup instructions for your pref
 ### Examples: 
 Refer to the demo scripts provided in the demo folder for examples on how to use the package for small target motion detection.
 
-### Parameter 
-Adjustment: Adjust parameters as needed for different input sources and application scenarios.
+### Parameter Adjustment: 
+Adjust parameters as needed for different input sources and application scenarios.
 
 ## Support and Feedback
 If you encounter any issues or have any suggestions while using the STMD package, feel free to reach out to me. 

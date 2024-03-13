@@ -3,7 +3,6 @@ classdef ContrastPathway < smalltargetmotiondetectors.core.BaseCore
 
     properties
         theta = [0:3]*pi/4; % Angles for filters
-        hGammaBankPassFilter; % Gamma bank-pass filter
         alpha2 = 1.5; % Alpha parameter for kernel creation
         eta = 3; % Eta parameter for kernel creation
         sizeT1 = 11; % Size parameter for kernel creation

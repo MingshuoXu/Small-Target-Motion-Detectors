@@ -2,11 +2,6 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
     % MushroomBody class for STMDPlus
 
     properties
-        theta = [0:3]*pi/4; % Theta values
-        hGammaBankPassFilter; % Gamma bank-pass filter
-
-        sizeT1 = 11; % Size of T1 kernel
-
         paraNMS = struct( ...
             'maxRegionSize', 15, ...
             'method', 'sort'); % Parameters for non-maximum suppression
@@ -78,11 +73,12 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             end
 
             [idX, idY] = find(nornroomOpt > self.detectThreshold);
-            indexXY = [idX,idY];
+            indexXY = [idX, idY];
 
             %% Information Integration - join
-            stateIdx = false(size(indexXY,1),1);
-            stateTRIdx = false(size(self.trackIdx,1),1);
+            stateIdx = false(length(idX), 1);
+            stateTRIdx = false(size(self.trackIdx,1), 1);
+            
             if ~isempty(self.trackIdx)
                 DD = pdist2(self.trackIdx, indexXY);
 
