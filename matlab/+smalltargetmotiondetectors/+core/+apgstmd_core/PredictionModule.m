@@ -3,7 +3,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
 
     properties
         % Parameters
-        vel = 0.25;         % Velocity
+        velocity;         % Velocity
         intDeltaT = 25;     % Delta time
         sizeFilter = 25;    % Size of filter
         numFilter = 8;      % Number of filters
@@ -19,6 +19,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
         predictionKernel;   % Prediction kernel
         cellPredictionGain; % Cell array for prediction gain
         cellPredictionMap;  % Cell array for prediction map
+        timeAttenuationKernel; % kernel in formula (23)
     end
 
     methods
@@ -41,22 +42,30 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             elseif ~isinteger(self.intDeltaT)
                 self.intDeltaT = round(self.intDeltaT);
             end
+            if isempty(self.velocity)
+                self.velocity = 5 / self.intDeltaT;
+            end
             
             self.predictionKernel = create_prediction_kernel(...
-                self.vel, ...
+                self.velocity, ...
                 self.intDeltaT, ...
                 self.sizeFilter, ...
                 self.numFilter, ...
                 self.zeta, ...
                 self.eta);
-            self.cellPredictionGain = cell(self.intDeltaT + 1, 1);
+            self.cellPredictionGain = ...
+                cell(self.intDeltaT + 1, self.numFilter);
             self.cellPredictionMap = cell(self.intDeltaT + 1, 1);
+
+            self.timeAttenuationKernel = ...
+                exp( self.kappa * ( -self.intDeltaT:0 ) );
         end
 
         function [facilitatedOpt, predictionMap] = process(self, lobulaOpt)
             % Processing method
             % Processes the input lobulaOpt to predict motion and update
             % prediction map
+            import smalltargetmotiondetectors.tool.compute.*;
             
             numDict = length(lobulaOpt);
             [imgH, imgW] = size(lobulaOpt{1});
@@ -64,44 +73,45 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             % Prediction Gain
             self.cellPredictionGain = circshift(self.cellPredictionGain, -1);
             predictionGain = cell(numDict, 1);
-            for idx = 1:numDict
-                if isempty(self.cellPredictionGain{1})
-                    predictionGain{idx} = conv2(...
-                        self.mu * lobulaOpt{idx},...
-                        self.predictionKernel{idx},...
+            for idxD = 1:numDict
+                if isempty(self.cellPredictionGain{1,idxD})
+                    predictionGain{idxD} = conv2(...
+                        self.mu * lobulaOpt{idxD},...
+                        self.predictionKernel{idxD},...
                         'same' ...
                         );
                 else
-                    predictionGain{idx} = conv2(...
-                        self.mu * lobulaOpt{idx} ...
-                        + (1 - self.mu) * self.cellPredictionGain{1}{idx}, ...
-                        self.predictionKernel{idx}, ...
+                    predictionGain{idxD} = conv2(...
+                        self.mu * lobulaOpt{idxD} ...
+                        + (1 - self.mu) * self.cellPredictionGain{1,idxD}, ...
+                        self.predictionKernel{idxD}, ...
                         'same' ...
                         );
                 end
             end
 
-            self.cellPredictionGain{end} = predictionGain;
+            [self.cellPredictionGain(end,:)] = deal(predictionGain);
 
             % Prediction Map
             tobePredictionMap = zeros(imgH, imgW);
-            for idx = 1:numDict
-                tobePredictionMap = tobePredictionMap + predictionGain{idx};
+            for idxD = 1:numDict
+                tobePredictionMap = tobePredictionMap + predictionGain{idxD};
             end
 
 
             % Facilitated STMD Output
             facilitatedOpt = cell(numDict, 1);
-            for idx = 1:numDict
-                facilitatedOpt{idx} = lobulaOpt{idx};
-                for ss = 0:self.intDeltaT
-                    ids = ss + 1;
-                    if ~isempty(self.cellPredictionGain{ids})
-                        facilitatedOpt{idx} = facilitatedOpt{idx} ...
-                            + self.beta * exp(self.kappa * (1 - ids)) *...
-                            self.cellPredictionGain{ids}{idx};
-                    end
+            for idxD = 1:numDict
+                facilitatedOpt{idxD} = lobulaOpt{idxD};
+                if ~isempty(self.cellPredictionGain{end, idxD})
+                    facilitatedOpt{idxD} = facilitatedOpt{idxD} + ...
+                        self.beta * ...
+                        compute_temporal_conv( ...
+                        self.cellPredictionGain(:,idxD), ...
+                        self.timeAttenuationKernel ...
+                        );
                 end
+
             end
 
             % Memorizer update
@@ -117,3 +127,21 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
     end
 
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

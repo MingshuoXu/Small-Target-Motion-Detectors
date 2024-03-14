@@ -1,5 +1,13 @@
 % get_IO_folder
 
-folderRIST = 'E:/RIST/';
+filePath = mfilename('fullpath');
 
-outputFolder = 'E:/RIST_result/';
+
+%%
+if startsWith(filePath, 'C:/Users/mings/MATLAB Drive/')
+    folderRIST = 'C:/Users/mings/MATLAB Drive/RIST/';
+    outputFolder = 'C:/Users/mings/MATLAB Drive/RIST_result/';
+elseif startsWith(filePath, '/MATLAB Drive/')
+    folderRIST = '/MATLAB Drive/RIST/';
+    outputFolder = '/MATLAB Drive/RIST_result/';
+end

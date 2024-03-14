@@ -33,7 +33,7 @@ datasetList = {...
 
 figIdx = 170;
 
-resultPath = 'E:\\RIST_result\\final_result\\';
+resultPath = 'E:/RIST_result/final_result/';
 
 %%
 for datasetStr = datasetList

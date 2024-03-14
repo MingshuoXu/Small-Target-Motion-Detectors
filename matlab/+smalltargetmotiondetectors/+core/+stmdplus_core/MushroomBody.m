@@ -17,6 +17,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
         hNMS; % Non-maximum suppression
         trackIdx; % Track index
         track = {}; % Track data
+        hasFunPdist2;
     end
 
 
@@ -40,6 +41,16 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             self.hNMS = MatrixNMS( ...
                 self.paraNMS.maxRegionSize, ...
                 self.paraNMS.method);
+
+            % Check if pdist2 is available
+            if exist('pdist2') == 2
+                % Use the built-in pdist2 function
+                self.hasFunPdist2 = true;
+            else
+                % Use the compute_pdist2 function
+                self.hasFunPdist2 = false;
+            end
+
 
         end
         
@@ -80,7 +91,12 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             stateTRIdx = false(size(self.trackIdx,1), 1);
             
             if ~isempty(self.trackIdx)
-                DD = pdist2(self.trackIdx, indexXY);
+
+                if self.hasFunPdist2
+                    DD = pdist2(self.trackIdx, indexXY);
+                else
+                    DD = compute_pdist2(self.trackIdx, indexXY);
+                end
 
                 [D1, ind1] = min(DD,[],2);
 
@@ -90,6 +106,9 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                         self.trackIdx(ii,:) = indexXY(j,:);
                         stateTRIdx(ii) = true;
                         stateIdx(j) = true;
+
+                        
+
                         self.track{ii} = [
                             self.track{ii}, ...
                             squeeze(contrastOpt(indexXY(j,1),indexXY(j,2),:))...
@@ -109,7 +128,8 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             for kk = kk_'
                 self.trackIdx(end+1,:) = indexXY(kk,:);
                 self.track{end+1} = squeeze( ...
-                    contrastOpt(indexXY(kk,1), indexXY(kk,2), :) ) ;
+                    contrastOpt(indexXY(kk,1), indexXY(kk,2), :) ...
+                    ) ;
             end
 
             %% Small Target Discrimination
