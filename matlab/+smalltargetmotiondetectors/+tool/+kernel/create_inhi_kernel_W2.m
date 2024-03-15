@@ -68,17 +68,14 @@ function inhibitionKernelW2 = create_inhi_kernel_W2( ...
     CenY = round(KernelSize/2);
     
     % Generate grid
-    [X,Y] = meshgrid(1:KernelSize,1:KernelSize);
-    
-    % Translate the grid
-    ShiftX = X - CenX;
-    ShiftY = Y - CenY;
-    
+    [ShiftX,ShiftY] = ...
+        meshgrid((1:KernelSize) - CenX, (KernelSize:-1:1) - CenY);
+        
     % Generate Gauss functions 1 and 2
     Gauss1 = (1 / (2 * pi * Sigma1^2)) * ...
-        exp(-(ShiftX .* ShiftX + ShiftY .* ShiftY) / (2 * Sigma1^2));
+        exp(-(ShiftX.^2 + ShiftY.^2) / (2 * Sigma1^2));
     Gauss2 = (1 / (2 * pi * Sigma2^2)) * ...
-        exp(-(ShiftX .* ShiftX + ShiftY .* ShiftY) / (2 * Sigma2^2));
+        exp(-(ShiftX.^2 + ShiftY.^2) / (2 * Sigma2^2));
     
     % Generate DoG, subtracting two Gaussian functions
     DoG_Filter = Gauss1 - e * Gauss2 - rho;

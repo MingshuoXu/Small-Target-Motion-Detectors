@@ -3,7 +3,7 @@ classdef Visualization < handle
     %
     %   Author: Mingshuo Xu
     %   Date: 2022-01-10
-    %   LastEditTime: 2024-02-26
+    %   LastEditTime: 2024-03-10
     
     properties
         hFig; % figure handle
@@ -27,17 +27,18 @@ classdef Visualization < handle
     end
     
     methods
-        function self = Visualization(className)
-            if nargin == 1
+        function self = Visualization(className, showThreshold)
+            if nargin > 0
                 self.inputClassName = className;
+                if nargin > 1
+                    self.showThreshold = showThreshold;
+                end
             elseif nargin == 0
                 self.inputClassName = 'None';
-            else
-                error(['The constructor of a visual class',...
-                    ' takes at most one input parameter!']);
             end
+
         end
-        
+
         function create_fig_handle(self)
             self.hFig = figure(...
                 'Name', ['Show result for ', self.inputClassName], ...

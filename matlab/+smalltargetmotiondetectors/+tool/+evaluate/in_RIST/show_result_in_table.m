@@ -1,5 +1,7 @@
 %show_result_in_table
-clc, clear, close all;
+if isempty(dbstack(1,'-completenames'))
+    clc, clear, close all;
+end
 
 %%
 modelList = {...

@@ -10,6 +10,12 @@ function frackernel = create_fracdiff_kernel(alpha, wide)
     %   Returns:
     %   - frackernel: The fractional difference kernel.
     
+    if nargin < 1
+        alpha = 0.8;
+    end
+    if nargin < 2
+        wide = 3;
+    end
     % Ensure the width is at least 2
     if wide < 2
         wide = 2;
@@ -28,6 +34,8 @@ function frackernel = create_fracdiff_kernel(alpha, wide)
 
         % Normalize the kernel
         sum_Kernel = sum(frackernel); % 1/M(\alpha)
+        frackernel = frackernel / sum_Kernel;
+        frackernel(frackernel < 1e-4) = 0;
         frackernel = frackernel / sum_Kernel;
     else
         error('Alpha must be in the interval (0,1]. \n');

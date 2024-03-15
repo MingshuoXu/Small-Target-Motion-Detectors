@@ -9,15 +9,15 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
         detectThreshold = 0.01; % Response threshold for clustering
         DBSCANDist = 5; % Spatial distance for clustering
         lenDBSCAN = 100; % Length of clustering trajectory
-        SDThreshold = 15; % Threshold of standard deviation
+        SDThreshold = 5; % Threshold of standard deviation
     end
 
     properties(Hidden)
         T1Kernel; % T1 kernel
-        hNMS; % Non-maximum suppression
-        trackIdx; % Track index
-        track = {}; % Track data
-        hasFunPdist2;
+        hNMS; % object's handle of non-maximum suppression
+        trackID; % trackInfo index
+        trackInfo = {}; % trackInfo data
+        hasFunPdist2; % check if there is a build-in function named pdist2
     end
 
 
@@ -43,7 +43,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                 self.paraNMS.method);
 
             % Check if pdist2 is available
-            if exist('pdist2') == 2
+            if exist('pdist2') == 2 %#ok<EXIST>
                 % Use the built-in pdist2 function
                 self.hasFunPdist2 = true;
             else
@@ -65,92 +65,90 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
             numDirection = length(lobulaOpt);
             mushroomBodyOpt = cell(numDirection, 1);
-            for idx = 1 : numDirection
-                mushroomBodyOpt{idx} = ...
-                    lobulaOpt{idx} .* logical(nmsLobulaOpt);
+            for idxI = 1 : numDirection
+                mushroomBodyOpt{idxI} = ...
+                    lobulaOpt{idxI} .* logical(nmsLobulaOpt);
             end
-            max_ = max(nmsLobulaOpt, [], 'all');
+            maxNumber = max(nmsLobulaOpt, [], 'all');
 
-            if max_ > 0
-                if max_ ~= 1
-                    nornroomOpt = nmsLobulaOpt ./ max_;
-                else
-                    nornroomOpt = nmsLobulaOpt;
-                end
-            else
-                self.trackIdx = [];
-                self.track = {};
+            if maxNumber <= 0
+                self.trackID = [];
+                self.trackInfo = {};
                 return;
             end
 
-            [idX, idY] = find(nornroomOpt > self.detectThreshold);
-            indexXY = [idX, idY];
+            [idX, idY] = find(nmsLobulaOpt > self.detectThreshold * maxNumber);
+            newID = [idX, idY];
 
-            %% Information Integration - join
-            stateIdx = false(length(idX), 1);
-            stateTRIdx = false(size(self.trackIdx,1), 1);
+            shouldTrackID = true(size(self.trackID,1), 1);
+            shouldAddNewID = true(length(idX), 1);
             
-            if ~isempty(self.trackIdx)
+            %% Information Integration -- join
+            if ~isempty(self.trackID)
 
                 if self.hasFunPdist2
-                    DD = pdist2(self.trackIdx, indexXY);
+                    DD = pdist2(self.trackID, newID);
                 else
-                    DD = compute_pdist2(self.trackIdx, indexXY);
+                    DD = compute_pdist2(self.trackID, newID);
                 end
 
-                [D1, ind1] = min(DD,[],2);
+                [D1, ind1] = min(DD, [], 2);
 
-                for ii = 1:length(D1)
-                    if D1(ii) <= self.DBSCANDist
-                        j = ind1(ii);
-                        self.trackIdx(ii,:) = indexXY(j,:);
-                        stateTRIdx(ii) = true;
-                        stateIdx(j) = true;
-
+                for idxI = 1:length(D1)
+                    if D1(idxI) <= self.DBSCANDist
+                        idxJ = ind1(idxI);
+                        if shouldAddNewID(idxJ)
+                            self.trackID(idxI,:) = newID(idxJ,:);
+                            self.trackInfo{idxI} = [
+                                self.trackInfo{idxI}, ...
+                                squeeze(contrastOpt(newID(idxJ,1),newID(idxJ,2),:))...
+                                ];
+                            shouldTrackID(idxI) = false;
+                            shouldAddNewID(idxJ) = false;
+                        end
                         
-
-                        self.track{ii} = [
-                            self.track{ii}, ...
-                            squeeze(contrastOpt(indexXY(j,1),indexXY(j,2),:))...
-                            ];
                     end
                 end
-                jj_ = find(~stateTRIdx);
-                self.trackIdx(jj_,:) = [];
-                self.track(jj_) = [];
+
+                %% Information Integration - wipe off
+                idxK = find(shouldTrackID);
+                self.trackID(idxK,:) = [];
+                self.trackInfo(idxK) = [];
 
             end
 
-            hasTractNum = length(self.track);
+            oldTractNum = length(self.trackInfo);
 
-            %% Information Integration - wipe off
-            kk_ = find(~stateIdx);
-            for kk = kk_'
-                self.trackIdx(end+1,:) = indexXY(kk,:);
-                self.track{end+1} = squeeze( ...
-                    contrastOpt(indexXY(kk,1), indexXY(kk,2), :) ...
+            %% New Track
+            isxNew = find(shouldAddNewID);
+            for kk = isxNew'
+                self.trackID(end+1,:) = newID(kk,:);
+                self.trackInfo{end+1} = squeeze( ...
+                    contrastOpt(newID(kk,1), newID(kk,2), :) ...
                     ) ;
             end
 
             %% Small Target Discrimination
 
-            for idx = 1:length(hasTractNum)
-                
-                if max(std(self.track{idx}, 0, 2)) < self.SDThreshold
+            for idx = 1:oldTractNum
+
+                if max(std(self.trackInfo{idx}, 0, 2)) < self.SDThreshold
                     for idxDirection = 1 : numDirection
-                        idX = self.trackIdx(idx,1);
-                        idY = self.trackIdx(idx,2);
+                        idX = self.trackID(idx,1);
+                        idY = self.trackID(idx,2);
                         mushroomBodyOpt{idxDirection}(idX, idY) = 0;
                     end
                 end
 
-                % Limit the length to ensure that the contents are 
+                % Limit the length to ensure that the contents are
                 %   within reasonable limits
-                if size(self.track{idx},2) > self.lenDBSCAN
-                    self.track{idx} = self.track{idx}(:,2:end);
+                if size(self.trackInfo{idx},2) > self.lenDBSCAN
+                    self.trackInfo{idx} = self.trackInfo{idx}(:,2:end);
                 end
             end
+
             self.Opt = mushroomBodyOpt;
+            
         end
     end
 

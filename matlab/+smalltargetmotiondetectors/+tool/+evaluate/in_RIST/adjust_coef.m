@@ -26,8 +26,9 @@ function hModel = adjust_coef(hModel, modelName, speedCoef)
                 };
         case 'FracSTMD'
             propertiesList = {
+                'hModel.hMedulla.hTm1.hGammaDelay.order', ...
                 'hModel.hMedulla.hTm1.hGammaDelay.tau'...
-                };
+                }; 
         case 'FeedbackSTMD'
             propertiesList = {
                 'hModel.hMedulla.hTm1.hGammaDelay.order', ...
@@ -42,14 +43,14 @@ function hModel = adjust_coef(hModel, modelName, speedCoef)
                 'hModel.hFeedbackPathway.hGammaDelay.order', ...
                 'hModel.hFeedbackPathway.hGammaDelay.tau' ...
                 };
-            
+
         otherwise
             return;
     end
-    
+
     for nProperty = propertiesList
         property = nProperty{1};
         eval([property, ' = ', property, ' * speedCoef;']);
     end
-         
+
 end

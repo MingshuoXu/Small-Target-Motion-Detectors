@@ -6,10 +6,10 @@ end
 %% 
 % Get the full path of this file
 filePath = mfilename('fullpath');
-%   Find the index of 'Small-Target-Motion-Detectors'
+%   Find the index of '/matlab/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    '/matlab/+smalltargetmotiondetectors/');
+    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath(end)+7));
 
@@ -20,7 +20,7 @@ import smalltargetmotiondetectors.tool.*;
 import smalltargetmotiondetectors.tool.evaluate.*;
 import smalltargetmotiondetectors.model.*;
 
-% %%
+%%
 % modelList = {...
 %     'ESTMD', ...
 %     'DSTMD', ...
@@ -40,11 +40,17 @@ import smalltargetmotiondetectors.model.*;
 %     'GX010335-1', 'GX010336-1', 'GX010337-1' };
 %%
 modelList = {...
-    'ApgSTMD' ...
+    'ESTMD', ...
+    'DSTMD', ...
+    'FracSTMD', ...
+    'STMDPlus', ...
+    'ApgSTMD', ...
+    'STMDv2', ...
+    'FeedbackSTMD', ...
+    'FSTMD' ...
     };
 
 datasetList = {...
-    'GX010071-1', 'GX010220-1', 'GX010228-1', 'GX010230-1', ...
     'GX010231-1', 'GX010241-1', 'GX010250-1', 'GX010266-1', ...
     'GX010290-1', 'GX010291-1', 'GX010303-1', 'GX010307-1', ...
     'GX010315-1', 'GX010321-1', 'GX010322-1', 'GX010327-1', ...
@@ -64,8 +70,10 @@ for datasetCell = datasetList
     frameRange = get_RIST_frame_range(datasetName);
 
     for modelNameCell = modelList
+        tic0 = tic;
+
         modelName = modelNameCell{1};
-        fprintf('%s\t', modelName);
+        fprintf('%s ', modelName);
         %-------------------------------------%
         load([outputFolder, datasetName, '/', modelName, '_result.mat']);
 
@@ -87,7 +95,7 @@ for datasetCell = datasetList
         [mTP,mFN,mFP] = deal(zeros(thresholdNum,1));
         [listTP,listFN,listFP] = deal(cell(thresholdNum,1));
         
-        for kk = 1:thresholdNum
+        parfor kk = 1:thresholdNum
             threshlod = (kk-1)/thresholdNum;
             
 
@@ -141,5 +149,10 @@ for datasetCell = datasetList
 
         eval(['clear ', modelName, '_output Output RIST_result']);
         eval(['clear ', modelName]);
+
+        toc0 = toc(tic0);
+
+         fprintf('%3.1fs\t ', toc0);
+
     end
 end

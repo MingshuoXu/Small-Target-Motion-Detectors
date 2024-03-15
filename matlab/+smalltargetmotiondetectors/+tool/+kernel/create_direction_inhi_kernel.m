@@ -60,6 +60,7 @@ function directionalInhiKernel = ...
 
             Inhibition_Kernel = Gauss1 - Gauss2;
 
+            Inhibition_Kernel(abs(Inhibition_Kernel) < 1e-4) = 0;
             %Inhibition_Kernel = Inhibition_Kernel(1:DSTMD_Directions);
             directionalInhiKernel = reshape(Inhibition_Kernel,[1 1 KernelSize]);
         end

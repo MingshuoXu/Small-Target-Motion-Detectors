@@ -28,11 +28,11 @@ classdef MatrixNMS < handle
         function self = MatrixNMS(maxRegionSize, method)
             % Constructor method
             if nargin < 1
-                method = 'bubble';
+                method = 'sort';
                 maxRegionSize = 5;
             elseif nargin == 1
                 if maxRegionSize > 3
-                    method = 'bubble';
+                    method = 'sort';
                 else
                     method = 'conv2';
                 end

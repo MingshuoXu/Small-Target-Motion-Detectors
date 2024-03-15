@@ -6,13 +6,14 @@ clc, clear, close all;
 %%
 % Get the full path of this file
 filePath = mfilename('fullpath');
-%   Find the index of 'Small-Target-Motion-Detectors'
+%   Find the index of '/matlab/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    '/matlab/+smalltargetmotiondetectors/');
+    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath(end)+7));
 
+%%
 % Import necessary packages
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
@@ -35,8 +36,11 @@ model = instancing_model('STMDv2');
 % hSteam = VidstreamReader( ...
 %     [filePath(1:indexPath(end)-1),'/demodata/RIST_GX010290.mp4']);
 
+
 % RIST
-hSteam = VidstreamReader('E:/RIST/GX010290-1/GX010290-1.mp4');
+% hSteam = VidstreamReader('E:/RIST/GX010290-1/GX010290-1.mp4');
+hSteam = VidstreamReader( ...
+    'C:\Users\mx60\MATLAB Drive\RIST\video_in_60Hz\GX010250-1_60Hz.mp4');
 
 % RIST in 60 Hz
 % hSteam = VidstreamReader('E:/RIST/video_in_60Hz/GX010290-1_60Hz.mp4');

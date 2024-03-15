@@ -1,4 +1,4 @@
-function dictKernel = create_T1_kernels(numfilter, alpha, eta, filterSize)
+function dictKernel = create_T1_kernels(filterNum, alpha, eta, filterSize)
     % CREATE_T1_KERNELS Generates convolution kernels for STMDPlus T1 neurons.
     %   This function generates convolution kernels for STMDPlus T1 neurons,
     %   which are composed of filters defined as:
@@ -6,7 +6,7 @@ function dictKernel = create_T1_kernels(numfilter, alpha, eta, filterSize)
     %            G(x + a*cos(theta), y + a*sin(theta))
     %
     %   Parameters:
-    %   - numfilter: Number of filters.
+    %   - filterNum: Number of filters.
     %   - alpha: Distance between the center of the Gaussian function and the filter center.
     %   - eta: Sigma of the Gaussian function.
     %   - filterSize: Size of the filter.
@@ -19,7 +19,7 @@ function dictKernel = create_T1_kernels(numfilter, alpha, eta, filterSize)
 
     % Default parameter values
     if nargin < 1
-        numfilter = 4;
+        filterNum = 4;
     end
     if nargin < 2
         filterSize = 11;
@@ -35,20 +35,20 @@ function dictKernel = create_T1_kernels(numfilter, alpha, eta, filterSize)
     end
 
     % Compute angles for each filter
-    Theta = zeros(1, numfilter);
-    for i = 1:numfilter
-        Theta(i) = (i - 1) * pi / numfilter;
+    Theta = zeros(1, filterNum);
+    for i = 1:filterNum
+        Theta(i) = (i - 1) * pi / filterNum;
     end
 
     % Initialize cell array to store generated kernels
-    dictKernel = cell(numfilter, 1);
+    dictKernel = cell(filterNum, 1);
 
     % Generate coordinates
     r = floor(filterSize / 2);
-    [X, Y] = meshgrid(-r:r, -r:r);
+    [X, Y] = meshgrid(-r:r, r:-1:-r);
 
     % Generate kernels for each filter
-    for idx = 1:numfilter
+    for idx = 1:filterNum
         % Determine the centers of the two Gaussian functions
         X1 = X - alpha * cos(Theta(idx));
         Y1 = Y - alpha * sin(Theta(idx));

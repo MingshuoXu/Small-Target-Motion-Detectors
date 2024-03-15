@@ -1,6 +1,5 @@
-%test_ImgsteamReader
-
-clc,clear,close all;
+%test_convKernel
+clc, clear, close all;
 
 %%
 % Get the full path of this file
@@ -12,10 +11,27 @@ indexPath = strfind(filePath, ...
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath(end)+7));
 
-import smalltargetmotiondetectors.tool.*;
+
+import smalltargetmotiondetectors.tool.kernel.*;
+
+%% 
+predictionKernel = create_prediction_kernel();
+
+kernel1 = predictionKernel{1};
+kernel2 = kernel1;
+kernel2(:,1:12) = 0;
 
 %%
+A = rand(250,500)*rand(1)*100;
 
-testObj = ImgstreamReader();
+times = 1000;
+%%
 
-% testObj.init();
+for idT = 1:times
+
+    B = conv2(A, kernel1, 'same');
+
+    C = conv2(A, kernel2, 'same');
+
+end
+

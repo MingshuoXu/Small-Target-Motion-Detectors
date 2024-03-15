@@ -1,4 +1,4 @@
-function hVisualization = get_visualize_handle(className)
+function hVisualization = get_visualize_handle(className, showThreshold)
     % GET_VISUALIZE_HANDLE returns a handle to a visualization object based
     % on the given class name.
     % 
@@ -16,19 +16,25 @@ function hVisualization = get_visualize_handle(className)
     %   % Creates a default visualization object
     %   hVis = get_visualize_handle(); 
     %   % Creates a visualization object of class 'MyVisualizationClass'
-    %   hVis = get_visualize_handle('MyVisualizationClass'); 
+    %   hVis = get_visualize_handle('MyVisualizationClass');
 
     % Get the full path of this file
     filePath = mfilename('fullpath');
-    %   Find the index of 'Small-Target-Motion-Detectors'
+    %   Find the index of '/matlab/+smalltargetmotiondetectors/'
     % in the file path
     indexPath = strfind(filePath, ...
-        '/matlab/+smalltargetmotiondetectors/');
+        [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
     % Add the path to the package containing the models
     addpath(filePath(1:indexPath(end)+7));
-    import smalltargetmotiondetectors.tool.Visualization;
 
-    if nargin == 1
+    import smalltargetmotiondetectors.tool.*;
+
+    if nargin == 2
+        docIdx = strfind(className, '.');
+        hVisualization = Visualization(...
+            className(docIdx(end)+1:end), ...
+            showThreshold);
+    elseif nargin == 1
         docIdx = strfind(className, '.');
         hVisualization = Visualization(className(docIdx(end)+1:end));
     elseif nargin == 0

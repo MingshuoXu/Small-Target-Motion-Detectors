@@ -10,13 +10,13 @@ classdef BaseCore < handle
             % Constructor
             % Get the full path of this file
             filePath = mfilename('fullpath');
-            %   Find the index of '/matlab/+smalltargetmotiondetectors/' 
+            %   Find the index of '/matlab/+smalltargetmotiondetectors/'
             % in the file path
             indexPath = strfind(filePath, ...
-                '/matlab/+smalltargetmotiondetectors/');
+                [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
             % Add the path to the package containing the models
             addpath(filePath(1:indexPath(end)+7));
-            
+
             import smalltargetmotiondetectors.core.*;
         end
     end

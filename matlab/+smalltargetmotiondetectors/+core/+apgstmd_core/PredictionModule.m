@@ -3,7 +3,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
 
     properties
         % Parameters
-        velocity;         % Velocity
+        velocity;           % Velocity: v_{opt} (Defalt: 0.25)
         intDeltaT = 25;     % Delta time
         sizeFilter = 25;    % Size of filter
         numFilter = 8;      % Number of filters
@@ -16,10 +16,10 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
 
     properties(Hidden)
         % Hidden properties
-        predictionKernel;   % Prediction kernel
-        cellPredictionGain; % Cell array for prediction gain
-        cellPredictionMap;  % Cell array for prediction map
-        timeAttenuationKernel; % kernel in formula (23)
+        predictionKernel;       % Prediction kernel
+        cellPredictionGain;     % Cell array for prediction gain
+        cellPredictionMap;      % Cell array for prediction map
+        timeAttenuationKernel;  % kernel in formula (23)
     end
 
     methods
@@ -37,13 +37,15 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             % Initializes the prediction module
             
             import smalltargetmotiondetectors.tool.kernel.*;
+
             if self.intDeltaT < 1
                 self.intDeltaT = 1;
             elseif ~isinteger(self.intDeltaT)
                 self.intDeltaT = round(self.intDeltaT);
             end
+            
             if isempty(self.velocity)
-                self.velocity = 5 / self.intDeltaT;
+                self.velocity = 25 / 4 / self.intDeltaT;
             end
             
             self.predictionKernel = create_prediction_kernel(...
@@ -59,6 +61,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
 
             self.timeAttenuationKernel = ...
                 exp( self.kappa * ( -self.intDeltaT:0 ) );
+            
         end
 
         function [facilitatedOpt, predictionMap] = process(self, lobulaOpt)
@@ -118,7 +121,7 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             maxTobePreMap = max(tobePredictionMap, [], 'all');
             self.cellPredictionMap = circshift(self.cellPredictionMap, -1);
             self.cellPredictionMap{end} = ...
-                ( tobePredictionMap > maxTobePreMap*1e-2 );
+                ( tobePredictionMap > maxTobePreMap*2e-1 );
 
             % Output
             predictionMap = self.cellPredictionMap{1};

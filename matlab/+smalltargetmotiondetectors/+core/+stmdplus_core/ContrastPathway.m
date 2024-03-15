@@ -25,21 +25,21 @@ classdef ContrastPathway < smalltargetmotiondetectors.core.BaseCore
         function init(self)
             % Initialization method
             % Initializes the T1Kernel
-            
+
             import smalltargetmotiondetectors.tool.kernel.*;
-            
+
             self.T1Kernel = create_T1_kernels(...
                 length(self.theta), ...
                 self.alpha2, ...
                 self.eta, ...
                 self.sizeT1 ...
-            );
+                );
         end
 
         function dictContrastOpt = process(self, retinaOpt)
             % Processing method
             % Processes the input retinaOpt to generate contrastOpt
-            
+
             lenKernel = length(self.theta);
             dictContrastOpt = zeros([size(retinaOpt), lenKernel]);
             for idx = 1:lenKernel

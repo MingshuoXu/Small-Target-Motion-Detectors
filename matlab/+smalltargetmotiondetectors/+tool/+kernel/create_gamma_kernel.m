@@ -12,6 +12,16 @@ function gammaKernel = create_gamma_kernel(Order, Tau, wide)
     %   Returns:
     %   - gammaKernel: The generated Gamma vector.
 
+    if nargin < 1
+        Order = 100;
+    end
+    if nargin < 2
+        Tau = 25;
+    end
+    if nargin < 3
+        wide = ceil(3*Tau);
+    end
+
     % Ensure wide is at least 2
     if wide <= 1
         wide = 2;
@@ -21,14 +31,14 @@ function gammaKernel = create_gamma_kernel(Order, Tau, wide)
     gammaKernel = zeros(1, wide);
 
     % Compute the values of the Gamma vector
-    timeList = 1:wide-1;
-    gammaKernel(2:wide) = ...
+    timeList = 0:wide-1;
+    gammaKernel = ...
         (Order * timeList / Tau).^Order .* exp(-Order * timeList / Tau) ...
         ./ (factorial(Order - 1) * Tau);
 
     % Normalize the Gamma vector
-    sumGammaKernel = sum(gammaKernel(:));
-    if sumGammaKernel > 0 && sumGammaKernel ~= 1
-        gammaKernel = gammaKernel / sumGammaKernel;
-    end
+    gammaKernel = gammaKernel / sum(gammaKernel, 'all');
+    gammaKernel(gammaKernel<1e-4) = 0;
+    gammaKernel = gammaKernel / sum(gammaKernel, 'all');
+
 end

@@ -41,11 +41,8 @@ function PredictionKernal = create_prediction_kernel(...
     Center = ceil(filter_size/2);
 
     % Create meshgrid
-    [Y, X] = meshgrid(1:filter_size, 1:filter_size);
-
-    % Shift the grid
-    ShiftX = X - Center;
-    ShiftY = Y - Center;
+    [ShiftX, ShiftY] = ...
+        meshgrid((1:filter_size) - Center, (filter_size:-1:1) - Center);
 
     % Compute angle
     fai = atan2(ShiftY, ShiftX);
@@ -56,14 +53,23 @@ function PredictionKernal = create_prediction_kernel(...
 
     % Generate prediction kernels
     for idx = 1:FilterNum
-        theta = (idx - 1) * 2 * pi / FilterNum + pi / 2;
+        theta = (idx - 1) * 2 * pi / FilterNum;
 
         PredictionKernalWithIdx = exp(...
             -((ShiftX - Delta_X).^2 + (ShiftY - Delta_Y).^2) / (2 * zeta^2) ...
             + eta * cos(fai - theta) ...
             );
-        PredictionKernalWithIdx(Center, Center) = 0;
+     
+        % normalization
+        PredictionKernalWithIdx = ...
+            PredictionKernalWithIdx / sum(PredictionKernalWithIdx, 'all');
+
+        % To speed up the calculation
+        PredictionKernalWithIdx(PredictionKernalWithIdx < 5e-4) = 0;
+        
+        % normalizating again
         PredictionKernal{idx} = ...
             PredictionKernalWithIdx / sum(PredictionKernalWithIdx, 'all');
+
     end
 end
