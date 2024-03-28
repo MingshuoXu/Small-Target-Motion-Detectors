@@ -7,7 +7,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
 
     properties
        alpha1 = 3;  % Alpha parameter
-       thetaList = [0:7] * pi / 4;  % List of theta values
+       thetaList = (0:7) * pi / 4;  % List of theta values
     end
 
     properties(Hidden)
@@ -50,7 +50,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
 
             % Correlation range
             corrRow = (1+self.alpha1):(imgH-self.alpha1);
-            CorrCol = (1+self.alpha1):(imgW-self.alpha1);
+            corrCol = (1+self.alpha1):(imgW-self.alpha1);
             
             % Correlation Output
             corrOutput = cell(numDict, 1);
@@ -64,13 +64,13 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 Y_Com = round(self.alpha1 * sin(theta + pi/2 ));
                 
                 % Calculate correlation output
-                corrOutput{countTheta}(corrRow, CorrCol)...
-                    = tm3Signal(corrRow, CorrCol)...
+                corrOutput{countTheta}(corrRow, corrCol)...
+                    = tm3Signal(corrRow, corrCol)...
                     .* ( ...
-                    tm1Delay5Signal(corrRow, CorrCol)...
-                    + mi1Delay4Signal(corrRow-X_Com, CorrCol-Y_Com)...
+                    tm1Delay5Signal(corrRow, corrCol)...
+                    + mi1Delay4Signal(corrRow-X_Com, corrCol-Y_Com)...
                     ) ...
-                    .* tm1Delay6Signal(corrRow-X_Com, CorrCol-Y_Com);
+                    .* tm1Delay6Signal(corrRow-X_Com, corrCol-Y_Com);
                 countTheta = countTheta + 1;
             end
 

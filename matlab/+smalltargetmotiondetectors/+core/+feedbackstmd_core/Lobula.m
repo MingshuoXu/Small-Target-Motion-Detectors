@@ -4,14 +4,11 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
     %   system. It performs several operations including temporal
     %   convolution, correlation, and surround inhibition.
     %
-    %   Author: [Your Name]
-    %   Date: [Date]
+    %   Date: 2024-03-10
 
     properties
         hSubInhi;  % SurroundInhibition component
-        alpha = 1;  % Parameter alpha
-        % Parameters for gamma kernel
-        paraGammaKernel = struct('order', 10, 'tau', 25, 'len', []);  
+        alpha = 1;  % Parameter alpha 
         % Parameters for Gaussian kernel
         paraGaussKernel = struct('eta', 1.5, 'size', 3);  
     end
@@ -54,7 +51,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 self.paraGaussKernel.eta);
         end
 
-        function lobulaOpt = process(self, varagein)
+        function lobulaOpt = process(self, varargin)
             % Processing method
             % Performs temporal convolution, correlation, and surround
             % inhibition
@@ -62,10 +59,11 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.tool.compute.*;
             
             % Extract ON and OFF channel signals from the input
-            onSignal = varagein{1};
-            offSignal = varagein{2};
+            onSignal = varargin{1};
+            offSignal = varargin{2};
 
             % Formula (9)
+            self.hGammaDelay.hCellInput.isCircshift = true;
             feedbackSignal = self.alpha * ...
                 self.hGammaDelay.process( zeros(size(onSignal)) );
             
@@ -80,9 +78,9 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 conv2(onSignal.*offSignal, self.gaussKernel, 'same');
 
             % only record correlationD + correlationE
-            self.hGammaDelay.isCircshift = false;
+            self.hGammaDelay.hCellInput.isCircshift = false;
             self.hGammaDelay.process( correlationD + correlationE );
-            self.hGammaDelay.isCircshift = true;
+            
 
             % Formula (14)
             lobulaOpt = self.hSubInhi.process(correlationD);

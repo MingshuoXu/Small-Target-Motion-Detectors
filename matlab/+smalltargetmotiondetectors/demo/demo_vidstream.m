@@ -4,12 +4,12 @@ clc, clear, close all;
 
 % Get the full path of this file
 filePath = mfilename('fullpath');
-%   Find the index of '/matlab/+smalltargetmotiondetectors/'
+%   Find the index of '/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+    [filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
-addpath(filePath(1:indexPath(end)+7));
+addpath(filePath(1:indexPath));
 
 % Import necessary modules
 import smalltargetmotiondetectors.*;
@@ -19,8 +19,7 @@ import smalltargetmotiondetectors.tool.*;
 %% Model
 
 % Instantiate the model
-% model = instancing_model(); 
-model = instancing_model('STMDv2');
+model = instancing_model(); 
 
 %{
 Please refer to +model/Readme or Readme for smalltargetmotiondetectors.
@@ -40,13 +39,13 @@ STMDv2          -indevelopment
 % Create a video stream reader
 % Specify the path to the video file or uncomment one of the provided options
 
-% hSteam = VidstreamReader();
+hSteam = VidstreamReader();
 
 % Alternatively, uncomment the following options for different inputs:
 
 % Demo video (RIST)
-hSteam = VidstreamReader( ...
-    [filePath(1:indexPath(end)-1),'/demodata/RIST_GX010290.mp4']);
+% hSteam = VidstreamReader( ...
+%     [filePath(1:indexPath-7),'demodata', filesep,'RIST_GX010290.mp4']);
 
 %% Get visualization handle and initiate model
 % Get visualization handle

@@ -22,17 +22,18 @@ classdef GammaDelay < smalltargetmotiondetectors.core.BaseCore
     properties
         order;      % Order of the gamma filter
         tau;        % Time constant of the filter
-        lenKernal;  % Length of the filter kernel
+        lenKernel;  % Length of the filter kernel
         
-        isCircshift = true; % Flag to indicate circular shifting
+        isRecord = true;
     end
 
     
     properties (Hidden)
         gammaKernel;    % Gamma filter kernel
-        cellInputHist;  % Input history stored in a cell array
+        hCellInput;  % Input history stored in a cell array
     end
     
+
     methods
         function self = GammaDelay(order, tau, lenKernal)
             % Constructor
@@ -46,14 +47,19 @@ classdef GammaDelay < smalltargetmotiondetectors.core.BaseCore
                 self.tau = tau;
             end
             if nargin >= 3
-                self.lenKernal = lenKernal;
+                self.lenKernel = lenKernal;
             end
         end
 
-        function init(self)
+        function init(self, isRecord)
             % Initialization method
             % Creates the gamma filter kernel and initializes input history
             import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.core.*;
+
+            if nargin > 1
+                self.isRecord = isRecord;
+            end
 
             if self.order < 1
                 self.order = 1;
@@ -61,38 +67,44 @@ classdef GammaDelay < smalltargetmotiondetectors.core.BaseCore
                 self.order = round(self.order);
             end
 
-            if isempty(self.lenKernal)
-                self.lenKernal = ceil(3 * self.tau);
+            if isempty(self.lenKernel)
+                self.lenKernel = ceil(3 * self.tau);
             end
 
             if isempty(self.gammaKernel)
                 self.gammaKernel = create_gamma_kernel( ...
                     self.order, ...
                     self.tau, ...
-                    self.lenKernal);
+                    self.lenKernel);
             end
 
-            self.cellInputHist = cell(self.lenKernal, 1);
+            if self.isRecord
+                self.hCellInput = CellRecording(self.lenKernel);
+                self.hCellInput.init();
+            end
         end
 
         function optMatrix = process(self, iptMatrix)
             % Processing method
             % Applies the gamma filter to the input matrix
-            
+
             import smalltargetmotiondetectors.tool.compute.*;
 
-            if self.isCircshift
-                self.cellInputHist = circshift(self.cellInputHist, -1);
-            end
-            self.cellInputHist{end} = iptMatrix;
-            
-            if nargout == 1
-                optMatrix = compute_temporal_conv(...
-                    self.cellInputHist, ...
-                    self.gammaKernel);
-            elseif nargout == 0
-                return
-            end
+            self.hCellInput.push(iptMatrix);
+
+            optMatrix = compute_temporal_conv(...
+                self.hCellInput.cellData, ...
+                self.gammaKernel);
         end
+
+        function optMatrix = process_cell(self, cellInput)
+            import smalltargetmotiondetectors.tool.compute.*;
+        
+            optMatrix = compute_temporal_conv(...
+                cellInput, ...
+                self.gammaKernel);
+        end
+
+
     end
 end

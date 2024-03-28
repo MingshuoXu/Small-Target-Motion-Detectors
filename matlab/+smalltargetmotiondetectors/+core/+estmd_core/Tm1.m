@@ -25,9 +25,14 @@ classdef Tm1 < smalltargetmotiondetectors.core.BaseCore
 
         function tm1Opt = process(self, tm2Signal)
             % Processing method
-            % Applies the delay mechanism to the input matrix tm2Signal
-            
-            tm1Opt = self.hGammaDelay.process(tm2Signal);
+
+            % Apply gamma delay to the input signal
+            if iscell(tm2Signal)
+                tm1Opt = self.hGammaDelay.process_cell(tm2Signal);
+            else
+                tm1Opt = self.hGammaDelay.process(tm2Signal);
+            end
+
             self.Opt = tm1Opt;
         end
     end

@@ -29,18 +29,21 @@ classdef DSTMDBackbone < smalltargetmotiondetectors.model.BaseModel
             
             % Call superclass constructor
             self = self@smalltargetmotiondetectors.model.BaseModel();
+            
             % Import necessary packages
-            import smalltargetmotiondetectors.core.*;
-            import smalltargetmotiondetectors.core.estmd_core.Retina ...
-                smalltargetmotiondetectors.core.estmd_backbone.Lamina ...
-                smalltargetmotiondetectors.core.dstmd_core.Medulla ...
-                smalltargetmotiondetectors.core.dstmd_core.Lobula;
+            import smalltargetmotiondetectors.core.estmd_core.*;
+            import smalltargetmotiondetectors.core.estmd_backbone.*;
+            import smalltargetmotiondetectors.core.dstmd_core.*;
 
             % Initialize components
-            self.hRetina = smalltargetmotiondetectors.core.estmd_core.Retina();
-            self.hLamina = smalltargetmotiondetectors.core.estmd_backbone.Lamina();
-            self.hMedulla = smalltargetmotiondetectors.core.dstmd_core.Medulla();
-            self.hLobula = smalltargetmotiondetectors.core.dstmd_core.Lobula();
+            self.hRetina = ...
+                smalltargetmotiondetectors.core.estmd_core.Retina();
+            self.hLamina = ...
+                smalltargetmotiondetectors.core.estmd_backbone.Lamina();
+            self.hMedulla = ...
+                smalltargetmotiondetectors.core.dstmd_core.Medulla();
+            self.hLobula = ...
+                smalltargetmotiondetectors.core.dstmd_core.Lobula();
         end
         
         function init(self)

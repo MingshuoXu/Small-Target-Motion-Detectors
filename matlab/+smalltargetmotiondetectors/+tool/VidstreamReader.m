@@ -73,13 +73,14 @@ classdef VidstreamReader < handle
                 %   Find the index of 'Small-Target-Motion-Detectors'
                 % in the file path
                 indexPath = strfind(filePath, ...
-                    '/matlab/+smalltargetmotiondetectors/');
+                    [filesep, '+smalltargetmotiondetectors', filesep]);
                 % Add the path to the package containing the models
-                addpath(filePath(1:indexPath(end)+7));
+                addpath(filePath(1:indexPath));
 
                 [fileName, pathName] = uigetfile(...
                     {'*.*'}, 'Selecting a input video', ...
-                    [filePath(1:indexPath-1),'/demodata/RIST_GX010290.mp4']);
+                    [filePath(1:indexPath-7),'demodata', filesep, ...
+                    'RIST_GX010290.mp4']);
                 vidName =  fullfile(pathName, fileName);
             end
             

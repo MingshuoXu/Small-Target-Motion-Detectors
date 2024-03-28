@@ -4,7 +4,7 @@ classdef Visualization < handle
     %   Author: Mingshuo Xu
     %   Date: 2022-01-10
     %   LastEditTime: 2024-03-10
-    
+
     properties
         hFig; % figure handle
         showThreshold = 0.8;
@@ -16,6 +16,7 @@ classdef Visualization < handle
         paraNMS = struct( ...
             'maxRegionSize', 15, ...
             'method', 'sort');
+        shouldNMS = true;
     end
     properties(Hidden)
         saveState = false;
@@ -24,8 +25,9 @@ classdef Visualization < handle
         hNMS;
         hasFigHandle = false;
         uiHandle;
+
     end
-    
+
     methods
         function self = Visualization(className, showThreshold)
             if nargin > 0
@@ -46,39 +48,39 @@ classdef Visualization < handle
 
             if ~self.isTestPatter
                 set(self.hFig, 'menubar', 'none', 'toolbar', 'none');
-%                 set(self.hFig, 'HandleVisibility', 'callback');
+                %                 set(self.hFig, 'HandleVisibility', 'callback');
             end
 
             self.hNMS = ...
                 smalltargetmotiondetectors.tool.MatrixNMS( ...
                 self.paraNMS.maxRegionSize, ...
                 self.paraNMS.method);
-            
-            % 添加一个文本框来显示时间信息
+
+            %
             self.uiHandle.timeTextBox = uicontrol( ...
                 'Parent', self.hFig, ...
                 'Style', 'text', ...
                 'String', 'Initiating, please wait...', ...
                 'Position', [165, 350, 250, 50], ...
-                'FontSize', 12, ... 
+                'FontSize', 12, ...
                 'HorizontalAlignment', 'center');
-            
+
             self.uiHandle.cancelButton = uicontrol( ...
                 'Parent', self.hFig, ...
                 'Style', 'pushbutton', ...
                 'String', 'Cancel', ...
                 'Position', [400, 10, 100, 30], ...
                 'Callback', @cancelCallback);
-            
-            
+
+
             self.uiHandle.pauseButton = uicontrol( ...
                 'Parent', self.hFig, ...
                 'Style', 'pushbutton', ...
                 'String', 'Pause', ...
                 'Position', [300, 10, 100, 30], ...
                 'Callback', @pauseCallback);
-            
-            % 设置取消和暂停标志
+
+            %
             setappdata(self.hFig, 'canceling', 0);
             setappdata(self.hFig, 'pausing', 0);
 
@@ -87,7 +89,7 @@ classdef Visualization < handle
 
 
             %---------------------------------%
-            function cancelCallback(hObject, ~) 
+            function cancelCallback(hObject, ~)
                 setappdata(hObject.Parent, 'canceling', 1);
             end
 
@@ -124,53 +126,53 @@ classdef Visualization < handle
                 return;
             end
 
-            
+
 
             modelOpt = result.response;
             motionDirection = result.direction;
-            
+
             figure(self.hFig);
 
             hold off;
-            imshow(colorImg, 'Border', 'loose');
-
+            hImg = imshow(colorImg, 'Border', 'loose');
+            hold on;
 
             axis manual;
 
             maxOutput = max(modelOpt(:));
 
-            if maxOutput > 0 
-                if abs(maxOutput - 1) > 1e-16  % normalization
-                    normOutput = modelOpt/maxOutput;
-                else
-                    normOutput = modelOpt;
-                end
-                nmsOutput = self.hNMS.nms(normOutput);
-                [idX, idY] = find(nmsOutput > self.showThreshold);
+            if maxOutput > 0
                 
-                hold on;
+
+                if self.shouldNMS
+                    nmsOutput = self.hNMS.nms(modelOpt);
+                end
+                [idX, idY] = find(nmsOutput > self.showThreshold * maxOutput);
                 plot(idY, idX, '*', ...
                     'MarkerEdgeColor', 'r', ...
                     'MarkerSize', 5 );
-
                 
                 if ~isempty(motionDirection) % Direction
+                   
+                    indXY = sub2ind(size(nmsOutput), idX, idY);
+                    nanStatus = ~isnan(motionDirection(indXY));
+
                     
+                    quiverX = idX(nanStatus);
+                    quiverY = idY(nanStatus);
 
-                    linearInd_Direction = ...
-                        sub2ind(size(motionDirection), idX, idY);
-
-                    indX = cos(motionDirection);
-                    indY = sin(motionDirection);
-                    cosD = indX(linearInd_Direction); 
-                    sinD = indY(linearInd_Direction);
-                    cosD( isnan(cosD) ) = 0;
-                    sinD( isnan(sinD) ) = 0;
+                    cosD = cos(motionDirection(quiverX, quiverY));
+                    sinD = sin(motionDirection(quiverX, quiverY));
 
                     lenArrow = 20;
                     % In the figure of imshow, the positive direction of
                     %   the y axis is downward, that is 'axis IJ'.
-                    quiver(idY, idX, ...
+                    % quiver(hImg,...
+                    %     quiverY, quiverX, ...
+                    %     lenArrow * cosD, ...
+                    %     -lenArrow * sinD, ...
+                    %     0);
+                    quiver(quiverY, quiverX, ...
                         lenArrow * cosD, ...
                         -lenArrow * sinD, ...
                         0);
@@ -182,7 +184,7 @@ classdef Visualization < handle
             if self.isSaveAsVideo
                 self.save_video();
             end
-            
+
             if getappdata(self.hFig, 'pausing')
                 while getappdata(self.hFig, 'pausing')
                     pause(0.1); % 等待0.1秒，检查暂停标志是否被设置为假
@@ -197,7 +199,7 @@ classdef Visualization < handle
             end
             self.timeTic = tic;
         end
-        
+
         function save_video(self)
             if self.saveState == 0
                 if isempty(self.savePath)
@@ -216,7 +218,7 @@ classdef Visualization < handle
                 fileName = fullfile(self.savePath,self.videoPath);
                 self.hVideo = VideoWriter(fileName);
                 self.hVideo.FrameRate = 10;
-                
+
                 fprintf('Visual output video is saved as ''%s''.\n',fileName);
                 open(self.hVideo);
                 self.saveState = true;
@@ -227,12 +229,12 @@ classdef Visualization < handle
 
         function delete(self)
             delete(self.hVideo);
-            try %#ok<TRYNC> 
+            try %#ok<TRYNC>
                 self.hFig.delete();
             end
 
         end
-        
+
     end % end methods
 end
 

@@ -12,6 +12,7 @@ classdef BaseModel < handle
         hLamina; % Handle for the lamina layer
         hMedulla; % Handle for the medulla layer
         hLobula; % Handle for the lobula layer
+        inputFps;
     end
 
     properties(Hidden)
@@ -28,12 +29,12 @@ classdef BaseModel < handle
             % BASEMODEL Constructor
             % Get the full path of this file
             filePath = mfilename('fullpath');
-            %   Find the index of '/matlab/+smalltargetmotiondetectors/'
+            %   Find the index of '/+smalltargetmotiondetectors/'
             % in the file path
             indexPath = strfind(filePath, ...
-                [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+                [filesep, '+smalltargetmotiondetectors', filesep]);
             % Add the path to the package containing the models
-            addpath(filePath(1:indexPath(end)+7));
+            addpath(filePath(1:indexPath(end)-1));
 
             % Import necessary packages
             import smalltargetmotiondetectors.*;

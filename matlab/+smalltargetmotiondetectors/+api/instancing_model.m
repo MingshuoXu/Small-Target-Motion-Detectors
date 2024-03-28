@@ -21,12 +21,12 @@ function model = instancing_model(modelName, modelPara)
     
     % Get the full path of this file
     filePath = mfilename('fullpath');
-    %   Find the index of '/matlab/+smalltargetmotiondetectors/'
+    %   Find the index of '/+smalltargetmotiondetectors/'
     % in the file path
     indexPath = strfind(filePath, ...
-        [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+        [filesep, '+smalltargetmotiondetectors', filesep]);
     % Add the path to the package containing the models
-    addpath(filePath(1:indexPath(end)+7));
+    addpath(filePath(1:indexPath));
 
     % Import the necessary packages
     import smalltargetmotiondetectors.model.*;
@@ -43,7 +43,7 @@ function model = instancing_model(modelName, modelPara)
         % Open file dialog for model selection
         [modelName] = uigetfile(...
             {'*.*'}, 'Pick a model from M-file or P-file', ...
-            [filePath(1:indexPath+35), '+model\STMDv2.p'] );
+            [filePath(1:indexPath+28), '+model\Backbonev2'] );
 
         % Check if BaseModel is selected (it's an abstract class)
         if strcmp(modelName, 'BaseModel.m')

@@ -6,10 +6,10 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             'maxRegionSize', 15, ...
             'method', 'sort'); % Parameters for non-maximum suppression
 
-        detectThreshold = 0.01; % Response threshold for clustering
+        detectThres = 0.01; % Response threshold for clustering
         DBSCANDist = 5; % Spatial distance for clustering
         lenDBSCAN = 100; % Length of clustering trajectory
-        SDThreshold = 5; % Threshold of standard deviation
+        SDThres = 5; % Threshold of standard deviation
     end
 
     properties(Hidden)
@@ -77,13 +77,13 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                 return;
             end
 
-            [idX, idY] = find(nmsLobulaOpt > self.detectThreshold * maxNumber);
+            [idX, idY] = find(nmsLobulaOpt > self.detectThres * maxNumber);
             newID = [idX, idY];
 
             shouldTrackID = true(size(self.trackID,1), 1);
             shouldAddNewID = true(length(idX), 1);
             
-            %% Information Integration -- join
+            
             if ~isempty(self.trackID)
 
                 if self.hasFunPdist2
@@ -91,7 +91,8 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                 else
                     DD = compute_pdist2(self.trackID, newID);
                 end
-
+                
+                %% Information Integration -- join
                 [D1, ind1] = min(DD, [], 2);
 
                 for idxI = 1:length(D1)
@@ -99,8 +100,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                         idxJ = ind1(idxI);
                         if shouldAddNewID(idxJ)
                             self.trackID(idxI,:) = newID(idxJ,:);
-                            self.trackInfo{idxI} = [
-                                self.trackInfo{idxI}, ...
+                            self.trackInfo{idxI} = [self.trackInfo{idxI}, ...
                                 squeeze(contrastOpt(newID(idxJ,1),newID(idxJ,2),:))...
                                 ];
                             shouldTrackID(idxI) = false;
@@ -132,7 +132,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
             for idx = 1:oldTractNum
 
-                if max(std(self.trackInfo{idx}, 0, 2)) < self.SDThreshold
+                if max(std(self.trackInfo{idx}, 0, 2)) < self.SDThres
                     for idxDirection = 1 : numDirection
                         idX = self.trackID(idx,1);
                         idY = self.trackID(idx,2);

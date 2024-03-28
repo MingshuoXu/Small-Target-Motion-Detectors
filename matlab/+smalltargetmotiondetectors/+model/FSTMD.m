@@ -80,32 +80,29 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             %   and generates the model's response.
             
             [m, n] = size(iptMatrix);
-            iteraSignal = ones(m, n);
+            lastFeedbackSignal = ones(m, n);
+            self.feedbackSignal = zeros(m, n);
 
             %% Retina layer
             self.retinaOpt = self.hRetina.process(iptMatrix);
 
-            %% Feedback loop Init
-            % Initialize feedback loop
-            self.laminaOpt = self.hLamina.process(self.retinaOpt);
-            self.hMedulla.process(self.laminaOpt);
-            self.medullaOpt = self.hMedulla.Opt;
-            [~, correlationOpt] = self.hLobula.process(self.medullaOpt);
-            self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt);
+           
 
-            % Disable circshift for certain components
-            self.hLamina.hGammaBankPassFilter.hGammaDelay1.isCircshift = false;
-            self.hLamina.hGammaBankPassFilter.hGammaDelay2.isCircshift = false;
-            self.hMedulla.hTm1.hGammaDelay.isCircshift = false;
-            self.hFeedbackPathway.hGammaDelay.isCircshift = false;
+
 
             %% Feedback loop
-            iterationCount = 0;
-            while max(abs(self.feedbackSignal - iteraSignal), [], 'all') ...
-                    > self.iterationThreshold && ...
-                    iterationCount < self.maxIterationNum
-                iterationCount = iterationCount + 1;
-                iteraSignal = self.feedbackSignal;
+            iterationCount = 1;
+            while iterationCount < self.maxIterationNum ...
+                && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
+                > self.iterationThreshold
+                    
+                if iterationCount == 1
+                    self.set_record_state(true);
+                elseif iterationCount == 2
+                    self.set_record_state(false);
+                end
+
+                
 
                 % Execute feedback loop
                 self.laminaOpt = self.hLamina.process(self.retinaOpt + self.feedbackSignal);
@@ -113,18 +110,21 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
                 self.medullaOpt = self.hMedulla.Opt;
                 [self.lobulaOpt, correlationOpt] = self.hLobula.process(self.medullaOpt);
                 self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt);
-            end
 
-            %% Reset circshift
-            % Re-enable circshift for components
-            self.hLamina.hGammaBankPassFilter.hGammaDelay1.isCircshift = true;
-            self.hLamina.hGammaBankPassFilter.hGammaDelay2.isCircshift = true;
-            self.hMedulla.hTm1.hGammaDelay.isCircshift = true;
-            self.hFeedbackPathway.hGammaDelay.isCircshift = true;
+                lastFeedbackSignal = self.feedbackSignal;
+                iterationCount = iterationCount + 1;
+            end
 
             % Set model response
             self.modelOpt.response = self.lobulaOpt;
         end
 
+        function set_record_state(self, state)
+            % Disable circshift for certain components
+            self.hLamina.hGammaBankPassFilter.hGammaDelay1.hCellInput.isCircshift = state;
+            self.hLamina.hGammaBankPassFilter.hGammaDelay2.hCellInput.isCircshift = state;
+            self.hMedulla.hTm1.hGammaDelay.hCellInput.isCircshift = state;
+            self.hFeedbackPathway.hGammaDelay.hCellInput.isCircshift = state;
+        end
     end
 end

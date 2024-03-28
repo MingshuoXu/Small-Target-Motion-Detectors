@@ -46,5 +46,5 @@ Xu, M., Wang, H., Chen, H., Li, H., & Peng, J. (2023).
 A Fractional-Order Visual Neural Model for Small Target Motion Detection. 
 Neurocomputing, 126459.
 
-STMDv2: -indevelopment
+Backbonev2: -indevelopment
 

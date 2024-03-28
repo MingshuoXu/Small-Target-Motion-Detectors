@@ -23,11 +23,16 @@ classdef Mi1 < smalltargetmotiondetectors.core.BaseCore
             self.hGammaDelay.init();
         end
 
-        function mi1Opt = process(self, tm3Ipt)
+        function mi1Opt = process(self, tm3Signal)
             % Processing method
-            % Applies the delay mechanism to the input matrix tm3Ipt
-            
-            mi1Opt = self.hGammaDelay.process(tm3Ipt);
+
+            % Apply gamma delay to the input signal
+            if iscell(tm3Signal)
+                mi1Opt = self.hGammaDelay.process_cell(tm3Signal);
+            else
+                mi1Opt = self.hGammaDelay.process(tm3Signal);
+            end
+
             self.Opt = mi1Opt;
         end
     end

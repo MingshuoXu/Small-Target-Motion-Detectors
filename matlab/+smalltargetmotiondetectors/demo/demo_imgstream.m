@@ -4,12 +4,12 @@ clc, clear, close all;
 
 % Get the full path of this file
 filePath = mfilename('fullpath');
-%   Find the index of '/matlab/+smalltargetmotiondetectors/'
+%   Find the index of '/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+    [filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
-addpath(filePath(1:indexPath(end)+7));
+addpath(filePath(1:indexPath));
 
 % Import necessary modules
 import smalltargetmotiondetectors.*;
@@ -20,7 +20,6 @@ import smalltargetmotiondetectors.tool.*;
 
 % Instantiate the model
 model = instancing_model(); 
-% model = instancing_model('STMDv2');
 
 %{
 Please refer to +model/Readme or Readme for smalltargetmotiondetectors.
