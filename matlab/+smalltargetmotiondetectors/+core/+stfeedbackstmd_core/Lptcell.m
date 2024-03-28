@@ -102,7 +102,7 @@ classdef Lptcell < ...
                 min( sum( (firingRate-self.tuningCurvef).^2, 1) ) ;
             self.velocity(end) = self.velocity(end) / self.inputFps;
 
-            fprintf('%f\n', self.velocity(end)  );
+            % fprintf('%f\n', self.velocity(end)  );
 
             sumV = zeros(size(self.velocity));
             for idV = 1:length(self.velocity)
