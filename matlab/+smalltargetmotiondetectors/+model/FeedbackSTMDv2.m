@@ -71,7 +71,8 @@ classdef FeedbackSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             self.medullaOpt = self.hMedulla.Opt;
 
             [self.lobulaOpt, self.modelOpt.direction] = ...
-                self.hLobula.process(self.medullaOpt{1}, self.medullaOpt{2});
+                self.hLobula.process(...
+                self.medullaOpt{1}, self.medullaOpt{2});
 
             %%
             self.modelOpt.response = self.lobulaOpt;

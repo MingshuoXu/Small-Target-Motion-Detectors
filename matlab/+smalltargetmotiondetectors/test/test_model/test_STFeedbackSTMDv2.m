@@ -1,4 +1,4 @@
-%test_FSTMDv2
+%STFeedbackSTMDv2
 
 clc, clear, close all;
 
@@ -17,7 +17,7 @@ import smalltargetmotiondetectors.api.*;
 import smalltargetmotiondetectors.tool.*;
 
 %% model
-model = instancing_model('FSTMDv2');
+model = instancing_model('STFeedbackSTMDv2');
 
 %% input
 
@@ -31,11 +31,14 @@ model = instancing_model('FSTMDv2');
 % Demo video (RIST)
 % hSteam = VidstreamReader( ...
 %     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
+% model.inputFps = 240;
+
+% hSteam = VidstreamReader( ...
+%     ['E:/RIST/video_in_60Hz/GX010291-1_60Hz.mp4']);
+% model.inputFps = 60;
 
 % RIST
-% hSteam = VidstreamReader( ...
-%     ['E:/STMD_Dataset/Real-World-Scence-Material/RIST/', ...
-%      'GX010290-1/GX010290-1.mp4']);
+% hSteam = VidstreamReader('E:/RIST/GX010290-1/GX010290-1.mp4');
 
 % simulate
 hSteam = ImgstreamReader( ...
@@ -44,6 +47,7 @@ hSteam = ImgstreamReader( ...
     '-Amp-0-Theta-0-TemFre-2-SamFre-1000/', ...
     'GeneratingDataSet*.tif'], ...
     100, 1000 );
+model.inputFps = 1000;
 
 %% visualization and model init
 
@@ -53,10 +57,10 @@ hVisual = get_visualize_handle(class(model));
 % Initialize the model
 model.init();
 
-
 %% run
 while hSteam.hasFrame && hVisual.hasFigHandle
     [grayImg, colorImg] = hSteam.get_next_frame();
     result = inference(model, grayImg);
     hVisual.show_result(colorImg, result);
+%     fprintf('%d\n',hSteam.currIdx);
 end

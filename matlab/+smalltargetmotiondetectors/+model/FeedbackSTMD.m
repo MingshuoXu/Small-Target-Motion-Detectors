@@ -82,7 +82,8 @@ classdef FeedbackSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             self.hMedulla.process(self.laminaOpt);
             self.medullaOpt = self.hMedulla.Opt;
 
-            self.lobulaOpt = self.hLobula.process(self.medullaOpt);
+            self.lobulaOpt = self.hLobula.process(...
+                self.medullaOpt{1}, self.medullaOpt{2});
 
             %%
             self.modelOpt.response = self.lobulaOpt;

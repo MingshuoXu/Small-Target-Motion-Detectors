@@ -63,7 +63,7 @@ This DEMO file demonstrates how to read videos from a video stream and perform t
 
     FracSTMD        	(2023, Xu, M., Neurocomputing)
 
-    STMDv2          	--indevelopment
+    Backbonev2         	--indevelopment
 
 +tool: Contains additional tools and utilities for data processing and visualization.
 

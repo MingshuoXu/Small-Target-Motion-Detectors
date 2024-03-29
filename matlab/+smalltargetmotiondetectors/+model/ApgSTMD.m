@@ -104,11 +104,10 @@ classdef ApgSTMD < smalltargetmotiondetectors.model.STMDPlus
                 self.direContrastOpt);
 
             % Prediction Module
-            [self.predictionOpt, self.predictionMap ] = ...
-                self.hPredictionPathway.process(self.mushroomBodyOpt);
-            
             % self.predictionOpt is the facilitated STMD 
             %   output Q(x; y; t; theta) in formula (23)
+            [self.predictionOpt, self.predictionMap ] = ...
+                self.hPredictionPathway.process(self.mushroomBodyOpt);
             
             % Compute response and direction
             self.modelOpt.response = compute_response(self.predictionOpt);

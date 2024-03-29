@@ -14,7 +14,6 @@ classdef Stmdcell < ...
     end
 
     properties(Hidden)
-        gammaKernel;  % Gamma kernel
         gaussKernel;  % Gaussian kernel
         hGammaDelay;
         cellDPlusE;

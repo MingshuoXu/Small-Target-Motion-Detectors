@@ -1,8 +1,8 @@
-classdef STFeedbackSTMD < ...
-        smalltargetmotiondetectors.model.ESTMDBackbone
+classdef STFeedbackSTMDv2 < ...
+        smalltargetmotiondetectors.model.Backbonev2
     % FeedbackSTMD - Feedback Small Target Motion Detector
     %   This class implements a Feedback Extended Small Target Motion Detector
-    %   by inheriting from the ESTMDBackbone class.
+    %   by inheriting from the Backbonev2 class.
     %
     % Ref: Wang, H., Zhong, Z., Lei, F., Peng, J., & Yue, S. (2023). 
     % Bio-Inspired Small Target Motion Detection With Spatio-Temporal 
@@ -15,7 +15,7 @@ classdef STFeedbackSTMD < ...
 
     
     methods
-        function self = STFeedbackSTMD()
+        function self = STFeedbackSTMDv2()
             %  Constructor method
             %   Initializes an instance of the STFeedbackSTMD class.
             %
@@ -26,20 +26,20 @@ classdef STFeedbackSTMD < ...
             %   Initializes the FeedbackSTMD object and sets up its components.
             
             % Call superclass constructor
-            self = self@smalltargetmotiondetectors.model.ESTMDBackbone();
+            self = self@smalltargetmotiondetectors.model.Backbonev2();
             % Import necessary packages
             import smalltargetmotiondetectors.core.stfeedbackstmd_core.*;
+            import smalltargetmotiondetectors.core.stfeedbackstmdv2_core.*;
 
             % Customize Medulla and Lobula component
-            self.hMedulla = ...
-                smalltargetmotiondetectors.core.stfeedbackstmd_core.Medulla();
+
             self.hLobula = ...
-                smalltargetmotiondetectors.core.stfeedbackstmd_core.Lobula();
+                smalltargetmotiondetectors.core.stfeedbackstmdv2_core.Lobula();
 
         end
 
         function init(self)
-            init@smalltargetmotiondetectors.model.ESTMDBackbone(self);
+            init@smalltargetmotiondetectors.model.Backbonev2(self);
             if isempty(self.inputFps)
                 error('input fps is needed!');
             else

@@ -21,6 +21,7 @@ classdef Lobula < smalltargetmotiondetectors.core.feedbackstmd_core.Lobula
 
             self.hDireCell = ...
                 smalltargetmotiondetectors.core.backbonev2_core.DirectionCell();
+            % self.hGammaDelay.tau = 10;
         end
     end
 
@@ -31,11 +32,14 @@ classdef Lobula < smalltargetmotiondetectors.core.feedbackstmd_core.Lobula
             init@smalltargetmotiondetectors.core.feedbackstmd_core.Lobula(self);
 
             self.hDireCell.init();
+
         end
 
         function [lobulaOpt, direciton] = process(self, varargin)
             % Processing 
-            inhiOpt = process@smalltargetmotiondetectors.core.feedbackstmd_core.Lobula(self, varargin{1}, varargin{2});
+            inhiOpt = ...
+                process@smalltargetmotiondetectors.core.feedbackstmd_core.Lobula(...
+                self, varargin{1}, varargin{2});
 
             [lobulaOpt, direciton] = self.hDireCell.process(inhiOpt);
 

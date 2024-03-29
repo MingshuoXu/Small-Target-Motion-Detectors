@@ -38,8 +38,8 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             
             import smalltargetmotiondetectors.tool.kernel.*;
 
-            if self.intDeltaT < 1
-                self.intDeltaT = 1;
+            if self.intDeltaT < 0
+                self.intDeltaT = 0;
             elseif ~isinteger(self.intDeltaT)
                 self.intDeltaT = round(self.intDeltaT);
             end

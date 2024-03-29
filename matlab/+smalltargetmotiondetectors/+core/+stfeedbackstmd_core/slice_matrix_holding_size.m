@@ -8,7 +8,7 @@ function Opt = slice_matrix_holding_size(input, shiftX, shiftY)
     end
 
     [m, n] = size(input);
-    if abs(shiftX) > n || abs(shiftY) > m
+    if abs(shiftX) >= n || abs(shiftY) >= m
         Opt = zeros(m, n);
         return;
     end
