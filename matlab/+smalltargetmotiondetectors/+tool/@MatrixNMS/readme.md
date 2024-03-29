@@ -27,15 +27,19 @@ Maps auto method based on key-value pairs.
 
 ## Usage
 1. Add the toolbox to MATLAB's search path.
+
     addpath('/path/to/toolbox'); 
 
 2. Import the toolbox.
+
     import smalltargetmotiondectors.tool.*;
 
 3. Create a MatrixNMS object specifying the maxRegionSize and method.
+
     obj = MatrixNMS(5, 'sort');
 
 4. Execute non-maximum suppression on the input matrix.
+
     nmsMatrix = obj.nms(input);
 
 ## Example
@@ -79,18 +83,23 @@ MatrixNMS 工具箱是一个专为在矩阵中执行非最大值抑制（NMS）�
 
 ## 使用方法
 1. 将工具箱添加到 MATLAB 的搜索路径中。
+
     addpath('/path/to/toolbox');
 
 2. 导入工具箱。
+
     import smalltargetmotiondectors.tool.*;
 
 3. 创建一个 MatrixNMS 对象，指定 maxRegionSize 和 method。
+
     obj = MatrixNMS(5, 'sort');
 
 4. 在输入矩阵上执行非最大值抑制。
+
     nmsMatrix = obj.nms(input);
 
 ## 示例
+
     addpath('/path/to/toolbox');
     import smalltargetmotiondectors.tool.*;
 
