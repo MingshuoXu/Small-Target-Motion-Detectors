@@ -7,7 +7,8 @@ classdef MatrixNMS < handle
     %
     %   Methods:
     %       - nms: Performs non-maximum suppression on the input matrix.
-    %       - select_auto_method: Automatically selects the method based on input matrix size.
+    %       - select_auto_method: Automatically selects the method based on
+    % input matrix size.
     %       - sort_nms: Performs non-maximum suppression using sorting method.
     %       - conv2_nms: Performs non-maximum suppression using conv2 method.
     %       - bubble_nms: Performs non-maximum suppression using bubble method.
