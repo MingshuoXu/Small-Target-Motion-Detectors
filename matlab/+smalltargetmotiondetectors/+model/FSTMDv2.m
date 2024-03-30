@@ -39,8 +39,8 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             self.hFeedbackPathway = ...
                 smalltargetmotiondetectors.core.fstmd_core.FeedbackPathway();
 
-            self.hFeedbackPathway.hGammaDelay.order = 20;
-            self.hFeedbackPathway.hGammaDelay.tau = 1;
+            self.hFeedbackPathway.hGammaDelay.tau = 5;
+            % self.hLobula.hDireCell.lenHist = 10;
         end
         
         
@@ -91,6 +91,8 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
                 && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
                 > self.iterationThres
                     
+                lastFeedbackSignal = self.feedbackSignal;
+                
                 if iterationCount == 1
                     self.set_record_state(true);
                 elseif iterationCount == 2
@@ -107,10 +109,9 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
                 self.feedbackSignal = ...
                     self.hFeedbackPathway.process(correlationOpt);
 
-                lastFeedbackSignal = self.feedbackSignal;
                 iterationCount = iterationCount + 1;
             end
-
+            
             %% Set model response
             self.modelOpt.response = self.lobulaOpt;
             self.modelOpt.direction = direction;

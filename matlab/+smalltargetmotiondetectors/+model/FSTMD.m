@@ -86,23 +86,19 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             %% Retina layer
             self.retinaOpt = self.hRetina.process(iptMatrix);
 
-           
-
-
-
             %% Feedback loop
             iterationCount = 1;
             while iterationCount < self.maxIterationNum ...
                 && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
                 > self.iterationThreshold
                     
+                lastFeedbackSignal = self.feedbackSignal;
+                
                 if iterationCount == 1
                     self.set_record_state(true);
                 elseif iterationCount == 2
                     self.set_record_state(false);
                 end
-
-                
 
                 % Execute feedback loop
                 self.laminaOpt = self.hLamina.process(self.retinaOpt + self.feedbackSignal);
@@ -111,10 +107,9 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
                 [self.lobulaOpt, correlationOpt] = self.hLobula.process(self.medullaOpt);
                 self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt);
 
-                lastFeedbackSignal = self.feedbackSignal;
                 iterationCount = iterationCount + 1;
             end
-
+            
             % Set model response
             self.modelOpt.response = self.lobulaOpt;
         end

@@ -3,10 +3,9 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
     properties
         paraNMS = struct( ...
-            'maxRegionSize', 15, ...
+            'maxRegionSize', 5, ...
             'method', 'sort'); % Parameters for non-maximum suppression
 
-        detectThres = 0.01; % Response threshold for clustering
         DBSCANDist = 5; % Spatial distance for clustering
         lenDBSCAN = 100; % Length of clustering trajectory
         SDThres = 5; % Threshold of standard deviation
@@ -77,7 +76,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                 return;
             end
 
-            [idX, idY] = find(nmsLobulaOpt > self.detectThres * maxNumber);
+            [idX, idY] = find(nmsLobulaOpt > 0);
             newID = [idX, idY];
 
             shouldTrackID = true(size(self.trackID,1), 1);

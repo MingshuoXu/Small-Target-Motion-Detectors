@@ -19,7 +19,6 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
         mushroomBodyOpt; % Mushroom body output
     end
      
-
     
     methods
         function self = STMDPlus()
@@ -100,8 +99,10 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
                 self.direContrastOpt);
 
             %% Compute response and direction
-            self.modelOpt.response = compute_response(self.mushroomBodyOpt);
-            self.modelOpt.direction = compute_direction(self.mushroomBodyOpt);
+            self.modelOpt.response = ...
+                compute_response(self.mushroomBodyOpt);
+            self.modelOpt.direction = ...
+                compute_direction(self.mushroomBodyOpt);
 
         end
 

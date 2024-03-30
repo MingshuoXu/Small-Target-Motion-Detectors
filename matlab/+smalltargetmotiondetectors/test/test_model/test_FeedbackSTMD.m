@@ -7,7 +7,7 @@ filePath = mfilename('fullpath');
 %   Find the index of '/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+    [filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath));
 
