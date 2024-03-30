@@ -1,3 +1,8 @@
+------------------------------------------
+updata -version 2.0.2 (in 29 March, 2024)
+
+
+------------------------------------------
 updata -version 2.0.2 (in 12 March, 2024)
 
 1. Corrected the implementation of the FeedbackSTMD model.

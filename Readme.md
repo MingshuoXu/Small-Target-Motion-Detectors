@@ -21,19 +21,19 @@ C++ and Python code will continue to synchronize.
 
 ## Package Structure:
 
-### api: Contains API functions and classes for interacting with the package.
+api: Contains API functions and classes for interacting with the package.
 
-### core: Includes core algorithms and utilities for motion detection and analysis.
+core: Includes core algorithms and utilities for motion detection and analysis.
 
-### model: Contains models and neural networks used in small target motion detection.
+model: Contains models and neural networks used in small target motion detection.
 
-### tool: Provides additional tools and utilities for data processing and visualization.
+tool: Provides additional tools and utilities for data processing and visualization.
 
-### config: Contains configuration files for setting up parameters and options.
+config: Contains configuration files for setting up parameters and options.
 
-### demo: Includes demonstration scripts showcasing the usage of the package.
+demo: Includes demonstration scripts showcasing the usage of the package.
 
-### test: Contains unit tests to verify the correctness of algorithms.
+test: Contains unit tests to verify the correctness of algorithms.
 
 ## How to Use:
 
@@ -74,19 +74,19 @@ C++ 和 Python代码将会持续同步。
 6. 提供单元测试，以确保算法的正确性和可靠性。
 
 ## 包结构: 
-### api: 包含与该包交互的 API 函数和类。
+api: 包含与该包交互的 API 函数和类。
 
-### core: 包含用于运动检测和分析的核心算法和实用程序。
+core: 包含用于运动检测和分析的核心算法和实用程序。
 
-### model: 包含用于小目标运动检测的模型和神经网络。
+model: 包含用于小目标运动检测的模型和神经网络。
 
-### tool: 提供额外的数据处理和可视化工具和实用程序。
+tool: 提供额外的数据处理和可视化工具和实用程序。
 
-### config: 包含用于设置参数和选项的配置文件。
+config: 包含用于设置参数和选项的配置文件。
 
-### demo: 包含演示脚本，展示该包的使用方法。
+demo: 包含演示脚本，展示该包的使用方法。
 
-### test: 包含单元测试，验证算法的正确性。
+test: 包含单元测试，验证算法的正确性。
 
 ## 如何使用: 
 
