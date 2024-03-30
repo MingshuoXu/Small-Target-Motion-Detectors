@@ -99,7 +99,7 @@ MatrixNMS 工具箱是一个专为在矩阵中执行非最大值抑制（NMS）�
     nmsMatrix = obj.nms(input);
 
 ## 示例
-
+    
     addpath('/path/to/toolbox');
     import smalltargetmotiondectors.tool.*;
 

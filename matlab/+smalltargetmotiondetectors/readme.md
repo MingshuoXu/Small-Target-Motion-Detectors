@@ -161,7 +161,7 @@ STMD 提供了两个 DEMO 文件，演示了如何使用该包进行小目标运
 
     FracSTMD        	(2023, Xu, M., Neurocomputing)
 
-    STMDv2          	--indevelopment
+    Backbonev2          	--indevelopment
 
 +tool：包含用于数据处理和可视化的附加工具和实用程序。
 

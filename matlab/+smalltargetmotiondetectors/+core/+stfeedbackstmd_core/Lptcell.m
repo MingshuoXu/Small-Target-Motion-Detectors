@@ -2,8 +2,6 @@ classdef Lptcell < ...
         smalltargetmotiondetectors.core.BaseCore
     %Lptcell Lobula Plate Tangential Cell
     %
-    %   Author: [Your Name]
-    %   Date: [Date]
 
     properties
         bataList = 2:2:18;
@@ -87,9 +85,9 @@ classdef Lptcell < ...
             end
 
             %% preferTheta
-            [~, preferTheta] = max(sumLplcOptR, [], 2);
+            [firingRate, preferTheta] = max(sumLplcOptR, [], 2);
             maxTheta = max(preferTheta);
-            firingRate = sumLplcOptR(:, maxTheta);
+            % firingRate = sumLplcOptR(:, maxTheta);
 
             %% background velocity
 
@@ -109,11 +107,10 @@ classdef Lptcell < ...
                 sumV(idV) = sum(self.velocity(idV:end), "all");
             end
 
-            %% have to check %%%%%%%%%%%%%%
-            
+            %%
             fai = sumV * cos(maxTheta);
             psi = sumV * sin(maxTheta);
-            %% have to check %%%%%%%%%%%%%%
+
 
             %%
             self.Opt = {fai, psi};
