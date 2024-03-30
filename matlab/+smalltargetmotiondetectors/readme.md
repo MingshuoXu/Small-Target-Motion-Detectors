@@ -1,4 +1,4 @@
-# Small Target Motion Detectors (STMD)
+# smalltargetmotiondetectors in matlab
 
 STMD is a MATLAB package for detecting small target motion in images or videos. It provides various functionalities and tools that enable users to effectively detect and track small targets in images or videos.
 
@@ -95,7 +95,7 @@ You can raise issues or submit feedback on the GitHub repository or email <mings
 I will respond promptly and strive to address your concerns.
 
 --------------------------------------------------------------------------
-# Small-Target-Motion-Detectors (STMD)
+# smalltargetmotiondetectors in matlab
 
 STMD 是一个用于检测图像或视频中小目标运动的 MATLAB 包。
 它提供了各种功能和工具，使用户能够有效地检测和跟踪图像或视频中的小目标。
