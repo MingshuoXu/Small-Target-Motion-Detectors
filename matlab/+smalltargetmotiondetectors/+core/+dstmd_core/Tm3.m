@@ -17,7 +17,7 @@ classdef Tm3 < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method is not used in this class
         end

@@ -39,7 +39,7 @@ classdef BaseModel < handle
             % Import necessary packages
             import smalltargetmotiondetectors.*;
             import smalltargetmotiondetectors.core.*;
-            import smalltargetmotiondetectors.tool.*;
+            import smalltargetmotiondetectors.util.*;
 
         end
 
@@ -66,7 +66,7 @@ classdef BaseModel < handle
     
     methods(Abstract)
         % Abstract methods to be implemented by subclasses
-        init(); % Method for initializing model components
-        model_structure(); % Method for defining model structure
+        init_config();      % Method for initializing model components
+        model_structure();  % Method for defining model structure
     end
 end

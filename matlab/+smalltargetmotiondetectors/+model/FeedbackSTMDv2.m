@@ -34,7 +34,7 @@ classdef FeedbackSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
         end
 
         
-        function init(self)
+        function init_config(self)
             %INIT Initializes the FeedbackSTMD components.
             %
             % Syntax:
@@ -43,7 +43,7 @@ classdef FeedbackSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             % Description:
             %   Initializes the components inherited from ESTMDBackbone.
             
-            init@smalltargetmotiondetectors.model.Backbonev2(self);
+            init_config@smalltargetmotiondetectors.model.Backbonev2(self);
         end
 
 

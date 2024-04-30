@@ -15,7 +15,7 @@ addpath(filePath(1:indexPath));
 % Import necessary packages
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% Model instantiation
 % Instantiate the FracSTMD model
@@ -26,13 +26,13 @@ model = instancing_model('FracSTMD');
 % hSteam = ImgstreamReader();
 
 % Demo images
-hSteam = ImgstreamReader( ...
-    [filePath(1:indexPath(end)-8),'/demodata/imgstream/DemoFig*.jpg'], ...
-    10, 100 );
+% hSteam = ImgstreamReader( ...
+%     [filePath(1:indexPath(end)-8),'/demodata/imgstream/DemoFig*.jpg'], ...
+%     10, 100 );
 
 % Demo video (RIST)
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
+hSteam = VidstreamReader( ...
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
 
 % RIST
 % hSteam = VidstreamReader( ...
@@ -53,7 +53,7 @@ hSteam = ImgstreamReader( ...
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
 
 %% Run inference
 while hSteam.hasFrame && hVisual.hasFigHandle

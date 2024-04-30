@@ -17,7 +17,7 @@ addpath(filePath(1:indexPath));
 % Import necessary packages
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 import smalltargetmotiondetectors.model.*;
 
 %% Model instantiation
@@ -66,7 +66,7 @@ hVisual = get_visualize_handle(class(model));
 
 % model.hLamina.alpha = 0.1;
 % Initialize the model
-model.init();
+model.init_config();
 
 %% Run inference
 while hSteam.hasFrame && hVisual.hasFigHandle

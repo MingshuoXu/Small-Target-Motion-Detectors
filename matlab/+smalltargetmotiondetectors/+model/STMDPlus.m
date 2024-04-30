@@ -43,7 +43,7 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
                 smalltargetmotiondetectors.core.stmdplus_core.MushroomBody();
         end
         
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the STMDPlus components.
             %
@@ -55,11 +55,11 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
             %   as well as the contrast pathway and mushroom body.
             
             % Call superclass init method
-            init@smalltargetmotiondetectors.model.DSTMDBackbone(self);
+            init_config@smalltargetmotiondetectors.model.DSTMDBackbone(self);
 
             % Initialize contrast pathway and mushroom body
-            self.hContrastPathway.init();
-            self.hMushroomBody.init();
+            self.hContrastPathway.init_config();
+            self.hMushroomBody.init_config();
         end
 
         function model_structure(self, iptMatrix)
@@ -78,7 +78,7 @@ classdef STMDPlus < smalltargetmotiondetectors.model.DSTMDBackbone
             %   and mushroom body) and generates the model's response.
             
             % Import necessary packages
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
             
             %% A. Ommatidia (Retina)
             self.retinaOpt = self.hRetina.process(iptMatrix);

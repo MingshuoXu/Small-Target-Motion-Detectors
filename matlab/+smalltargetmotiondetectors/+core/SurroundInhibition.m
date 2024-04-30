@@ -61,11 +61,11 @@ classdef SurroundInhibition < smalltargetmotiondetectors.core.BaseCore
             end
         end
         
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Creates the surround inhibition filter kernel
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.*;
             
             self.inhiKernelW2 = create_inhi_kernel_W2(...
                 self.KernelSize, ...

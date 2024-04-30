@@ -46,7 +46,7 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
                 smalltargetmotiondetectors.core.stmdplusv2_core.MushroomBody();
         end
         
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the STMDPlus components.
             %
@@ -58,10 +58,10 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
             %   as well as the contrast pathway and mushroom body.
             
             % Call superclass init method
-            init@smalltargetmotiondetectors.model.Backbonev2(self);
+            init_config@smalltargetmotiondetectors.model.Backbonev2(self);
 
             % Initialize contrast pathway and mushroom body
-            self.hContrastPathway.init();
+            self.hContrastPathway.init_config();
         end
 
         function model_structure(self, iptMatrix)

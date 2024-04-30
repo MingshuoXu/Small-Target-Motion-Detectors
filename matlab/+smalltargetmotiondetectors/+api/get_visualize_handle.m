@@ -27,7 +27,7 @@ function hVisualization = get_visualize_handle(className, showThreshold)
     % Add the path to the package containing the models
     addpath(filePath(1:indexPath(end)+7));
 
-    import smalltargetmotiondetectors.tool.*;
+    import smalltargetmotiondetectors.util.*;
 
     if nargin == 2
         docIdx = strfind(className, '.');

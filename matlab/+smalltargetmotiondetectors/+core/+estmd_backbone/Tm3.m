@@ -11,14 +11,14 @@ classdef Tm3 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Tm3 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
         end
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes Tm3 (no initialization required)
+            return;
         end
 
         function tm3Opt = process(self, tm3OptIpt)

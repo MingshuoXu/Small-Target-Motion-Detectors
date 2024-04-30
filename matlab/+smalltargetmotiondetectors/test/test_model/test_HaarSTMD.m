@@ -13,7 +13,7 @@ addpath(filePath(1:indexPath));
 
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% model
 model = instancing_model('HaarSTMD');
@@ -29,8 +29,7 @@ model = instancing_model('HaarSTMD');
 
 % Demo video (RIST)
 hSteam = VidstreamReader( ...
-    [filePath(1:indexPath(end)-8), filesep, ...
-    'demodata', filesep, 'RIST_GX010290.mp4']);
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
 model.hMedulla.lenTemporalKernel = 8;
 model.hMedulla.sizeSpacialKernel = [8,10];
 model.hMedulla.tau = 0;
@@ -55,7 +54,7 @@ model.hMedulla.cp = 2;
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
 
 
 %% run

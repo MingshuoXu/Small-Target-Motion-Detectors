@@ -13,7 +13,7 @@ addpath(filePath(1:indexPath));
 
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% model
 model = instancing_model('DSTMDBackbone');
@@ -31,7 +31,8 @@ model = instancing_model('DSTMDBackbone');
 % hSteam = VidstreamReader( ...
 %     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
 hSteam = VidstreamReader( ...
-    [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo1.mp4']);
+    [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo1.mp4'], ...
+    150);
 
 % RIST
 % hSteam = VidstreamReader( ...
@@ -52,7 +53,7 @@ hSteam = VidstreamReader( ...
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
 
 
 %% run

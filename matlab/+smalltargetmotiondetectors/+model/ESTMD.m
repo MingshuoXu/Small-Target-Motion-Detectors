@@ -40,7 +40,7 @@ classdef ESTMD < smalltargetmotiondetectors.model.BaseModel
                 smalltargetmotiondetectors.core.estmd_core.Lobula();
         end
         
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the ESTMD components.
             %
@@ -50,9 +50,9 @@ classdef ESTMD < smalltargetmotiondetectors.model.BaseModel
             % Description:
             %   Initializes the retina, lamina, and medulla components.
             
-            self.hRetina.init();
-            self.hLamina.init();
-            self.hMedulla.init();
+            self.hRetina.init_config();
+            self.hLamina.init_config();
+            self.hMedulla.init_config();
         end
 
         function model_structure(self, iptMatrix)

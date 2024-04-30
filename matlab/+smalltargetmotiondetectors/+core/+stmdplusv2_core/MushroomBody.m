@@ -22,7 +22,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the non-maximum suppression
         end
@@ -44,40 +44,47 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
             lenT = length(sTrajectory);
 
-            newContrast = cell(lenT, 1);
+            newContrastRecord = cell(lenT, 1);
+            
+            numContrast = length(contrastOpt);
+            
 
             for newId = 1:lenT
                 oldId = sTrajectory(newId).oldId;
 
                 % lost tract
                 if sTrajectory(newId).lostCount > 1
-                    newContrast{newId} = self.contrastRecord{oldId};
+                    newContrastRecord{newId} = self.contrastRecord{oldId};
                     continue;
                 end
 
                 % contrast of new index
                 xNew = cellLocation{newId}(1);
                 yNew = cellLocation{newId}(2);
-                nowContrast = squeeze(contrastOpt(xNew, yNew, :));
+                nowContrast = zeros(numContrast, 1);
+                for idCont = 1:numContrast
+                    nowContrast(idCont, 1) = ...
+                        contrastOpt{idCont}(xNew, yNew);
+                end
 
 
                 if isnan(oldId)
                     % new response
-                    newContrast{newId} = nowContrast;
+                    newContrastRecord{newId} = nowContrast;
                 else
                     if length(self.contrastRecord{oldId}) >= ...
                             self.maxLenRecordContrast
-                        newContrast{newId} = [...
-                            self.contrastRecord{oldId}(:,2:end),...
-                            nowContrast ];
+                        newContrast_newId = ...
+                            circshift(self.contrastRecord{oldId}, [0, -1]);
+                        newContrast_newId(:, end) = nowContrast;
+                        newContrastRecord{newId} = newContrast_newId;
                     else
-                        newContrast{newId} = [...
-                            self.contrastRecord{oldId},...
-                            nowContrast ];
+                        newContrastRecord{newId} = ...
+                            [self.contrastRecord{oldId}, nowContrast];
                     end
 
                     %% Small Target Discrimination
-                    if max(std(newContrast{newId}, 0, 2)) < self.SDThres
+                    if max(std(newContrastRecord{newId}, 0, 2)) < self.SDThres
                         mushroomBodyOpt(xNew, yNew) = 0;
                     end
 
@@ -85,7 +92,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
             end
 
-            self.contrastRecord = newContrast;
+            self.contrastRecord = newContrastRecord;
 
             self.Opt = mushroomBodyOpt;
 

@@ -27,7 +27,7 @@ core: Includes core algorithms and utilities for motion detection and analysis.
 
 model: Contains models and neural networks used in small target motion detection.
 
-tool: Provides additional tools and utilities for data processing and visualization.
+util: Provides additional tools and utilities for data processing and visualization.
 
 config: Contains configuration files for setting up parameters and options.
 
@@ -80,7 +80,7 @@ core: 包含用于运动检测和分析的核心算法和实用程序。
 
 model: 包含用于小目标运动检测的模型和神经网络。
 
-tool: 提供额外的数据处理和可视化工具和实用程序。
+util: 提供额外的数据处理和可视化工具和实用程序。
 
 config: 包含用于设置参数和选项的配置文件。
 

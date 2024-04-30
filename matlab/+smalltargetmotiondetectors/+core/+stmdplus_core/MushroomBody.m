@@ -26,16 +26,15 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             % Initializes the MushroomBody object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            
         end
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the non-maximum suppression
             
-            import smalltargetmotiondetectors.tool.MatrixNMS;
+            import smalltargetmotiondetectors.util.MatrixNMS;
 
             self.hNMS = MatrixNMS( ...
                 self.paraNMS.maxRegionSize, ...
@@ -57,7 +56,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             % Processing method
             % Processes the input lobulaOpt and contrastOpt to generate mushroomBodyOpt
             
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
 
             maxLobulaOpt = compute_response(lobulaOpt);
             nmsLobulaOpt = self.hNMS.nms(maxLobulaOpt);
@@ -81,7 +80,7 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
 
             shouldTrackID = true(size(self.trackID,1), 1);
             shouldAddNewID = true(length(idX), 1);
-            
+            numContrast = length(contrastOpt);
             
             if ~isempty(self.trackID)
 
@@ -93,15 +92,26 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
                 
                 %% Information Integration -- join
                 [D1, ind1] = min(DD, [], 2);
+                
 
                 for idxI = 1:length(D1)
                     if D1(idxI) <= self.DBSCANDist
                         idxJ = ind1(idxI);
                         if shouldAddNewID(idxJ)
                             self.trackID(idxI,:) = newID(idxJ,:);
-                            self.trackInfo{idxI} = [self.trackInfo{idxI}, ...
-                                squeeze(contrastOpt(newID(idxJ,1),newID(idxJ,2),:))...
-                                ];
+                            nowContrast = zeros(numContrast, 1);
+                            for idCont = 1:numContrast
+                                nowContrast(idCont, 1) = ...
+                                    contrastOpt{idCont}(...
+                                    newID(idxJ,1), ...
+                                    newID(idxJ,2)...
+                                    );
+                            end
+
+                            self.trackInfo{idxI} ...
+                                = [self.trackInfo{idxI}, nowContrast];
+                            
+
                             shouldTrackID(idxI) = false;
                             shouldAddNewID(idxJ) = false;
                         end
@@ -122,9 +132,16 @@ classdef MushroomBody < smalltargetmotiondetectors.core.BaseCore
             isxNew = find(shouldAddNewID);
             for kk = isxNew'
                 self.trackID(end+1,:) = newID(kk,:);
-                self.trackInfo{end+1} = squeeze( ...
-                    contrastOpt(newID(kk,1), newID(kk,2), :) ...
-                    ) ;
+
+                nowContrast = zeros(numContrast, 1);
+                for idCont = 1:numContrast
+                    nowContrast(idCont, 1) = ...
+                        contrastOpt{idCont}(...
+                        newID(kk,1), ...
+                        newID(kk,2)...
+                        );
+                end
+                self.trackInfo{end+1} = nowContrast;
             end
 
             %% Small Target Discrimination

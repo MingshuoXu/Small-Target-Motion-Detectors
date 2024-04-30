@@ -22,8 +22,8 @@ classdef BaseCore < handle
     end
 
     methods (Abstract)
-        init(self);     % Abstract method for initialization
-        process(self);  % Abstract method for processing
+        init_config(self);  % Abstract method for initialing kernels etc.
+        process(self);      % Abstract method for processing
     end
 
 end

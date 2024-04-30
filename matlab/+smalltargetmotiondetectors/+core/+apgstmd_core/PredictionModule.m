@@ -32,11 +32,11 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the prediction module
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.*;
 
             if self.intDeltaT < 0
                 self.intDeltaT = 0;
@@ -68,32 +68,31 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
             % Processing method
             % Processes the input lobulaOpt to predict motion and update
             % prediction map
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
             
             numDict = length(lobulaOpt);
             [imgH, imgW] = size(lobulaOpt{1});
 
             % Prediction Gain
-            self.cellPredictionGain = circshift(self.cellPredictionGain, -1);
-            predictionGain = cell(numDict, 1);
+            self.cellPredictionGain(1, :) = [];
+            predictionGain = cell(1, numDict);
             for idxD = 1:numDict
                 if isempty(self.cellPredictionGain{1,idxD})
                     predictionGain{idxD} = conv2(...
                         self.mu * lobulaOpt{idxD},...
                         self.predictionKernel{idxD},...
-                        'same' ...
-                        );
+                        'same');
                 else
                     predictionGain{idxD} = conv2(...
                         self.mu * lobulaOpt{idxD} ...
                         + (1 - self.mu) * self.cellPredictionGain{1,idxD}, ...
                         self.predictionKernel{idxD}, ...
-                        'same' ...
-                        );
+                        'same');
                 end
             end
 
-            [self.cellPredictionGain(end,:)] = deal(predictionGain);
+            self.cellPredictionGain = ...
+                [self.cellPredictionGain; predictionGain];
 
             % Prediction Map
             tobePredictionMap = zeros(imgH, imgW);
@@ -119,8 +118,8 @@ classdef PredictionModule < smalltargetmotiondetectors.core.BaseCore
 
             % Memorizer update
             maxTobePreMap = max(tobePredictionMap, [], 'all');
-            self.cellPredictionMap = circshift(self.cellPredictionMap, -1);
-            self.cellPredictionMap{end} = ...
+            self.cellPredictionMap(1) = [];
+            self.cellPredictionMap{end+1} = ...
                 ( tobePredictionMap > maxTobePreMap*2e-1 );
 
             % Output

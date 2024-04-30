@@ -24,13 +24,13 @@ classdef Medulla < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the Tm1, Tm2, and Tm3 objects
             
-            self.hTm1.init();
-            self.hTm2.init();
-            self.hTm3.init();
+            self.hTm1.init_config();
+            self.hTm2.init_config();
+            self.hTm3.init_config();
         end
 
         function varargout = process(self, MedullaIpt)

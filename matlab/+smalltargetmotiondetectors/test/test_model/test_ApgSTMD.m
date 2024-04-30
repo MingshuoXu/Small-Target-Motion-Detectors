@@ -14,7 +14,7 @@ addpath(filePath(1:indexPath));
 
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% model
 model = instancing_model('ApgSTMD');
@@ -51,7 +51,7 @@ hSteam = VidstreamReader( ...
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
 
 %% run
 while hSteam.hasFrame && hVisual.hasFigHandle

@@ -15,18 +15,18 @@ classdef Retina < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Retina object and creates a GaussianBlur object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.GaussianBlur;
+            import smalltargetmotiondetectors.core.math_operator.*;
             
             self.hGaussianBlur = GaussianBlur();
         end
     end
     
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the GaussianBlur object
             
-            self.hGaussianBlur.init();
+            self.hGaussianBlur.init_config();
         end
         
         function retinaOpt = process(self, retinaIpt)

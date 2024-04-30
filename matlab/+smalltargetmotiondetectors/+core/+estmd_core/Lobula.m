@@ -39,9 +39,8 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
-            % Does nothing for Lobula layer
             return;
         end
 

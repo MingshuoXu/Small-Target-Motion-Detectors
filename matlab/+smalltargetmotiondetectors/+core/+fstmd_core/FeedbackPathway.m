@@ -13,24 +13,24 @@ classdef FeedbackPathway < smalltargetmotiondetectors.core.BaseCore
             % Initializes the FeedbackPathway object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.GammaDelay;
+            import smalltargetmotiondetectors.core.math_operator.GammaDelay;
             
             self.hGammaDelay = GammaDelay(5, 10);
         end
     end
     
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the GammaDelay object
-            
-            self.hGammaDelay.init();
+
+            self.hGammaDelay.init_config();
         end
         
         function feedbackOpt = process(self, feedbackIpt)
             % Processing method
             % Processes the feedbackIpt to generate the feedback output
-            
+
             feedbackOpt = ...
                 self.feedbackConstant * ...
                 self.hGammaDelay.process(feedbackIpt);

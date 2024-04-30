@@ -14,7 +14,7 @@ addpath(filePath(1:indexPath));
 % Import necessary modules
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% Model
 
@@ -51,7 +51,7 @@ hSteam = ImgstreamReader();
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
 
 %% Run
 while hSteam.hasFrame && hVisual.hasFigHandle

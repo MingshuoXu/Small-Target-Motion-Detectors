@@ -25,11 +25,11 @@ classdef DirectionInhi < smalltargetmotiondetectors.core.BaseCore
             self = self@smalltargetmotiondetectors.core.BaseCore();
         end
 
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes the directional inhibition kernel
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.*;
             
             % Create directional inhibition kernel
             if isempty(self.diretionalInhiKernel)
@@ -43,37 +43,38 @@ classdef DirectionInhi < smalltargetmotiondetectors.core.BaseCore
             self.diretionalInhiKernel = squeeze(self.diretionalInhiKernel);
         end
 
-        function opt = process(self, ipt)
+        function opt = process(self, iptCell)
             % Processing method
             % Performs directional inhibition on the input
             
-            len_1 = length(ipt);
-            len_2 = length(self.diretionalInhiKernel);
+            len1 = length(iptCell);
+            len2 = length(self.diretionalInhiKernel);
 
-            certer = ceil(len_2/2);
+            certer = ceil(len2/2);
             RR = certer-1;
 
-            if mod(len_2,2) ~= 0
+            if mod(len2,2) ~= 0
                 LL = - RR;
             else
                 LL = - RR + 1;
             end
 
-            opt = cell(len_1, 1);
-            [m, n] = size(ipt{1});
+            opt = cell(len1, 1);
+            [m, n] = size(iptCell{1});
  
-            for idx = 1:len_1
+            for idx = 1:len1
                 opt{idx} = zeros(m, n);
                 for j = LL : RR
-                    k = mod(idx-j, len_1);
+                    k = mod(idx-j, len1);
                     if k == 0
-                        k = len_1;
+                        k = len1;
                     end
                     opt{idx} = opt{idx} ...
-                        + ipt{k} * self.diretionalInhiKernel(j+certer);
+                        + iptCell{k} * self.diretionalInhiKernel(j+certer);
                 end
                 opt{idx} = max(opt{idx}, 0);
             end
-        end
+
+        end % [EoF]
     end
 end

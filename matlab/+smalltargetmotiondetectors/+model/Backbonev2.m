@@ -29,14 +29,15 @@ classdef Backbonev2 < smalltargetmotiondetectors.model.BaseModel
             self.hLamina.alpha = 0.3;
         end
 
-        function init(self)
-            self.hRetina.init();
-            self.hLamina.init();
-            self.hMedulla.init();
-            self.hLobula.init();
+        function init_config(self)
+            self.hRetina.init_config();
+            self.hLamina.init_config();
+            self.hMedulla.init_config();
+            self.hLobula.init_config();
         end
 
         function model_structure(self, modelIpt)
+            
 
             self.retinaOpt = self.hRetina.process(modelIpt);
             self.laminaOpt = self.hLamina.process(self.retinaOpt);

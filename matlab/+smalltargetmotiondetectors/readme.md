@@ -65,7 +65,7 @@ This DEMO file demonstrates how to read videos from a video stream and perform t
 
     Backbonev2         	--indevelopment
 
-+tool: Contains additional tools and utilities for data processing and visualization.
++util: Contains additional tools and utilities for data processing and visualization.
 
 config: Contains configuration files for setting up parameters and options.
 
@@ -80,7 +80,7 @@ test: Contains unit tests to verify the correctness of the algorithms.
 
 +model: Includes models for detecting small moving objects in video sequences.
 
-+tool: Offers additional tools and utilities for data preprocessing, visualization, and evaluation.
++util: Offers additional tools and utilities for data preprocessing, visualization, and evaluation.
 
 config: Allows users to configure parameters and options for specific applications or scenarios.
 
@@ -163,7 +163,7 @@ STMD 提供了两个 DEMO 文件，演示了如何使用该包进行小目标运
 
     Backbonev2          	--indevelopment
 
-+tool: 包含用于数据处理和可视化的附加工具和实用程序。
++util: 包含用于数据处理和可视化的附加工具和实用程序。
 
 config: 包含用于设置参数和选项的配置文件。
 
@@ -178,7 +178,7 @@ test: 包含用于验证算法正确性的单元测试。
 
 +model: 包含用于在视频序列中检测小运动物体的模型。
 
-+tool: 提供用于数据预处理、可视化和评估的附加工具和实用程序。
++util: 提供用于数据预处理、可视化和评估的附加工具和实用程序。
 
 config: 允许用户为特定应用程序或场景配置参数和选项。
 

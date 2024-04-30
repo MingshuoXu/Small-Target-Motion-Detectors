@@ -7,12 +7,11 @@ classdef Tm2 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Tm2 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
         end
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes Tm2 (no initialization required)
         end

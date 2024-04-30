@@ -23,11 +23,11 @@ classdef AttentionModule < smalltargetmotiondetectors.core.BaseCore
     end
     
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the attention kernel
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.*;
             self.attentionKernal = create_attention_kernal(...
                 self.kernalSize, ...
                 self.zetaList, ...

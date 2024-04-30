@@ -26,12 +26,12 @@ classdef Lobula < smalltargetmotiondetectors.core.feedbackstmd_core.Lobula
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes the Lobula layer component
-            init@smalltargetmotiondetectors.core.feedbackstmd_core.Lobula(self);
+            init_config@smalltargetmotiondetectors.core.feedbackstmd_core.Lobula(self);
 
-            self.hDireCell.init();
+            self.hDireCell.init_config();
 
         end
 

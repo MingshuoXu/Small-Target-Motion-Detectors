@@ -37,7 +37,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lobula object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
+            import smalltargetmotiondetectors.core.*;
             
             % Initialize the SurroundInhibition component
             self.hSubInhi = SurroundInhibition();
@@ -45,11 +45,11 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes the Lobula layer component
             
-            self.hSubInhi.init();
+            self.hSubInhi.init_config();
         end
 
         function lobulaOpt = process(self, varagein)

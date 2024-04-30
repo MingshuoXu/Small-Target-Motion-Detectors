@@ -13,7 +13,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lamina object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.estmd_core.GammaBankPassFilter;
+            import smalltargetmotiondetectors.core.math_operator.GammaBankPassFilter;
 
             % Initialize the GammaBankPassFilter component
             self.hGammaBankPassFilter = GammaBankPassFilter();
@@ -21,11 +21,11 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes the Lamina layer component
             
-            self.hGammaBankPassFilter.init();
+            self.hGammaBankPassFilter.init_config();
         end
 
         function laminaOpt = process(self, laminaIpt)

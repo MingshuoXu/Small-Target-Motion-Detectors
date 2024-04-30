@@ -11,18 +11,19 @@ classdef Tm3 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Tm3 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
-            
-            self.hSubInhi = SurroundInhibition();  % Initialize SurroundInhibition object
+            import smalltargetmotiondetectors.core.*;
+
+            % Initialize SurroundInhibition object
+            self.hSubInhi = SurroundInhibition();  
         end
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the SurroundInhibition object
             
-            self.hSubInhi.init();
+            self.hSubInhi.init_config();
         end
 
         function tm3Opt = process(self, iptMatrix)

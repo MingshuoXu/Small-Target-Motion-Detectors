@@ -47,7 +47,7 @@ classdef ApgSTMD < smalltargetmotiondetectors.model.STMDPlus
             self.hLobula.hLateralInhi.e = 1.2;
         end
         
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the ApgSTMD components.
             %
@@ -58,11 +58,11 @@ classdef ApgSTMD < smalltargetmotiondetectors.model.STMDPlus
             %   Initializes the attention pathway and prediction pathway components.
 
             % Call superclass init method
-            init@smalltargetmotiondetectors.model.STMDPlus(self);
+            init_config@smalltargetmotiondetectors.model.STMDPlus(self);
 
             % Initialize attention pathway and prediction pathway components
-            self.hAttentionPathway.init();
-            self.hPredictionPathway.init();
+            self.hAttentionPathway.init_config();
+            self.hPredictionPathway.init_config();
         end
 
         function model_structure(self, iptMatrix)
@@ -80,7 +80,7 @@ classdef ApgSTMD < smalltargetmotiondetectors.model.STMDPlus
             %   components and generates the model's response.
 
             % Import compute function
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
 
             % Preprocessing Module
             self.retinaOpt = self.hRetina.process(iptMatrix);

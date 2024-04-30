@@ -44,9 +44,7 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             self.hMedulla.hTm1.hGammaDelay.order = 5;
         end
         
-        
-
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the FSTMD components.
             %
@@ -58,9 +56,9 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             %   as well as the feedback pathway.
             
             % Call superclass init method
-            init@smalltargetmotiondetectors.model.ESTMDBackbone(self);
+            init_config@smalltargetmotiondetectors.model.ESTMDBackbone(self);
             % Initialize feedback pathway
-            self.hFeedbackPathway.init();
+            self.hFeedbackPathway.init_config();
         end
 
         function model_structure(self, iptMatrix)
@@ -88,17 +86,12 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
 
             %% Feedback loop
             iterationCount = 1;
+            self.set_loop_state(false);
             while iterationCount < self.maxIterationNum ...
                 && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
                 > self.iterationThreshold
                     
                 lastFeedbackSignal = self.feedbackSignal;
-                
-                if iterationCount == 1
-                    self.set_record_state(true);
-                elseif iterationCount == 2
-                    self.set_record_state(false);
-                end
 
                 % Execute feedback loop
                 self.laminaOpt = self.hLamina.process(self.retinaOpt + self.feedbackSignal);
@@ -108,18 +101,19 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
                 self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt);
 
                 iterationCount = iterationCount + 1;
+                self.set_loop_state(true);
             end
             
             % Set model response
             self.modelOpt.response = self.lobulaOpt;
         end
 
-        function set_record_state(self, state)
+        function set_loop_state(self, state)
             % Disable circshift for certain components
-            self.hLamina.hGammaBankPassFilter.hGammaDelay1.hCellInput.isCircshift = state;
-            self.hLamina.hGammaBankPassFilter.hGammaDelay2.hCellInput.isCircshift = state;
-            self.hMedulla.hTm1.hGammaDelay.hCellInput.isCircshift = state;
-            self.hFeedbackPathway.hGammaDelay.hCellInput.isCircshift = state;
+            self.hLamina.hGammaBankPassFilter.hGammaDelay1.isInLoop = state;
+            self.hLamina.hGammaBankPassFilter.hGammaDelay2.isInLoop = state;
+            self.hMedulla.hTm1.hGammaDelay.isInLoop = state;
+            self.hFeedbackPathway.hGammaDelay.isInLoop = state;
         end
     end
 end

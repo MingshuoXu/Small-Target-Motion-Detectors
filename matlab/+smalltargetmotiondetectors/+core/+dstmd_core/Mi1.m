@@ -14,17 +14,17 @@ classdef Mi1 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Mi1 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.GammaDelay;
+            import smalltargetmotiondetectors.core.math_operator.GammaDelay;
 
             % Initialize gamma delay component with default parameters
             self.hGammaDelay = GammaDelay(3, 15);
         end
 
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the gamma delay component
             
-            self.hGammaDelay.init();
+            self.hGammaDelay.init_config();
         end
 
         function mi1Opt = process(self, tm3Signal)
@@ -32,11 +32,7 @@ classdef Mi1 < smalltargetmotiondetectors.core.BaseCore
             % Processes the input signal using the gamma delay component
 
             % Apply gamma delay to the input signal
-            if iscell(tm3Signal)
-                mi1Opt = self.hGammaDelay.process_cell(tm3Signal);
-            else
-                mi1Opt = self.hGammaDelay.process(tm3Signal);
-            end
+            mi1Opt = self.hGammaDelay.process(tm3Signal);
 
             % Set output
             self.Opt = mi1Opt;

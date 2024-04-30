@@ -33,17 +33,17 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lobula object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
+            import smalltargetmotiondetectors.core.*;
             self.hSubInhi = SurroundInhibition();
         end
     end
     
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the SurroundInhibition object
             
-            self.hSubInhi.init();
+            self.hSubInhi.init_config();
         end
         
         function [lobulaOpt, correlationOpt] = process(self, varagein)

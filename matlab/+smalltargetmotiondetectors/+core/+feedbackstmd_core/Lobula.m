@@ -25,7 +25,8 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lobula object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.*;
+            import smalltargetmotiondetectors.core.SurroundInhibition;
+            import smalltargetmotiondetectors.core.math_operator.GammaDelay;
             
             % Initialize the SurroundInhibition component
             self.hSubInhi = SurroundInhibition();
@@ -34,16 +35,16 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
     end
 
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % This method initializes the Lobula layer component
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.*;
             
             % Initialize parameters and kernels
-            self.hSubInhi.init();
+            self.hSubInhi.init_config();
 
-            self.hGammaDelay.init();
+            self.hGammaDelay.init_config();
 
             self.gaussKernel = fspecial(...
                 'gaussian', ...
@@ -56,14 +57,13 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Performs temporal convolution, correlation, and surround
             % inhibition
             
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
             
             % Extract ON and OFF channel signals from the input
             onSignal = varargin{1};
             offSignal = varargin{2};
 
             % Formula (9)
-            self.hGammaDelay.hCellInput.isCircshift = true;
             feedbackSignal = self.alpha * ...
                 self.hGammaDelay.process( zeros(size(onSignal)) );
             
@@ -78,8 +78,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 conv2(onSignal.*offSignal, self.gaussKernel, 'same');
 
             % only record correlationD + correlationE
-            self.hGammaDelay.hCellInput.isCircshift = false;
-            self.hGammaDelay.process( correlationD + correlationE );
+            self.hGammaDelay.hCellInput.cover(correlationD + correlationE);
             
 
             % Formula (14)

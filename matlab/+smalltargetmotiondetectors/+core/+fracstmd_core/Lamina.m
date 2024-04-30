@@ -12,8 +12,9 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
         fracKernel;
         paraCur;
         paraPre;
-        preLaminaIpt = [];
-        preLaminaOpt = [];
+        preLaminaIpt;
+        preLaminaOpt;
+        cellRetinaOutput;
     end
     
     methods
@@ -26,16 +27,18 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
     end
     
     methods
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the fractional differential kernel
             
-            import smalltargetmotiondetectors.tool.kernel.*;
+            import smalltargetmotiondetectors.util.kernel.create_fracdiff_kernel;
+            import smalltargetmotiondetectors.util.CircularCell;
             
             self.fracKernel = create_fracdiff_kernel(self.alpha, self.delta);
             
             self.paraCur = self.fracKernel(1);
             self.paraPre = exp(-self.alpha / (1 - self.alpha));
+            self.cellRetinaOutput = CircularCell(self.delta);
         end
         
         function laminaOpt = process(self, LaminaIpt)
@@ -63,11 +66,10 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
         % to the compute_by_conv function. Since compute_by_iteration
         % is faster, we sacrifice some computational precision for efficiency
         function laminaopt = compute_by_conv(self, diffLaminaIpt)
-            import smalltargetmotiondetectors.tool.compute.*;
-            self.cellRetinaOutput(1) = [];
-            self.cellRetinaOutput{end+1} = diffLaminaIpt;
-            
-            laminaopt = compute_temporal_conv( ...
+            import smalltargetmotiondetectors.util.compute.compute_circularcell_conv;
+            self.cellRetinaOutput.circrecord(diffLaminaIpt);
+
+            laminaopt = compute_circularcell_conv( ...
                 self.cellRetinaOutput, ...
                 self.fracKernel ...
                 );

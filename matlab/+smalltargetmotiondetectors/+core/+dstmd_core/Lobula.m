@@ -28,22 +28,22 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             self.hDirectionInhi = DirectionInhi();   
         end
 
-        function init(self)
+        function init_config(self)
             % Initialization method
             % Initializes the lateral and directional inhibition components
             
-            self.hLateralInhi.init();
-            self.hDirectionInhi.init();
+            self.hLateralInhi.init_config();
+            self.hDirectionInhi.init_config();
         end
 
         function lobulaOpt = process(self, lobulaIpt)
             % Processing method
             % Performs motion processing on the input
-            
+
             tm3Signal = lobulaIpt{1};
-            mi1Delay4Signal = lobulaIpt{2};
-            tm1Delay5Signal = lobulaIpt{3};
-            tm1Delay6Signal = lobulaIpt{4};
+            mi1Para4Signal = lobulaIpt{2};
+            tm1Para5Signal = lobulaIpt{3};
+            tm1Para6Signal = lobulaIpt{4};
 
             [imgH, imgW] = size(tm3Signal);
             numDict = length(self.thetaList);
@@ -53,9 +53,9 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             corrCol = (1+self.alpha1):(imgW-self.alpha1);
             
             % Correlation Output
-            corrOutput = cell(numDict, 1);
+            correOutput = cell(numDict, 1);
             for idx = 1:numDict
-                corrOutput{idx} = zeros(imgH, imgW);
+                correOutput{idx} = zeros(imgH, imgW);
             end
             countTheta = 1;
             for theta = self.thetaList
@@ -64,13 +64,13 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
                 Y_Com = round(self.alpha1 * sin(theta + pi/2 ));
                 
                 % Calculate correlation output
-                corrOutput{countTheta}(corrRow, corrCol)...
+                correOutput{countTheta}(corrRow, corrCol)...
                     = tm3Signal(corrRow, corrCol)...
                     .* ( ...
-                    tm1Delay5Signal(corrRow, corrCol)...
-                    + mi1Delay4Signal(corrRow-X_Com, corrCol-Y_Com)...
+                    tm1Para5Signal(corrRow, corrCol)...
+                    + mi1Para4Signal(corrRow-X_Com, corrCol-Y_Com)...
                     ) ...
-                    .* tm1Delay6Signal(corrRow-X_Com, corrCol-Y_Com);
+                    .* tm1Para6Signal(corrRow-X_Com, corrCol-Y_Com);
                 countTheta = countTheta + 1;
             end
 
@@ -78,7 +78,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             lateralInhiOpt = cell(numDict, 1);
             for idx = 1:numDict
                 lateralInhiOpt{idx} = ...
-                    self.hLateralInhi.process(corrOutput{idx});
+                    self.hLateralInhi.process(correOutput{idx});
             end
 
             % Perform directional inhibition

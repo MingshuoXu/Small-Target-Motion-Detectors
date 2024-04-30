@@ -46,7 +46,7 @@ classdef DSTMDBackbone < smalltargetmotiondetectors.model.BaseModel
                 smalltargetmotiondetectors.core.dstmd_core.Lobula();
         end
         
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the DSTMDBackbone components.
             %
@@ -56,10 +56,10 @@ classdef DSTMDBackbone < smalltargetmotiondetectors.model.BaseModel
             % Description:
             %   Initializes the retina, lamina, medulla, and lobula components.
             
-            self.hRetina.init();
-            self.hLamina.init();
-            self.hMedulla.init();
-            self.hLobula.init();
+            self.hRetina.init_config();
+            self.hLamina.init_config();
+            self.hMedulla.init_config();
+            self.hLobula.init_config();
         end
 
         function model_structure(self, iptMatrix)
@@ -78,7 +78,7 @@ classdef DSTMDBackbone < smalltargetmotiondetectors.model.BaseModel
             %   generates the model's response.
             
             % Import necessary packages
-            import smalltargetmotiondetectors.tool.compute.*;
+            import smalltargetmotiondetectors.util.compute.*;
             
             % Process input matrix through model components
             self.retinaOpt = self.hRetina.process(iptMatrix);

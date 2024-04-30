@@ -34,18 +34,20 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
 
             % Import necessary packages
             import smalltargetmotiondetectors.core.fstmd_core.*;
+            import smalltargetmotiondetectors.core.fstmdv2_core.*
 
+            self.hLamina = ...
+                smalltargetmotiondetectors.core.fstmdv2_core.Lamina();
             % Initialize feedback pathway component
             self.hFeedbackPathway = ...
                 smalltargetmotiondetectors.core.fstmd_core.FeedbackPathway();
 
-            self.hFeedbackPathway.hGammaDelay.tau = 5;
-            % self.hLobula.hDireCell.lenHist = 10;
+            self.hFeedbackPathway.hGammaDelay.tau = 1;
         end
         
         
 
-        function init(self)
+        function init_config(self)
             % INIT Method
             %   Initializes the FSTMD components.
             %
@@ -57,9 +59,9 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             %   as well as the feedback pathway.
             
             % Call superclass init method
-            init@smalltargetmotiondetectors.model.Backbonev2(self);
+            init_config@smalltargetmotiondetectors.model.Backbonev2(self);
             % Initialize feedback pathway
-            self.hFeedbackPathway.init();
+            self.hFeedbackPathway.init_config();
         end
 
         function model_structure(self, iptMatrix)
@@ -87,18 +89,13 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
 
             %% Feedback loop
             iterationCount = 1;
+            self.set_loop_state(false);
             while iterationCount < self.maxIteraNum ...
                 && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
                 > self.iterationThres
                     
                 lastFeedbackSignal = self.feedbackSignal;
                 
-                if iterationCount == 1
-                    self.set_record_state(true);
-                elseif iterationCount == 2
-                    self.set_record_state(false);
-                end
-
                 self.laminaOpt = ...
                     self.hLamina.process(self.retinaOpt + self.feedbackSignal);
                 self.hMedulla.process(self.laminaOpt);
@@ -110,6 +107,7 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
                     self.hFeedbackPathway.process(correlationOpt);
 
                 iterationCount = iterationCount + 1;
+                self.set_loop_state(true);
             end
             
             %% Set model response
@@ -117,9 +115,10 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             self.modelOpt.direction = direction;
         end
 
-        function set_record_state(self, state)
+        function set_loop_state(self, state)
             % Disable circshift for certain components
-            self.hFeedbackPathway.hGammaDelay.hCellInput.isCircshift = state;
+            self.hLamina.isInLoop = state; 
+            self.hFeedbackPathway.hGammaDelay.isInLoop = state;
         end
 
     end

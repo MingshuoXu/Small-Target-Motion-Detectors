@@ -14,7 +14,7 @@ addpath(filePath(1:indexPath));
 %%
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.tool.*;
+import smalltargetmotiondetectors.util.*;
 
 %% model
 model = instancing_model('STMDPlus');
@@ -24,13 +24,13 @@ model = instancing_model('STMDPlus');
 % hSteam = ImgstreamReader();
 
 % Demo images
-hSteam = ImgstreamReader( ...
-    [filePath(1:indexPath(end)-8),'/demodata/imgstream/DemoFig*.jpg'], ...
-    10, 100 );
+% hSteam = ImgstreamReader( ...
+%     [filePath(1:indexPath(end)-8),'/demodata/imgstream/DemoFig*.jpg'], ...
+%     10, 100 );
 
 % Demo video (RIST)
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
+hSteam = VidstreamReader( ...
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
 % hSteam = VidstreamReader( ...
 %     [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo1.mp4']);
 % RIST
@@ -52,7 +52,8 @@ hSteam = ImgstreamReader( ...
 hVisual = get_visualize_handle(class(model));
 
 % Initialize the model
-model.init();
+model.init_config();
+
 %% run
 while hSteam.hasFrame && hVisual.hasFigHandle
     [grayImg, colorImg] = hSteam.get_next_frame();
