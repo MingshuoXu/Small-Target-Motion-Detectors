@@ -11,7 +11,7 @@ import_path = filePath[:indexPath]
 sys.path.append(import_path)
 
 from smalltargetmotiondetectors.api import *
-from smalltargetmotiondetectors.util.inputstream import *
+from smalltargetmotiondetectors.util.iostream import *
 
 # Model instantiation
 model = instancing_model('ESTMD')

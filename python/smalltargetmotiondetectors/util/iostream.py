@@ -1,9 +1,16 @@
 import os
 import sys
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
 import cv2
+import tkinter as tk
 from tkinter import filedialog
 import glob
-import numpy as np
+
+from .matrixnms import MatrixNMS
+
 
 class ImgstreamReader:
     def __init__(self, imgsteamFormat=None, startFrame=1, endFrame=None):
@@ -70,7 +77,6 @@ class ImgstreamReader:
         # Set endFrame to endIdx
         self.endFrame = endIdx
 
-
     def get_filelist_from_ui(self):
         '''
         get_filelist_from_ui - Prompts user to select start and end frames via GUI.
@@ -121,7 +127,6 @@ class ImgstreamReader:
         # Update fileList property with files matching the selected extension
         self.fileList = glob.glob(os.path.join(pathName, '*' + ext1))
         return startImgName, endImgName
-
 
     def get_filelist_from_imgsteamformat(self, imgsteamFormat, startFrame, endFrame):
         '''
@@ -176,7 +181,6 @@ class ImgstreamReader:
                 
         return startImgName, endImgName
     
-
     def get_next_frame(self):
         '''
         get_next_frame - Retrieves the next frame from the image stream.
@@ -189,7 +193,7 @@ class ImgstreamReader:
         
           Returns:
               - garyImg: Grayscale version of the retrieved frame.
-              - colorImg: Color version of the retrieved frame.
+              - colorImg: Color version (RGB) of the retrieved frame.
         '''
 
         # Get information about the current frame
@@ -223,13 +227,12 @@ class ImgstreamReader:
         #     self.hWaitbar.destroy()
         #     self.hasDeleteWaitbar = True
 
-        return np.double(garyImg), colorImg
-    
-
+        return np.double(garyImg), cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
     
     def __del__(self):
         '''
             Release any resources associated with the object
+        '''
         '''
         if self.hWaitbar:
             # Perform cleanup actions, such as closing files or releasing memory
@@ -237,6 +240,8 @@ class ImgstreamReader:
             self.hWaitbar.close()
             # Set hWaitbar to None to indicate that the resource has been released
             self.hWaitbar = None
+        '''
+
 
 class VidstreamReader:
     """
@@ -286,7 +291,7 @@ class VidstreamReader:
         Returns:
             VidstreamReader: Instance of the VidstreamReader class.
         """
-        self.create_waitbar_handle()
+        # self.create_waitbar_handle()
 
         if vidName is None:
             # Get the full path of this file
@@ -304,7 +309,7 @@ class VidstreamReader:
         self.hVid = cv2.VideoCapture(vidName)
 
         self.currIdx = 1
-        self.hasFrame = True
+        self.hasFrame = self.hVid.isOpened()
         self.startFrame = startFrame
 
         if endFrame is None:
@@ -355,32 +360,220 @@ class VidstreamReader:
         #     del self.hWaitbar
         #     self.hasDeleteWaitbar = True
 
-        return grayImg, colorImg
-
-
-    def create_waitbar_handle(self):
-        """
-        Creates a waitbar to show progress.
-        """
-
-        # Implementation of create_waitbar_handle method goes here
-        pass
-
-    def call_waitbar(self):
-        """
-        Updates the waitbar with current progress.
-        """
-
-        # Implementation of call_waitbar method goes here
-        pass
+        return grayImg, cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
 
     def __del__(self):
         """
         Destructor method.
         """
-        pass
-        # self.hVid.release()
+        self.hVid.release()
 
+
+class Visualization:
+    """
+    A class to visualize the model output.
+    
+    Attributes:
+        hFig: Figure handle.
+        showThreshold: Threshold for visualization.
+        isSaveAsVideo: Flag indicating whether to save visualization as a video.
+        savePath: Path to save the visualization.
+        videoPath: Path to the video file.
+        inputClassName: Name of the input class.
+        isTestPatter: Flag indicating whether it is a test pattern.
+        paraNMS: Parameters for non-maximum suppression.
+        shouldNMS: Flag indicating whether to perform non-maximum suppression.
+        saveState: Flag indicating the saving state.
+        hVideo: Video handle.
+        timeTic: Time tic.
+        hNMS: NMS handle.
+        hasFigHandle: Flag indicating whether it has figure handle.
+        uiHandle: UI handle.
+        
+    Methods:
+        __init__: Constructor method.
+    """
+
+    def __init__(self, className='None', showThreshold=0.8):
+        """
+        Constructor method for Visualization class.
+        
+        Args:
+            className (str, optional): Name of the class. Defaults to 'None'.
+            showThreshold (float, optional): Threshold for visualization. Defaults to 0.8.
+        """
+        self.hFig = None
+        self.showThreshold = showThreshold
+        self.isSaveAsVideo = False
+        self.savePath = None
+        self.videoPath = None
+        self.inputClassName = className
+        self.isTestPatter = False
+        self.paraNMS = {
+            'maxRegionSize': 15,
+            'method': 'sort'
+        }
+        self.shouldNMS = True
+        self.saveState = False
+        self.hVideo = None
+        self.timeTic = None
+        self.hNMS = None
+        self.hasFigHandle = False
+        self.uiHandle = None
+
+        self.inputClassName = className
+        self.showThreshold = showThreshold
+
+    def __del__(self):
+        if self.isSaveAsVideo:
+            self.hVideo.release()
+
+        try:
+            plt.close(self.hFig)
+        except:
+            pass
+
+    def create_fig_handle(self):
+        """
+        Creates a figure handle.
+        """
+        self.hFig = plt.figure(f'Show result for {self.inputClassName}')
+        plt.axis('off')
+        
+        if not self.isTestPatter:
+            self.hFig.canvas.toolbar.pack_forget()
+            self.hFig.canvas.manager.toolbar.pack_forget()
+
+        if self.shouldNMS:
+            self.hNMS = MatrixNMS(self.paraNMS['maxRegionSize'], 
+                                  self.paraNMS['method'])
+
+        # create UI handle
+        self.uiHandle = {}
+        self.uiHandle['timeTextBox'] = tk.Label(master=self.hFig.canvas.get_tk_widget(), 
+                                                text='Initiating, please wait...')
+        self.uiHandle['timeTextBox'].place(relx=0.5, rely=0.05, anchor='center')
+
+        self.uiHandle['closeButton'] = tk.Button(master=self.hFig.canvas.get_tk_widget(), 
+                                                  text='Close', 
+                                                  command=self._closeCallback)
+        self.uiHandle['closeButton'].place(relx=0.8, rely=0.85, width=80, height=30)
+        self.uiHandle['closeButton'].bool = False
+
+
+        self.uiHandle['pauseButton'] = tk.Button(master=self.hFig.canvas.get_tk_widget(), 
+                                                 text='Pause', 
+                                                 command=self._pauseCallback)
+        self.uiHandle['pauseButton'].place(relx=0.65, rely=0.85, width=80, height=30)
+        self.uiHandle['pauseButton'].bool = False
+
+        self.hasFigHandle = True
+        self.timeTic = time.time()
+
+    def show_result(self, colorImg=None, result=None):
+        """
+        Display the result.
+        
+        Args:
+            colorImg (numpy.ndarray): Color image.
+            result (dict): Dictionary containing model output and motion direction.
+        """
+        elapsedTime = time.time() - self.timeTic
+        self.uiHandle['timeTextBox'].config(text=f'Elapsed Time: {elapsedTime:.4f} s/frame')
+
+        if self.uiHandle['closeButton'].bool:
+            return
+
+        plt.figure(self.hFig.number)
+        plt.clf()
+        ax = plt.gca()
+
+        if colorImg is not None:
+            plt.imshow(colorImg)
+            plt.axis('off')
+        
+        if result is not None:
+            modelOpt = result['response']
+            motionDirection = result['direction']
+            maxOutput = np.max(modelOpt)
+
+            if maxOutput > 0:
+                if self.shouldNMS:
+                    nmsOutput = self.hNMS.nms(modelOpt)
+                idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
+                ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
+
+                if motionDirection is not None:
+                    nanStatus = ~np.isnan(motionDirection[idX, idY])
+                    quiverX = idX[nanStatus]
+                    quiverY = idY[nanStatus]
+                    cosD = np.cos(motionDirection[quiverX, quiverY])
+                    sinD = np.sin(motionDirection[quiverX, quiverY])
+                    lenArrow = 20
+                    ax.quiver(quiverY, 
+                            quiverX, 
+                            lenArrow * cosD, 
+                            -lenArrow * sinD, 
+                            angles='xy', 
+                            scale_units='xy', 
+                            scale=1, 
+                            color='b')
+
+        plt.draw()
+        plt.pause(0.001)
+
+        if self.isSaveAsVideo:
+            self.save_video()
+
+        while self.uiHandle['pauseButton'].bool:
+            plt.pause(0.1)
+            if self.uiHandle['closeButton'].bool:
+                return
+
+        self.timeTic = time.time()
+
+    def save_video(self):
+        if self.saveState == 0:
+            if not self.savePath:
+                self.savePath = os.getcwd()
+            elif not os.path.isdir(self.savePath):
+                os.mkdir(self.savePath)
+                if not os.path.isdir(self.savePath):
+                    raise FileNotFoundError(f"{self.savePath} is not a folder and cannot be created automatically.")
+
+            if not self.videoPath:
+                self.videoPath = 'visualization_video.avi'
+            
+            fileName = os.path.join(self.savePath, self.videoPath)
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            self.hVideo = cv2.VideoWriter(fileName, fourcc, 10, (640, 480))
+            
+            print(f"Visual output video is saved as '{fileName}'.")
+            self.saveState = True
+        
+        _, currFrame = self.hFig.canvas.retrieve()
+        self.hVideo.write(currFrame)
+
+    def _closeCallback(self, event=None):
+        """
+        Callback function for close button.
+        """
+        plt.close(self.hFig)
+        self.hasFigHandle = False
+        self.uiHandle['pauseButton'].bool = False
+        print('\n \t --- Manual termination --- \t \n')
+
+    def _pauseCallback(self, event=None):
+        """
+        Callback function for pause button.
+        """
+        if self.uiHandle['pauseButton']['text'] == 'Pause':
+            self.uiHandle['pauseButton']['text'] = 'Resume'
+            self.uiHandle['pauseButton'].bool = True
+        else:
+            self.uiHandle['pauseButton']['text'] = 'Pause'
+            self.uiHandle['pauseButton'].bool = False   
+    
 
 def create_waitbar_handle(self):
     '''
@@ -397,7 +590,8 @@ def create_waitbar_handle(self):
     pass
     # self.hWaitbar = waitbar(
     #     0, 'Initiating, please wait...', name='ImgstreamReader', position=[450, 450, 270, 50])
-    
+
+
 def call_waitbar(self):
     '''
     call_waitbar - Updates the waitbar with current frame index.
@@ -419,7 +613,3 @@ def call_waitbar(self):
 
     pass
     # self.hWaitbar = waitbar(floatBar, self.hWaitbar, waitbarStr)
-
-
-if __name__ == '__main__':
-    pass

@@ -1,5 +1,4 @@
-import os
-from ..util.visualization import Visualization
+from ..util.iostream import Visualization
 
 def get_visualize_handle(className=None, showThreshold=None):
     """
@@ -24,7 +23,3 @@ def get_visualize_handle(className=None, showThreshold=None):
 
     return objVisualization
 
-# Example usage:
-# hVisualization = get_visualize_handle()
-# hVisualization = get_visualize_handle('MyVisualizationClass')
-# hVisualization = get_visualize_handle('MyVisualizationClass', True)

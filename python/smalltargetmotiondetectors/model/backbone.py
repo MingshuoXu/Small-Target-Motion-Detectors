@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from ..core import estmd_core
-# from ..util import smalltargetmotiondetectors
+
 
 class BaseModel(ABC):
     """

@@ -95,8 +95,7 @@ classdef Visualization < handle
 
             %---------------------------------%
             function pauseCallback(hObject, ~)
-                pausing = getappdata(hObject.Parent, 'pausing');
-                if pausing
+                if getappdata(hObject.Parent, 'pausing')
                     setappdata(hObject.Parent, 'pausing', 0);
                     set(hObject, 'String', 'Pause');
                 else
@@ -139,8 +138,6 @@ classdef Visualization < handle
             maxOutput = max(modelOpt(:));
 
             if maxOutput > 0
-                
-
                 if self.shouldNMS
                     nmsOutput = self.hNMS.nms(modelOpt);
                 end
@@ -184,7 +181,7 @@ classdef Visualization < handle
 
             if getappdata(self.hFig, 'pausing')
                 while getappdata(self.hFig, 'pausing')
-                    pause(0.1); % 等待0.1秒，检查暂停标志是否被设置为假
+                    pause(0.1); 
 
                     if getappdata(self.hFig, 'canceling')
                         close(self.hFig);

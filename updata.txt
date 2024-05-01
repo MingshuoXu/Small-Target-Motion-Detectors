@@ -1,5 +1,6 @@
+
 ------------------------------------------
-updata -version 2.0.3 (in 20 April, 2024)
+updata -version 2.0.3 (in 30 April, 2024)
 1(Matlab). Rename function `init` to `init_config` to maintain consistency 
     with python.
 2(Matlab). Rename the module tool to util, which stands for utility.

@@ -24,8 +24,8 @@ class MatrixNMS:
     _mappingAutoMethod = {}
 
     @classmethod
-    def mapping_auto_method(cls, map_key, add_map_value=None):
-        # 如果没有传入添加的值，则表示查询操作
+    def  mapping_auto_method(cls, map_key, add_map_value=None):
+        # If no added value is passed, it represents a query operation
         if add_map_value is None:
             return cls._mappingAutoMethod.get(map_key)
         else:
