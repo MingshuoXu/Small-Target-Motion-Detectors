@@ -7,7 +7,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
     
     properties
         % Handle to the GammaBankPassFilter object
-        hGammaBankPassFilter;       
+        hGammaBandPassFilter;       
         % Handle to the LaminaLateralInhibition object
         hLaminaLateralInhibition;   
     end
@@ -22,7 +22,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.core.estmd_core.*;
             import smalltargetmotiondetectors.core.math_operator.*;
             
-            self.hGammaBankPassFilter = GammaBankPassFilter();
+            self.hGammaBandPassFilter = GammaBandPassFilter();
             self.hLaminaLateralInhibition = LaminaLateralInhibition();
         end
     end
@@ -32,7 +32,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Initialization method
             % Initializes the GammaBankPassFilter and LaminaLateralInhibition objects
             
-            self.hGammaBankPassFilter.init_config();
+            self.hGammaBandPassFilter.init_config();
             self.hLaminaLateralInhibition.init_config();
         end
         
@@ -40,7 +40,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Processing method
             % Applies GammaBankPassFilter and LaminaLateralInhibition to the input matrix
             
-            signalWithBPF = self.hGammaBankPassFilter.process(laminaIpt);
+            signalWithBPF = self.hGammaBandPassFilter.process(laminaIpt);
             laminaOpt = self.hLaminaLateralInhibition.process(signalWithBPF);
             self.Opt = laminaOpt;
         end

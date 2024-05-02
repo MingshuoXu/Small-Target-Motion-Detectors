@@ -81,7 +81,7 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             %   and generates the model's response.
             
             [m, n] = size(iptMatrix);
-            lastFeedbackSignal = ones(m, n);
+            lastFeedback = ones(m, n);
             self.feedbackSignal = zeros(m, n);
 
             %% Retina layer
@@ -91,10 +91,10 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             iterationCount = 1;
             self.set_loop_state(false);
             while iterationCount < self.maxIteraNum ...
-                && max(abs(self.feedbackSignal - lastFeedbackSignal), [], 'all') ...
+                && max(abs(self.feedbackSignal-lastFeedback), [], 'all') ...
                 > self.iterationThres
                     
-                lastFeedbackSignal = self.feedbackSignal;
+                lastFeedback = self.feedbackSignal;
                 
                 self.laminaOpt = ...
                     self.hLamina.process(self.retinaOpt + self.feedbackSignal);

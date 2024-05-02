@@ -15,7 +15,7 @@ addpath(filePath(1:indexPath));
 % Import necessary packages
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.util.*;
+import smalltargetmotiondetectors.util.iostream.*;
 
 %% Model instantiation
 % Instantiate the FracSTMD model

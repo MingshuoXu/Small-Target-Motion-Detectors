@@ -9,8 +9,7 @@ class BaseCore(ABC):
         """
         Constructor.
         """
-        # your initialization code here
-        pass
+        self.Opt = None
 
     @abstractmethod
     def init_config(self):

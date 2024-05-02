@@ -1,7 +1,7 @@
 from numpy import maximum
 from scipy.ndimage import convolve
 
-from .basecore import BaseCore
+from .base_core import BaseCore
 from ..util.create_kernel import create_inhi_kernel_W2
 
 

@@ -1,4 +1,4 @@
-classdef GammaBankPassFilter < smalltargetmotiondetectors.core.BaseCore
+classdef GammaBandPassFilter < smalltargetmotiondetectors.core.BaseCore
     % GammaBankPassFilter Gamma bank pass filter
     %   This class implements a gamma bank pass filter with two gamma
     %   delays.
@@ -18,7 +18,7 @@ classdef GammaBankPassFilter < smalltargetmotiondetectors.core.BaseCore
 
 
     methods
-        function self = GammaBankPassFilter()
+        function self = GammaBandPassFilter()
             % Constructor method
             % Initializes the GammaBankPassFilter object
 

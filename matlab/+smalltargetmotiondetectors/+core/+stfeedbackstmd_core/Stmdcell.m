@@ -9,7 +9,7 @@ classdef Stmdcell < smalltargetmotiondetectors.core.BaseCore
     properties
         hSubInhi;  % SurroundInhibition component
         alpha = 0.1;  % Parameter alpha 
- 
+        paraGaussKernel = struct('eta', 1.5, 'size', 3);  
     end
 
     properties(Hidden)
@@ -54,6 +54,11 @@ classdef Stmdcell < smalltargetmotiondetectors.core.BaseCore
             end
             self.cellDPlusE.init_config();
 
+            self.gaussKernel = fspecial(...
+                'gaussian', ...
+                self.paraGaussKernel.size, ...
+                self.paraGaussKernel.eta);
+            
         end
 
         function lateralInhiSTMDOpt = process(self, ...

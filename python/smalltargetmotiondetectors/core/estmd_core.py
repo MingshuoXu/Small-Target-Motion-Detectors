@@ -1,7 +1,7 @@
 import numpy as np
-from scipy.ndimage import convolve
+import cv2
 
-from .basecore import BaseCore
+from .base_core import BaseCore
 from .math_operator import GaussianBlur
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
 from .math_operator import *
@@ -63,7 +63,7 @@ class Lamina(BaseCore):
         Initializes the Lamina object and creates GammaBankPassFilter
         and LaminaLateralInhibition objects
         """
-        self.hGammaBankPassFilter = GammaBankPassFilter()
+        self.hGammaBankPassFilter = GammaBandPassFilter()
         self.hLaminaLateralInhibition = LaminaLateralInhibition()
 
     def init_config(self):
@@ -404,14 +404,10 @@ class LaminaLateralInhibition(BaseCore):
         """
         # Lateral inhibition
         self.cellSpatialPositive.circrecord(
-            convolve(iptMatrix, self.spatialPositiveKernel, 
-                     mode='constant', 
-                     cval=0.0)
+            cv2.filter2D(iptMatrix, -1, self.spatialPositiveKernel)
             )
         self.cellSpatialPositive.circrecord(
-            convolve(iptMatrix, self.spatialNegativeKernel, 
-                     mode='constant', 
-                     cval=0.0)
+            cv2.filter2D(iptMatrix, -1, self.spatialNegativeKernel)
             )
 
         optMatrix \

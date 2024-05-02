@@ -23,14 +23,6 @@ class MatrixNMS:
 
     _mappingAutoMethod = {}
 
-    @classmethod
-    def  mapping_auto_method(cls, map_key, add_map_value=None):
-        # If no added value is passed, it represents a query operation
-        if add_map_value is None:
-            return cls._mappingAutoMethod.get(map_key)
-        else:
-            cls._mappingAutoMethod[map_key] = add_map_value
-
     def __init__(self, maxRegionSize=5, method=None):
         """
         Constructor method
@@ -42,64 +34,74 @@ class MatrixNMS:
                 method = 'conv2'
         self.maxRegionSize = maxRegionSize
         self.method = method
-        self.hasAutoMethod = False
+        self.nullAutoMethod = True
+        if not isinstance(maxRegionSize, int) or maxRegionSize <= 0:
+            raise ValueError("maxRegionSize must be a positive integer.")
+        if method is not None and method not in ['bubble', 'conv2', 'greedy', 'sort', 'auto']:
+            raise ValueError("method must be one of 'bubble', 'conv2', 'greedy', 'sort', or 'auto'.")
 
     def nms(self, inputMatrix):
         """
         Performs non-maximum suppression based on the selected method
         """
+        maxRS = self.maxRegionSize
 
-        wouldNmsMatrix = copy.deepcopy(inputMatrix)
-
-        if self.method in ['bubble', 'conv2', 'greedy', 'sort']:
-            # Call the corresponding method based on the selected method
-            methodName = self.method + '_nms'
-            outputMatrix = getattr(self, methodName)(wouldNmsMatrix)
-        elif self.method == 'auto':
-            if self.hasAutoMethod:
-                # If auto method is already determined, call the corresponding method
-                outputMatrix = getattr(self, self.autoMethod + '_nms')(wouldNmsMatrix)
-            else:
+        if self.method == 'auto':
+            if self.nullAutoMethod:
                 # If auto method is not determined yet
-                M, N = wouldNmsMatrix.shape
+                M, N = inputMatrix.shape
                 # Determine auto method based on input matrix size
-                self.autoMethod = self.mapping_auto_method(f'{M}-{N}-{self.maxRegionSize}')
+                self.autoMethod = self.mapping_auto_method(f'{M}-{N}-{maxRS}')
                 if not self.autoMethod:
                     # Select auto method if not determined before
-                    self.autoMethod = self.select_auto_method(wouldNmsMatrix)
+                    self.select_auto_method(inputMatrix)
                     # Save auto method in mapping
-                    self.mapping_auto_method(f'{M}-{N}-{self.maxRegionSize}', self.autoMethod)
-                self.hasAutoMethod = True
-                # Call nms function recursively with auto method
-                outputMatrix = self.nms(wouldNmsMatrix)
+                    self.mapping_auto_method(f'{M}-{N}-{maxRS}', self.autoMethod)
+                self.nullAutoMethod = False
+
+        else:
+            self.autoMethod = self.method
+
+        if self.autoMethod == 'conv2':
+            outputMartix = conv2_nms(inputMatrix, maxRS)
+        
+        elif self.autoMethod == 'sort':
+            outputMartix = sort_nms(inputMatrix, maxRS)
+
+        elif self.autoMethod == 'greedy':
+            outputMartix = greedy_nms(inputMatrix, maxRS)
+
+        elif self.autoMethod == 'bubble':
+            outputMartix = bubble_nms(inputMatrix, maxRS)                   
+
         else:
             # Error for invalid method
-            raise ValueError("method must be 'bubble', 'conv2', 'greedy', or 'auto'")
-        
-        return outputMatrix
+            raise ValueError("method must be 'sort', 'bubble', 'conv2', or 'greedy'")
+
+        return outputMartix
 
     def select_auto_method(self, inputMatrix):
         """
         Selects the most efficient method for non-maximum suppression automatically
         """
         nTimes = 3
-
+        maxRS = self.maxRegionSize
         # Measure the time taken by each method and repeat the process multiple times
         timeBubble, timeConv2, timeGreedy, timeSort = 0, 0, 0, 0
         for methodIdx in range(1, 5):
             for iT in range(nTimes):
-                wouldNmsMatrix = copy.deepcopy(inputMatrix)
+                wouldNmsMatrix = inputMatrix
 
                 if iT > 0:
                     timeTic = time.time()
                 if methodIdx == 1:
-                    self.bubble_nms(wouldNmsMatrix)
+                    bubble_nms(wouldNmsMatrix, maxRS)
                 elif methodIdx == 2:
-                    self.conv2_nms(wouldNmsMatrix)
+                    conv2_nms(wouldNmsMatrix, maxRS)
                 elif methodIdx == 3:
-                    self.greedy_nms(wouldNmsMatrix)
+                    greedy_nms(wouldNmsMatrix, maxRS)
                 elif methodIdx == 4:
-                    self.sort_nms(wouldNmsMatrix)
+                    sort_nms(wouldNmsMatrix, maxRS)
 
             timeElapsed = time.time() - timeTic
             if methodIdx == 1:
@@ -114,173 +116,196 @@ class MatrixNMS:
         # Determine the fastest method
         minTime = min(timeBubble, timeConv2, timeGreedy, timeSort)
         if minTime == timeBubble:
-            autoMethod = 'bubble'
+            self.autoMethod = 'bubble'
         elif minTime == timeConv2:
-            autoMethod = 'conv2'
+            self.autoMethod = 'conv2'
         elif minTime == timeGreedy:
-            autoMethod = 'greedy'
+            self.autoMethod = 'greedy'
         elif minTime == timeSort:
-            autoMethod = 'sort'
+            self.autoMethod = 'sort'
         else:
             raise ValueError('Invalid method index.')
 
-        return autoMethod
+        return self.autoMethod
 
-    def sort_nms(self, inputMatrix):
-        """
-        Performs non-maximum suppression using sorting method
-        """
-        M, N = inputMatrix.shape
-        indexI, indexJ = np.where(inputMatrix > 0)
-        valueInputMatrix = inputMatrix[indexI, indexJ]
-        indexSub = np.argsort(valueInputMatrix)[::-1]
-        indexI = indexI[indexSub]
-        indexJ = indexJ[indexSub]
+    @classmethod
+    def mapping_auto_method(cls, map_key, add_map_value=None):
+        # If no added value is passed, it represents a query operation
+        if add_map_value is None:
+            return cls._mappingAutoMethod.get(map_key)
+        else:
+            cls._mappingAutoMethod[map_key] = add_map_value
 
-        n = len(indexI)
-        isNotSuppress = np.ones((M, N), dtype=bool)
 
-        # Calculate boundaries for local region once
-        maxRegion = self.maxRegionSize
-        x_lower = np.maximum(0, indexI - maxRegion)
-        x_upper = np.minimum(M, indexI + maxRegion + 1)
-        y_lower = np.maximum(0, indexJ - maxRegion)
-        y_upper = np.minimum(N, indexJ + maxRegion + 1)
+def conv2_nms(inputMatrix, maxRegionSize):
+    """
+    Performs non-maximum suppression using conv2 method
+    """
+    M, N = inputMatrix.shape
+    outputMatrix = copy.deepcopy(inputMatrix)  # Initialize output matrix
 
-        for idxI in range(n):
-            x = indexI[idxI]
-            y = indexJ[idxI]
-            if isNotSuppress[x, y]:
-                internalX = slice(x_lower[idxI], x_upper[idxI])
-                internalY = slice(y_lower[idxI], y_upper[idxI])
-                isNotSuppress[internalX, internalY] = False
+    # Iterate over the region defined by maxRegionSize
+    for rr in range(-maxRegionSize, maxRegionSize + 1):
+        for cc in range(-maxRegionSize, maxRegionSize + 1):
+            # Define the regions to extract from the input matrix
+            rr1 = slice(max(0, 0 + rr), min(M, M + rr))
+            cc1 = slice(max(0, 0 + cc), min(N, N + cc))
+            rr2 = slice(max(0, 0 - rr), min(M, M - rr))
+            cc2 = slice(max(0, 0 - cc), min(N, N - cc))
 
-                # Check if the current pixel is the maximum in its local region
-                maxLocalValue = np.max(inputMatrix[internalX, internalY])
-                if inputMatrix[x, y] == maxLocalValue:
-                    isNotSuppress[x, y] = True
+            # Extract the submatrices from the output matrix and input matrix
+            temp = outputMatrix[rr2, cc2]
+            inputSubmatrix = inputMatrix[rr1, cc1]
 
-        # Apply non-maximum suppression
-        outputMatrix = inputMatrix * isNotSuppress
+            # Perform element-wise comparison and update the output matrix
+            outputMatrix[rr2, cc2] = temp * (temp >= inputSubmatrix)
 
-        return outputMatrix
+    return outputMatrix
 
-    def conv2_nms(self, inputMatrix):
-        """
-        Performs non-maximum suppression using conv2 method
-        """
-        M, N = inputMatrix.shape
-        outputMatrix = inputMatrix.copy()  # Initialize output matrix
 
-        # Iterate over the region defined by maxRegionSize
-        for rr in range(-self.maxRegionSize, self.maxRegionSize + 1):
-            for cc in range(-self.maxRegionSize, self.maxRegionSize + 1):
-                # Define the regions to extract from the input matrix
-                rr1 = slice(max(0, 0 + rr), min(M, M + rr))
-                cc1 = slice(max(0, 0 + cc), min(N, N + cc))
-                rr2 = slice(max(0, 0 - rr), min(M, M - rr))
-                cc2 = slice(max(0, 0 - cc), min(N, N - cc))
+def sort_nms(inputMatrix, maxRegionSize):
+    """
+    Performs non-maximum suppression using sorting method
+    """
+    M, N = inputMatrix.shape
+    indexI, indexJ = np.where(inputMatrix > 0)
+    valueInputMatrix = inputMatrix[indexI, indexJ]
+    indexSub = np.argsort(valueInputMatrix)[::-1]
+    indexI = indexI[indexSub]
+    indexJ = indexJ[indexSub]
 
-                # Extract the submatrices from the output matrix and input matrix
-                temp = copy.deepcopy(outputMatrix[rr2, cc2])
-                inputSubmatrix = inputMatrix[rr1, cc1]
+    n = len(indexI)
+    isNotSuppress = np.ones((M, N), dtype=bool)
 
-                # Perform element-wise comparison and update the output matrix
-                outputMatrix[rr2, cc2] = temp * (temp >= inputSubmatrix)
+    # Calculate boundaries for local region once
+    maxRegion = maxRegionSize
+    x_lower = np.maximum(0, indexI - maxRegion)
+    x_upper = np.minimum(M, indexI + maxRegion + 1)
+    y_lower = np.maximum(0, indexJ - maxRegion)
+    y_upper = np.minimum(N, indexJ + maxRegion + 1)
 
-        return outputMatrix
+    for idxI in range(n):
+        x = indexI[idxI]
+        y = indexJ[idxI]
+        if isNotSuppress[x, y]:
+            internalX = slice(x_lower[idxI], x_upper[idxI])
+            internalY = slice(y_lower[idxI], y_upper[idxI])
+            isNotSuppress[internalX, internalY] = False
 
-    def bubble_nms(self, inputMatrix):
-        """
-        Performs non-maximum suppression using bubble method
-        """
-        M, N = inputMatrix.shape
-        outputMatrix = np.zeros((M, N))  # Initialize output matrix
-        copyInputMatrix = np.copy(inputMatrix)  # Create a copy of input matrix
+            # Check if the current pixel is the maximum in its local region
+            maxLocalValue = np.max(inputMatrix[internalX, internalY])
+            if inputMatrix[x, y] == maxLocalValue:
+                isNotSuppress[x, y] = True
 
-        # Continue the process until maxValue drops below a threshold
-        while np.max(copyInputMatrix) > 1e-16:
-            # Find the maximum value and its index in the copy input matrix
-            maxValue = np.max(copyInputMatrix)
-            maxIndex = np.argmax(copyInputMatrix)
+    # Apply non-maximum suppression
+    outputMatrix = inputMatrix * isNotSuppress
 
-            # Convert the linear index of the maximum value to subscripts
-            x, y = maxIndex // N, maxIndex % N
+    return outputMatrix
 
-            # Define the region around the maximum value
-            startX = max(0, x - self.maxRegionSize)
-            endX = min(M, x + self.maxRegionSize + 1)
-            startY = max(0, y - self.maxRegionSize)
-            endY = min(N, y + self.maxRegionSize + 1)
 
-            # Find the maximum value within the defined region
-            maxLocalValue = np.max(inputMatrix[startX:endX, startY:endY])
+def bubble_nms(inputMatrix, maxRegionSize):
+    """
+    Performs non-maximum suppression using bubble method
+    """
+    M, N = inputMatrix.shape
+    outputMatrix = np.zeros((M, N))  # Initialize output matrix
+    copyInputMatrix = copy.deepcopy(inputMatrix)  # Create a copy of input matrix
 
-            # Check if the maximum value in the region is equal to the maximum value in the input matrix
-            if maxValue == maxLocalValue:
-                outputMatrix[x, y] = maxLocalValue  # Set the output matrix value to the maximum value
+    # Continue the process until maxValue drops below a threshold
+    while np.max(copyInputMatrix) > 1e-16:
+        # Find the maximum value and its index in the copy input matrix
+        maxValue = np.max(copyInputMatrix)
+        maxIndex = np.argmax(copyInputMatrix)
 
-            # Set the values in the defined region of the copy input matrix to zero
-            copyInputMatrix[startX:endX, startY:endY] = 0
+        # Convert the linear index of the maximum value to subscripts
+        x, y = maxIndex // N, maxIndex % N
 
-        return outputMatrix
+        # Define the region around the maximum value
+        startX = max(0, x - maxRegionSize)
+        endX = min(M, x + maxRegionSize + 1)
+        startY = max(0, y - maxRegionSize)
+        endY = min(N, y + maxRegionSize + 1)
 
-    def greedy_nms(self, inputMatrix):
-        """
-        Performs non-maximum suppression using the greedy method
-        """
-        M, N = inputMatrix.shape
-        gIptMatrix = copy.deepcopy(inputMatrix)
-        gIsNotSupp = np.ones((M, N), dtype=bool)
+        # Find the maximum value within the defined region
+        maxLocalValue = np.max(inputMatrix[startX:endX, startY:endY])
 
-        gM = M
-        gN = N
-        gMaxRS = self.maxRegionSize
-        gOptMatrix = np.zeros((M, N))
+        # Check if the maximum value in the region is equal to the maximum value in the input matrix
+        if maxValue == maxLocalValue:
+            outputMatrix[x, y] = maxLocalValue  # Set the output matrix value to the maximum value
 
-        # Define a nested function to recursively find the maximum and suppress
-        def findMax2Supp(x, y):
-            nonlocal gIsNotSupp, gIptMatrix, gOptMatrix, gM, gN, gMaxRS
+        # Set the values in the defined region of the copy input matrix to zero
+        copyInputMatrix[startX:endX, startY:endY] = 0
 
-            localInternalX = slice(max(0, x - gMaxRS), min(gM, x + gMaxRS + 1))
-            localInternalY = slice(max(0, y - gMaxRS), min(gN, y + gMaxRS + 1))
+    return outputMatrix
 
-            maxIndex = np.argmax(gIptMatrix[localInternalX, localInternalY])
 
-            maxIdX0, maxIdY0 = np.unravel_index(
-                maxIndex, 
-                (localInternalX.stop - localInternalX.start, localInternalY.stop - localInternalY.start)
-            )
+def greedy_nms(inputMatrix, maxRegionSize):
+    """
+    Performs non-maximum suppression using the greedy method
+    """
+    M, N = inputMatrix.shape
+    gIptMatrix = inputMatrix
+    gIsNotSupp = np.ones((M, N), dtype=bool)
 
-            maxIdX = maxIdX0 + localInternalX.start
-            maxIdY = maxIdY0 + localInternalY.start
+    gM = M
+    gN = N
+    gMaxRS = maxRegionSize
+    gOptMatrix = np.zeros((M, N))
 
-            internalMaxIdX = slice(max(0, maxIdX - gMaxRS), min(gM, maxIdX + gMaxRS + 1))
-            internalMaxIdY = slice(max(0, maxIdY - gMaxRS), min(gN, maxIdY + gMaxRS + 1))
+    # Define a nested function to recursively find the maximum and suppress
+    def findMax2Supp(x, y):
+        nonlocal gIsNotSupp, gIptMatrix, gOptMatrix, gM, gN, gMaxRS
 
-            if maxIdX == x and maxIdY == y:
-                gOptMatrix[maxIdX, maxIdY] = gIptMatrix[maxIdX, maxIdY]
-                gIsNotSupp[internalMaxIdX, internalMaxIdY] = False
-            else:
-                if gIsNotSupp[maxIdX, maxIdY]:
-                    findMax2Supp(maxIdX, maxIdY)
-                if maxIdX < x or (maxIdX == x and maxIdY < y):
-                    intersectX = slice(
-                        max(localInternalX.start, internalMaxIdX.start),
-                        min(localInternalX.stop, internalMaxIdX.stop)
-                        )
-                    intersectY = slice(
-                        max(localInternalY.start, internalMaxIdY.start),
-                        min(localInternalY.stop, internalMaxIdY.stop)
-                        )
-                    gIsNotSupp[intersectX, intersectY] = False
+        localInternalX = slice(max(0, x - gMaxRS), min(gM, x + gMaxRS + 1))
+        localInternalY = slice(max(0, y - gMaxRS), min(gN, y + gMaxRS + 1))
 
-        # Iterate over each element in the input matrix
-        for x in range(0, M):
-            for y in range(0, N):
-                if gIsNotSupp[x, y]:
-                    findMax2Supp(x, y)
+        maxIndex = np.argmax(gIptMatrix[localInternalX, localInternalY])
 
-        return gOptMatrix
+        maxIdX0, maxIdY0 = np.unravel_index(
+            maxIndex, 
+            (localInternalX.stop - localInternalX.start, localInternalY.stop - localInternalY.start)
+        )
+
+        maxIdX = maxIdX0 + localInternalX.start
+        maxIdY = maxIdY0 + localInternalY.start
+
+        internalMaxIdX = slice(max(0, maxIdX - gMaxRS), min(gM, maxIdX + gMaxRS + 1))
+        internalMaxIdY = slice(max(0, maxIdY - gMaxRS), min(gN, maxIdY + gMaxRS + 1))
+
+        if maxIdX == x and maxIdY == y:
+            gOptMatrix[maxIdX, maxIdY] = gIptMatrix[maxIdX, maxIdY]
+            gIsNotSupp[internalMaxIdX, internalMaxIdY] = False
+        else:
+            if gIsNotSupp[maxIdX, maxIdY]:
+                findMax2Supp(maxIdX, maxIdY)
+            if maxIdX < x or (maxIdX == x and maxIdY < y):
+                intersectX = slice(
+                    max(localInternalX.start, internalMaxIdX.start),
+                    min(localInternalX.stop, internalMaxIdX.stop)
+                    )
+                intersectY = slice(
+                    max(localInternalY.start, internalMaxIdY.start),
+                    min(localInternalY.stop, internalMaxIdY.stop)
+                    )
+                gIsNotSupp[intersectX, intersectY] = False
+
+    # Iterate over each element in the input matrix
+    for x in range(M):
+        for y in range(N):
+            if gIsNotSupp[x, y]:
+                findMax2Supp(x, y)
+
+    return gOptMatrix
+
+
+if __name__ == "__main__":
+    import numpy as np
+    from numpy.random import default_rng
+
+    obj = MatrixNMS(maxRegionSize=5, method='auto')
+    rng = default_rng(42)
+    Ipt =  rng.random((250, 500))
+    Opt = obj.nms(Ipt)
+
 
 

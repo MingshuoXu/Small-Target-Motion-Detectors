@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
-from .basecore import BaseCore
+from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
 from ..util.create_kernel import create_gamma_kernel
 from ..util.datarecord import CircularList
@@ -130,7 +130,7 @@ class GammaDelay:
                                          self.gammaKernel)
 
 
-class GammaBankPassFilter(BaseCore):
+class GammaBandPassFilter(BaseCore):
     """
     GammaBankPassFilter Gamma bank pass filter
     This class implements a gamma bank pass filter with two gamma delays.
@@ -195,4 +195,4 @@ class GammaBankPassFilter(BaseCore):
 
 
 if __name__ == "__main__":
-    obj = GammaDelay()
+    pass

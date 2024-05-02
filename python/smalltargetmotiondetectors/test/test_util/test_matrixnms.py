@@ -14,31 +14,31 @@ import numpy as np
 from numpy.random import default_rng
 import unittest
 
-
-from smalltargetmotiondetectors.util.nms_for_matrix import MatrixNMS
+from util.matrixnms import MatrixNMS, sort_nms, conv2_nms, bubble_nms, greedy_nms
 
 class TestMatrixNMS(unittest.TestCase):
     def setUp(self):
-        self.matrix_nms = MatrixNMS(maxRegionSize=5, method='auto') 
+        self.maxRS = 5
+        self.matrix_nms = MatrixNMS(maxRegionSize=self.maxRS, method='auto') 
 
         rng = default_rng(42)
         self.inputMatrix = rng.random((250, 500))
         self.expected_output = self.matrix_nms.nms(self.inputMatrix)
 
     def test_sort_nms(self):
-        output_matrix = self.matrix_nms.sort_nms(self.inputMatrix)
+        output_matrix = sort_nms(self.inputMatrix, self.maxRS)
         self.assertTrue(np.array_equal(output_matrix, self.expected_output))
 
     def test_conv2_nms(self):
-        output_matrix = self.matrix_nms.conv2_nms(self.inputMatrix)
+        output_matrix = conv2_nms(self.inputMatrix, self.maxRS)
         self.assertTrue(np.array_equal(output_matrix, self.expected_output))
 
     def test_bubble_nms(self):
-        output_matrix = self.matrix_nms.bubble_nms(self.inputMatrix)
+        output_matrix = bubble_nms(self.inputMatrix, self.maxRS)
         self.assertTrue(np.array_equal(output_matrix, self.expected_output))
 
     def test_greedy_nms(self):
-        output_matrix = self.matrix_nms.greedy_nms(self.inputMatrix)
+        output_matrix = greedy_nms(self.inputMatrix, self.maxRS)
         self.assertTrue(np.array_equal(output_matrix, self.expected_output))
 
 def test_in_diff_size():
@@ -99,6 +99,6 @@ def test_in_diff_size():
 
 if __name__ == '__main__':
 
-    test_in_diff_size()
+    # test_in_diff_size()
 
     unittest.main()

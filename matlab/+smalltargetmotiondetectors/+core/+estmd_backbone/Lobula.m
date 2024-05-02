@@ -52,7 +52,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             self.hSubInhi.init_config();
         end
 
-        function lobulaOpt = process(self, varagein)
+        function varargout = process(self, varagein)
             % Processing method
             % Performs a correlation operation on the ON and OFF channels
             % and then applies surround inhibition
@@ -72,6 +72,12 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             
             % Store the output in Opt property
             self.Opt = lobulaOpt;
+
+            if nargout == 1
+                varargout = {lobulaOpt};
+            elseif nargout == 2
+                varargout = {lobulaOpt, correlationOutput};
+            end
         end
     end
 

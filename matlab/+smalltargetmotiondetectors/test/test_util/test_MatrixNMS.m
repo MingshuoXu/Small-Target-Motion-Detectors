@@ -1,20 +1,21 @@
-clc,clear, close all;
+clc, clear, close all;
 
 %%
 % Get the full path of this file
 filePath = mfilename('fullpath');
-%   Find the index of '/matlab/+smalltargetmotiondetectors/'
+%   Find the index of '/+smalltargetmotiondetectors/'
 % in the file path
 indexPath = strfind(filePath, ...
-    [filesep, 'matlab', filesep, '+smalltargetmotiondetectors', filesep]);
+    [filesep, '+smalltargetmotiondetectors', filesep]);
 % Add the path to the package containing the models
-addpath(filePath(1:indexPath(end)+7));
-import smalltargetmotiondetectors.util.MatrixNMS
+addpath(filePath(1:indexPath));
+import smalltargetmotiondetectors.util.*;
+% import smalltargetmotiondetectors.util.MatrixNMS.*;
 
 %%
 intM = 250;
 intN = 500;
-listMaxRegionSize = 5:7;
+listMaxRegionSize = 5;%1:2:15;
 [recordTime1, recordTime2, recordTime3, recordTime4, recordTime5] = ...
     deal( zeros(size(listMaxRegionSize)) );
 iList = 0;

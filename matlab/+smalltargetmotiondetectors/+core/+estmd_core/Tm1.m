@@ -11,7 +11,7 @@ classdef Tm1 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Tm1 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.math_operator.GammaDelay;
+            import smalltargetmotiondetectors.core.math_operator.*;
             
             % Initialize GammaDelay object
             self.hGammaDelay = GammaDelay(12, 25);  

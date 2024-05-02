@@ -34,9 +34,6 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
             % Import necessary packages
             import smalltargetmotiondetectors.core.fstmd_core.*;
 
-            % Customize Lobula component
-            self.hLobula = smalltargetmotiondetectors.core.fstmd_core.Lobula();
-
             % Initialize feedback pathway component
             self.hFeedbackPathway = ...
                 smalltargetmotiondetectors.core.fstmd_core.FeedbackPathway();
@@ -94,11 +91,14 @@ classdef FSTMD < smalltargetmotiondetectors.model.ESTMDBackbone
                 lastFeedbackSignal = self.feedbackSignal;
 
                 % Execute feedback loop
-                self.laminaOpt = self.hLamina.process(self.retinaOpt + self.feedbackSignal);
+                self.laminaOpt = ...
+                    self.hLamina.process(self.retinaOpt + self.feedbackSignal);
                 self.hMedulla.process(self.laminaOpt);
                 self.medullaOpt = self.hMedulla.Opt;
-                [self.lobulaOpt, correlationOpt] = self.hLobula.process(self.medullaOpt);
-                self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt);
+                [self.lobulaOpt, correlationOpt] = ...
+                    self.hLobula.process(self.medullaOpt);
+                self.feedbackSignal = ...
+                    self.hFeedbackPathway.process(correlationOpt);
 
                 iterationCount = iterationCount + 1;
                 self.set_loop_state(true);

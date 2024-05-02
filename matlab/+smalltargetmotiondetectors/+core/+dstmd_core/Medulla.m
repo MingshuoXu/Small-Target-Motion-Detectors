@@ -4,8 +4,8 @@ classdef Medulla < smalltargetmotiondetectors.core.BaseCore
     %   system. It processes inputs from Tm3, Tm2, Mi1, and Tm1 to produce
     %   output signals.
     %
-    %   Author: [Your Name]
-    %   Date: [Date]
+    %   Author: Mingshuo XU
+    %   Date: 2022.02.05
 
     properties
         

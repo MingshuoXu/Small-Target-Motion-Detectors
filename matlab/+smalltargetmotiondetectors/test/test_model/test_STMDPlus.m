@@ -14,7 +14,7 @@ addpath(filePath(1:indexPath));
 %%
 import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
-import smalltargetmotiondetectors.util.*;
+import smalltargetmotiondetectors.util.iostream.*;
 
 %% model
 model = instancing_model('STMDPlus');
