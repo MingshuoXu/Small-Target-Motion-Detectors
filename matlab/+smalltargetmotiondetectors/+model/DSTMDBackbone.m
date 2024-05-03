@@ -13,8 +13,6 @@ classdef DSTMDBackbone < smalltargetmotiondetectors.model.BaseModel
     properties
         % Define properties here (if any)
     end
-     
-
     
     methods
         function self = DSTMDBackbone()

@@ -25,8 +25,7 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lobula object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.SurroundInhibition;
-            import smalltargetmotiondetectors.core.math_operator.GammaDelay;
+            import smalltargetmotiondetectors.core.math_operator.*;
             
             % Initialize the SurroundInhibition component
             self.hSubInhi = SurroundInhibition();

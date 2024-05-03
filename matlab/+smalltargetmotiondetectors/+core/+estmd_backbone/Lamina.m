@@ -13,10 +13,10 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Lamina object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.math_operator.GammaBankPassFilter;
+            import smalltargetmotiondetectors.core.math_operator.*;
 
             % Initialize the GammaBankPassFilter component
-            self.hGammaBankPassFilter = GammaBankPassFilter();
+            self.hGammaBankPassFilter = GammaBandPassFilter();
         end
     end
 

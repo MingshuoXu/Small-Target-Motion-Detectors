@@ -11,7 +11,7 @@ classdef Tm2 < smalltargetmotiondetectors.core.BaseCore
             % Initializes the Tm2 object
             
             self = self@smalltargetmotiondetectors.core.BaseCore();
-            import smalltargetmotiondetectors.core.*;
+            import smalltargetmotiondetectors.core.math_operator.*;
             
             % Initialize SurroundInhibition object
             self.hSubInhi = SurroundInhibition();  
