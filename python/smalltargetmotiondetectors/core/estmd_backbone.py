@@ -1,6 +1,7 @@
-from . import BaseCore, SurroundInhibition
-from .math_operator import GammaBandPassFilter
+import numpy as np
 
+from .base_core import BaseCore
+from .math_operator import GammaBandPassFilter, SurroundInhibition
 from . import estmd_core
 
 class Lamina(BaseCore):
@@ -16,13 +17,13 @@ class Lamina(BaseCore):
     def init_config(self):
         """Initialization method."""
         # This method initializes the Lamina layer component
-        self.hGammaBankPassFilter.init_config()
+        self.hGammaBandPassFilter.init_config()
 
     def process(self, laminaIpt):
         """Processing method."""
         # Applies gamma bank pass filtering to the input
         # Process the input using GammaBankPassFilter
-        laminaOpt = self.hGammaBankPassFilter.process(laminaIpt)
+        laminaOpt = self.hGammaBandPassFilter.process(laminaIpt)
         # Store the output in Opt property
         self.Opt = laminaOpt
         return laminaOpt
@@ -105,7 +106,7 @@ class Lobula(BaseCore):
         
         # Store the output in Opt property
         self.Opt = lobulaOpt
-        return lobulaOpt
+        return lobulaOpt, correlationOutput
 
 
 class Tm2(BaseCore):
@@ -125,7 +126,7 @@ class Tm2(BaseCore):
         """Processing method."""
         # Applies surround inhibition to the input to generate the output
         
-        tm2Opt = max(-tm2Ipt, 0)  # Apply surround inhibition
+        tm2Opt = np.maximum(-tm2Ipt, 0)  # Apply surround inhibition
         self.Opt = tm2Opt  # Store the output in Opt property
         return tm2Opt
     
@@ -147,7 +148,7 @@ class Tm3(BaseCore):
         """Processing method."""
         # Applies a surround inhibition to the input to generate the output
         
-        tm3Opt = max(tm3OptIpt, 0)  # Apply surround inhibition
+        tm3Opt = np.maximum(tm3OptIpt, 0)  # Apply surround inhibition
         self.Opt = tm3Opt  # Store the output in Opt property
         return tm3Opt
 

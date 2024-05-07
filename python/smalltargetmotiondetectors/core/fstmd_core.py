@@ -1,4 +1,4 @@
-from base_core import BaseCore
+from .base_core import BaseCore
 from .math_operator import GammaDelay
 
 class FeedbackPathway(BaseCore):

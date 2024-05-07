@@ -12,7 +12,6 @@ indexPath = strfind(filePath, ...
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath));
 
-import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
 import smalltargetmotiondetectors.util.iostream.*;
 

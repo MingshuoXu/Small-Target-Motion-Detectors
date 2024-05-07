@@ -299,7 +299,6 @@ def greedy_nms(inputMatrix, maxRegionSize):
 
 
 if __name__ == "__main__":
-    import numpy as np
     from numpy.random import default_rng
 
     obj = MatrixNMS(maxRegionSize=5, method='auto')

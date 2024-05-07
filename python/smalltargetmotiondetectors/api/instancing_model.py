@@ -1,10 +1,19 @@
 import os
-import tkinter as tk
-from tkinter import filedialog
+import sys
 
-from ..model.backbone import *
+# Get the full path of this file
+filePath = os.path.realpath(__file__)
+# Find the index of '/+smalltargetmotiondetectors/'
+# in the file path
+indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.sep)
+# Add the path to the package containing the models
+sys.path.append(filePath[:indexPath])
 
-def instancing_model(modelName=None, modelPara=None):
+# from smalltargetmotiondetectors import model
+from smalltargetmotiondetectors.model import *
+from smalltargetmotiondetectors.util.iostream import *
+
+def instancing_model(modelName, modelPara=None):
     """
     Instantiate a model object based on the given model name.
 
@@ -15,42 +24,24 @@ def instancing_model(modelName=None, modelPara=None):
     Returns:
         BaseModel: The instantiated model object.
     """
-
-    # Determine if GUI should be opened for model selection
-    isOpenUI = True if modelName is None else False
-
-    '''
-    # Open GUI for model selection if necessary
-    if isOpenUI:
-        # Open file dialog for model selection
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        modelName = filedialog.askopenfilename(
-            initialdir='../',
-            title="Pick a model from M-file or P-file",
-            filetypes=(("M-file", "*.m"), ("P-file", "*.p")))
-        root.destroy()  # Close the hidden Tkinter window
-
-        # Check if BaseModel is selected (it's an abstract class)
-        if os.path.basename(modelName) == 'BaseModel.m':
-            raise ValueError("BaseModel is an Abstract Class! Please select another model.")
-
-        # Check if a model is selected
-        if not modelName:
-            raise ValueError("Please re-run and select a model.")
-        # Remove file extension from the model name
-        modelName = os.path.splitext(os.path.basename(modelName))[0]
-    '''
     
     # Instantiate the model
-    model = eval(modelName + "()")
+    modelName =  globals().get(modelName)
+    if modelName:
+        objModel = modelName()
+    else:
+        print(f"Class {modelName} not found.")
 
     # Process additional parameters if provided
     if modelPara is not None:
         # Handle model parameters
         pass
 
-    return model
+    return objModel
 
-# Example usage:
-# model = instancing_model('STMDv2')
+
+if __name__ == "__main__":
+    objModel = instancing_model('ESTMD')
+    print(objModel)
+
+

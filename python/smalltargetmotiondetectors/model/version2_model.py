@@ -19,6 +19,7 @@ class FeedbackSTMDv2(Backbonev2):
         """
         # Call superclass constructor
         super().__init__()
+        
 
         # Import necessary packages
         from smalltargetmotiondetectors.core.feedbackstmdv2_core import Lobula
@@ -44,11 +45,11 @@ class FeedbackSTMDv2(Backbonev2):
         self.medullaOpt = self.hMedulla.Opt
 
         # Process through Lobula and get response and direction
-        self.lobulaOpt, self.modelOpt.direction = self.hLobula.process(
+        self.lobulaOpt, self.modelOpt['direction'] = self.hLobula.process(
             self.medullaOpt[0], self.medullaOpt[1])
 
         # Set model response
-        self.modelOpt.response = self.lobulaOpt
+        self.modelOpt['response'] = self.lobulaOpt
 
 
 class FSTMDv2(Backbonev2):
@@ -61,10 +62,12 @@ class FSTMDv2(Backbonev2):
         Constructor method
         """
         super().__init__()
+        self.maxIteraNum = 10
+        self.iterationThres = 1e-3
 
         # Initialize components
-        self.hLamina = fstmd_core.Lamina()
-        self.hFeedbackPathway = fstmdv2_core.FeedbackPathway()
+        self.hLamina = fstmdv2_core.Lamina()
+        self.hFeedbackPathway = fstmd_core.FeedbackPathway()
 
         # Initialize feedback pathway component
         self.hFeedbackPathway.hGammaDelay.tau = 1
@@ -107,8 +110,8 @@ class FSTMDv2(Backbonev2):
             self.set_loop_state(True)
 
         # Set model response
-        self.modelOpt.response = self.lobulaOpt
-        self.modelOpt.direction = direction
+        self.modelOpt['response'] = self.lobulaOpt
+        self.modelOpt['direction'] = direction
 
     def set_loop_state(self, state):
         """
@@ -159,7 +162,7 @@ class STMDPlusv2(Backbonev2):
         )
 
         # Compute response and direction
-        self.modelOpt.response = self.mushroomBodyOpt
+        self.modelOpt['response'] = self.mushroomBodyOpt
 
 
 class ApgSTMDv2(STMDPlusv2):

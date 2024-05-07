@@ -13,7 +13,6 @@ indexPath = strfind(filePath, ...
 addpath(filePath(1:indexPath));
 
 % Import necessary packages
-import smalltargetmotiondetectors.*;
 import smalltargetmotiondetectors.api.*;
 import smalltargetmotiondetectors.util.iostream.*;
 

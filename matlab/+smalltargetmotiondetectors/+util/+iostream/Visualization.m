@@ -142,9 +142,9 @@ classdef Visualization < handle
                     nmsOutput = self.hNMS.nms(modelOpt);
                 end
                 [idX, idY] = find(nmsOutput > self.showThreshold * maxOutput);
-                plot(idY, idX, '*', ...
-                    'MarkerEdgeColor', 'r', ...
-                    'MarkerSize', 5 );
+                plot(idY, idX,          '*', ...
+                    'MarkerEdgeColor',  'r', ...
+                    'MarkerSize',       5 );
                 
                 if ~isempty(motionDirection) % Direction
                    
@@ -160,16 +160,28 @@ classdef Visualization < handle
 
                     lenArrow = 20;
                     % In the figure of imshow, the positive direction of
-                    %   the y axis is downward, that is 'axis IJ'.
+                    %   the x axis is downward, that is 'axis IJ'.
+                    
+                    %---------------------------------------%
+                    %   --------> x         y               %
+                    %   |                   ^               %
+                    %   |                   |               %
+                    %   V                   |               %
+                    %   y                   --------> x     %
+                    %                                       %
+                    %   IJ                  image           %
+                    %---------------------------------------%
+                    
                     % quiver(hImg,...
                     %     quiverY, quiverX, ...
                     %     lenArrow * cosD, ...
                     %     -lenArrow * sinD, ...
                     %     0);
-                    quiver(quiverY, quiverX, ...
-                        lenArrow * cosD, ...
+                    quiver(quiverY, quiverX, ... % image axis
+                        lenArrow * cosD, ... % IJ axis
                         -lenArrow * sinD, ...
                         0);
+                    
                 end
             end
 

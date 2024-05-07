@@ -31,7 +31,11 @@ classdef Lptcell < ...
             lenBataList = length(self.bataList);
             lenthetaList = length(self.thetaList);
             % generate gauss distribution
-            gaussianDistribution = normpdf(-199:200, 1, 100/2);
+            try
+                gaussianDistribution = normpdf(-199:200, 1, 100/2);
+            catch
+                gaussianDistribution = custom_normpdf(-199:200, 1, 100/2);
+            end
             % normlization
             gaussianDistribution = ...
                 gaussianDistribution / max(gaussianDistribution);
@@ -49,7 +53,7 @@ classdef Lptcell < ...
         function [fai, psi] = process(self, ...
                 tm1Signal, tm2Signal, tm3Signal, mi1Signal, tau5)
             import smalltargetmotiondetectors.core.stfeedbackstmd_core.*;
-            import smalltargetmotiondetectors.util.compute.slice_matrix_holding_size;
+            import smalltargetmotiondetectors.util.compute.*;
 
             lenBataList = length(self.bataList);
             lenthetaList = length(self.thetaList);
@@ -117,4 +121,8 @@ classdef Lptcell < ...
 
     end
 
+end
+
+function y = custom_normpdf(x, mu, sigma)
+    y = exp(-0.5 * ((x - mu) / sigma).^2) / (sigma * sqrt(2 * pi));
 end

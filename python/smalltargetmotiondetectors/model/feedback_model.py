@@ -22,10 +22,10 @@ class FeedbackSTMD(ESTMDBackbone):
         self.hLobula = feedbackstmd_core.Lobula()
 
         # Customize Lamina's GammaBankPassFilter properties
-        self.hLamina.hGammaBankPassFilter.hGammaDelay1.order = 4
-        self.hLamina.hGammaBankPassFilter.hGammaDelay1.tau = 8
-        self.hLamina.hGammaBankPassFilter.hGammaDelay2.order = 16
-        self.hLamina.hGammaBankPassFilter.hGammaDelay2.tau = 32
+        self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = 4
+        self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau = 8
+        self.hLamina.hGammaBandPassFilter.hGammaDelay2.order = 16
+        self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau = 32
 
         # Customize Medulla's Tm1 component properties
         self.hMedulla.hTm1.hGammaDelay.order = 9
@@ -50,7 +50,7 @@ class FeedbackSTMD(ESTMDBackbone):
         self.lobulaOpt = self.hLobula.process(self.medullaOpt[0], self.medullaOpt[1])
 
         # Set model response
-        self.modelOpt.response = self.lobulaOpt
+        self.modelOpt['response'] = self.lobulaOpt
 
 
 class FSTMD(ESTMDBackbone):
@@ -67,6 +67,8 @@ class FSTMD(ESTMDBackbone):
         """
         # Call superclass constructor
         super().__init__()
+        self.maxIterationNum = 10
+        self.iterationThreshold = 1e-3
 
         # Initialize feedback pathway component
         self.hFeedbackPathway = fstmd_core.FeedbackPathway()
@@ -115,15 +117,15 @@ class FSTMD(ESTMDBackbone):
             self.set_loop_state(True)
 
         # Set model response
-        self.modelOpt.response = self.lobulaOpt
+        self.modelOpt['response'] = self.lobulaOpt
 
     def set_loop_state(self, state):
         """
         Sets the loop state of certain components.
         """
         # Disable circshift for certain components
-        self.hLamina.hGammaBankPassFilter.hGammaDelay1.isInLoop = state
-        self.hLamina.hGammaBankPassFilter.hGammaDelay2.isInLoop = state
+        self.hLamina.hGammaBandPassFilter.hGammaDelay1.isInLoop = state
+        self.hLamina.hGammaBandPassFilter.hGammaDelay2.isInLoop = state
         self.hMedulla.hTm1.hGammaDelay.isInLoop = state
         self.hFeedbackPathway.hGammaDelay.isInLoop = state
 

@@ -43,7 +43,7 @@ function model = instancing_model(modelName, modelPara)
         % Open file dialog for model selection
         [modelName] = uigetfile(...
             {'*.*'}, 'Pick a model from M-file or P-file', ...
-            [filePath(1:indexPath+28), '+model\Backbonev2'] );
+            [filePath(1:indexPath+28), '+model\Backbonev2.m'] );
 
         % Check if BaseModel is selected (it's an abstract class)
         if strcmp(modelName, 'BaseModel.m')

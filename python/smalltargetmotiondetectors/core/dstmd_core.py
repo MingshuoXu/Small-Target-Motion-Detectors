@@ -1,10 +1,10 @@
 import numpy as np
 import math
 
-from . import BaseCore
-from ..util import CircularCell
+from .base_core import BaseCore
+from ..util.datarecord import CircularList
 from .math_operator import GammaDelay
-from .surround_inhibition import SurroundInhibition
+from .math_operator import SurroundInhibition
 from ..util.create_kernel import create_direction_inhi_kernel
 
 
@@ -28,7 +28,7 @@ class Medulla(BaseCore):
         self.hTm1Para6.hGammaDelay.order = 8
         self.hTm1Para6.hGammaDelay.tau = 40
 
-        self.cellTm1Ipt = CircularCell()
+        self.cellTm1Ipt = CircularList()
 
     def init_config(self):
         """Initialization method."""
@@ -176,7 +176,7 @@ class Lobula(BaseCore):
         # Initializes the Lobula object
         super().__init__()
         self.alpha1 = 3  # Alpha parameter
-        self.thetaList = [(0 + i * (math.pi / 4)) for i in range(8)]  # List of theta values
+        self.thetaList = [(i * math.pi / 4) for i in range(8)]  # List of theta values
         self.hLateralInhi = SurroundInhibition()  # Lateral inhibition component
         self.hDirectionInhi = DirectionInhi()  # Directional inhibition component
 
@@ -195,24 +195,26 @@ class Lobula(BaseCore):
         numDict = len(self.thetaList)
 
         # Correlation range
-        corrRow = slice(1 + self.alpha1, imgH - self.alpha1)
-        corrCol = slice(1 + self.alpha1, imgW - self.alpha1)
+        xRange = slice(self.alpha1, imgH - self.alpha1)
+        yRange = slice(self.alpha1, imgW - self.alpha1)
 
         # Correlation Output
         correOutput = [np.zeros((imgH, imgW)) for _ in range(numDict)]
-        countTheta = 0
-        for theta in self.thetaList:
+
+        for countTheta, theta in enumerate(self.thetaList):
             # Correlation position
-            X_Com = round(self.alpha1 * math.cos(theta + math.pi / 2))
-            Y_Com = round(self.alpha1 * math.sin(theta + math.pi / 2))
+            shiftX = round(self.alpha1 * math.cos(theta + math.pi / 2))
+            shiftY = round(self.alpha1 * math.sin(theta + math.pi / 2))
+            shiftXRange = slice(self.alpha1 - shiftX, imgH - self.alpha1 - shiftX)
+            shiftYRange = slice(self.alpha1 - shiftY, imgW - self.alpha1 - shiftY)
 
             # Calculate correlation output
-            correOutput[countTheta][corrRow, corrCol] = (
-                tm3Signal[corrRow, corrCol]
-                * (tm1Para5Signal[corrRow, corrCol] + mi1Para4Signal[corrRow - X_Com, corrCol - Y_Com])
-                * tm1Para6Signal[corrRow - X_Com, corrCol - Y_Com]
+            correOutput[countTheta][xRange, yRange] = (
+                tm3Signal[xRange, yRange]
+                * (tm1Para5Signal[xRange, yRange] + mi1Para4Signal[shiftXRange, shiftYRange])
+                * tm1Para6Signal[shiftXRange, shiftYRange]
             )
-            countTheta += 1
+
 
         # Perform lateral inhibition
         lateralInhiOpt = [self.hLateralInhi.process(output) for output in correOutput]
@@ -269,7 +271,7 @@ class DirectionInhi(BaseCore):
                 if k == 0:
                     k = len1
                 result += iptCell[k - 1] * self.diretionalInhiKernel[j + certer - 1]
-            opt.append(max(result, 0))
+            opt.append(np.maximum(result, 0))
 
         return opt
 

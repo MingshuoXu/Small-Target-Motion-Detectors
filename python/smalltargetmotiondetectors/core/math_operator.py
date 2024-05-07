@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.ndimage import gaussian_filter, convolve2d
-
+from scipy.ndimage import gaussian_filter
+import cv2
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
@@ -121,10 +121,9 @@ class GammaDelay(BaseCore):
 
         return self.process_circularlist(self.listInput)
 
-    def process_cell(self, objListIpt):
+    def process_list(self, objListIpt):
         return compute_temporal_conv(objListIpt, 
-                                     self.gammaKernel, 
-                                     mode='same')
+                                     self.gammaKernel)
 
     def process_circularlist(self, objCircularList):
         return compute_circularlist_conv(objCircularList, 
@@ -191,6 +190,7 @@ class GammaBandPassFilter(BaseCore):
         gamma2Output = self.hGammaDelay2.process_circularlist(self.objListIpt)
         
         # Compute the difference between the outputs
+        
         optMatrix = gamma1Output - gamma2Output
         return optMatrix
 
@@ -250,7 +250,7 @@ class SurroundInhibition(BaseCore):
         Returns:
         - inhiOpt: Output of the surround inhibition filter
         """
-        inhiOpt = convolve2d(iptMatrix, -1, self.inhiKernelW2)
+        inhiOpt = cv2.filter2D(iptMatrix, -1, self.inhiKernelW2)
         inhiOpt = np.maximum(inhiOpt, 0)
         return inhiOpt
 

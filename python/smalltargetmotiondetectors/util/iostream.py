@@ -1,19 +1,34 @@
 import os
 import sys
 import time
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import ttk, filedialog, simpledialog, messagebox
 import glob
 
 from .matrixnms import MatrixNMS
+from .. import model
 
+# Get the full path of this file
+filePath = os.path.abspath(__file__)
+# Find the index of '/smalltargetmotiondetectors/' in the file path
+indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
+VID_DEFAULT_FOLDER = os.path.join(filePath[:indexPath-7], 'demodata')
+IMG_DEFAULT_FOLDER = os.path.join(VID_DEFAULT_FOLDER, 'imgstream')
+
+ALL_MODEL = model.__all__
 
 class ImgstreamReader:
-    def __init__(self, imgsteamFormat=None, startFrame=1, endFrame=None):
+    def __init__(self, 
+                 imgsteamFormat=None, 
+                 startFrame=1, 
+                 endFrame=None, 
+                 startImgName = None, 
+                 endImgName = None):
         '''
         ImgstreamReader Constructor - Initializes the ImgstreamReader object.
           This constructor initializes the ImgstreamReader object. It takes optional
@@ -26,35 +41,41 @@ class ImgstreamReader:
               - endFrame: Ending frame index (optional).
         '''
 
-        self.hasFrame = True    # Flag indicating if there are frames available
+        self.hasFrame = False    # Flag indicating if there are frames available
         self.fileList = []      # List of files in the image stream
         self.currIdx = 0        # Index of the current frame being read
         self.frameIdx = 0       # Current frame index (visible)
-        self.hWaitbar = None # Handle for waitbar UI
-        self.endFrame = 0       # Index of the last frame
+        self.hWaitbar = None    # Handle for waitbar UI
         self.isShowWaitbar = False      # Flag indicating whether to show waitbar
         self.hasDeleteWaitbar = False   # Flag indicating whether waitbar has been deleted
-
-
+        self.imgsteamFormat = imgsteamFormat
+        self.startFrame = startFrame
+        self.endFrame = startFrame       # Index of the last frame
         # Create waitbar handle
         # self.create_waitbar_handle()
 
         # Initialize file list based on input arguments
-        if imgsteamFormat is None:
-            startImgName, endImgName = self.get_filelist_from_ui()
+        if startImgName and endImgName is not None:
+            self.startImgName = startImgName
+            self.endImgName = endImgName
+            self.get_filelist_from_imgName()
+        elif imgsteamFormat is not None:
+            self.get_filelist_from_imgsteamformat()
         else:
-            startImgName, endImgName = self.get_filelist_from_imgsteamformat( \
-                imgsteamFormat, startFrame, endFrame)
+            raise Exception('')
+        
+        self.get_idx()
 
+    def get_idx(self):
         # Find start and end frame indices
         shouldFoundStart = True
         for idx in range(len(self.fileList)):
             if shouldFoundStart:
-                if os.path.basename(self.fileList[idx]) == os.path.basename(startImgName):
+                if os.path.basename(self.fileList[idx]) == os.path.basename(self.startImgName):
                     startIdx = idx
                     shouldFoundStart = False
             else:
-                if os.path.basename(self.fileList[idx]) == os.path.basename(endImgName):
+                if os.path.basename(self.fileList[idx]) == os.path.basename(self.endImgName):
                     endIdx = idx
                     break
 
@@ -77,58 +98,28 @@ class ImgstreamReader:
         # Set endFrame to endIdx
         self.endFrame = endIdx
 
-    def get_filelist_from_ui(self):
+    def get_filelist_from_imgName(self):
         '''
-        get_filelist_from_ui - Prompts user to select start and end frames via GUI.
-          This method prompts the user to select the start and end frames of the
-          image stream using a graphical user interface (GUI). It opens a file dialog
-          for the user to choose the start frame, and then another file dialog for
-          the end frame, ensuring that both frames have the same file extension.
+          get_filelist_from_imgName
         
           Parameters:
               - self: Instance of the ImgstreamReader class.
         
-          Returns:
-              - startImgName: Name of the selected start frame file.
-              - endImgName: Name of the selected end frame file.
-        '''
-
-        # Get the full path of this file
-        filePath = os.path.abspath(__file__)
-        # Find the index of '/smalltargetmotiondetectors/' in the file path
-        indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
-        # Add the path to the package containing the models
-        sys.path.append(filePath[:indexPath + len('smalltargetmotiondetectors') + 1])
-        
-
-        pathName = os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream')
-        # Open file dialog for selecting the start frame
-        startImgName = filedialog.askopenfilename(
-            initialdir=pathName, 
-            title='Pick the start frame from image stream')
-        
+        '''       
         # Find the index of the dot in the start image name
-        dotIndex = startImgName.rfind('.')
-        
-        # Open file dialog for selecting the end frame
-        endImgName = filedialog.askopenfilename(
-            initialdir=pathName, 
-            title='Pick the end frame from image stream', 
-            filetypes=[(startImgName[dotIndex:], startImgName[dotIndex:])])
-        
-        # Get the file extensions of the start and end images
-        _, ext1 = os.path.splitext(startImgName)
-        _, ext2 = os.path.splitext(endImgName)
-        
-        # Check if the extensions of the start and end images are the same
-        if ext1 != ext2:
+        dotIndex = self.startImgName.rfind('.')
+        startFolder, _ = os.path.split(self.startImgName)
+        endFolder, _ = os.path.split(self.endImgName)
+
+        if not check_same_ext_name(self.startImgName, self.endImgName):
             raise Exception('Start image has a different extension than end image.')
+        if os.path.basename(startFolder) != os.path.basename(endFolder):
+            raise Exception('The image stream must be in the same folder!')
         
         # Update fileList property with files matching the selected extension
-        self.fileList = glob.glob(os.path.join(pathName, '*' + ext1))
-        return startImgName, endImgName
+        self.fileList = glob.glob(os.path.join(startFolder, '*' + self.startImgName[dotIndex:]))
 
-    def get_filelist_from_imgsteamformat(self, imgsteamFormat, startFrame, endFrame):
+    def get_filelist_from_imgsteamformat(self):
         '''
         Get start and end frame names from image stream format
         This method generates the start and end frame names based on the specified image stream format
@@ -145,10 +136,10 @@ class ImgstreamReader:
         '''
 
         # Retrieve the list of files matching the image stream format
-        self.fileList = os.listdir(imgsteamFormat)
+        self.fileList = os.listdir(self.imgsteamFormat)
         
         # Extract the basename and extension from the specified format
-        basename, ext1 = os.path.splitext(imgsteamFormat)
+        basename, ext1 = os.path.splitext(self.imgsteamFormat)
         basename = basename[:-1] # Remove the trailing backslash if any
         
         # Check if any files match the specified format
@@ -172,14 +163,12 @@ class ImgstreamReader:
                 numDigits1 = len(num1)
                 
                 # Generate the start and end frame names with zero-padding
-                startImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % startFrame
-                endImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % endFrame
+                self.startImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % self.startFrame
+                self.endImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % self.endFrame
             else:
                 # Generate the start and end frame names without zero-padding
-                startImgName = basename + '%d' + ext1 % startFrame
-                endImgName = basename + '%d' + ext1 % endFrame
-                
-        return startImgName, endImgName
+                self.startImgName = basename + '%d' + ext1 % self.startFrame
+                self.endImgName = basename + '%d' + ext1 % self.endFrame
     
     def get_next_frame(self):
         '''
@@ -229,19 +218,6 @@ class ImgstreamReader:
 
         return np.double(garyImg), cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
     
-    def __del__(self):
-        '''
-            Release any resources associated with the object
-        '''
-        '''
-        if self.hWaitbar:
-            # Perform cleanup actions, such as closing files or releasing memory
-            # For demonstration, let's assume hWaitbar is a file object and close it
-            self.hWaitbar.close()
-            # Set hWaitbar to None to indicate that the resource has been released
-            self.hWaitbar = None
-        '''
-
 
 class VidstreamReader:
     """
@@ -492,9 +468,9 @@ class Visualization:
             plt.imshow(colorImg)
             plt.axis('off')
         
-        if result is not None:
-            modelOpt = result['response']
-            motionDirection = result['direction']
+        modelOpt = result['response']
+        motionDirection = result['direction']
+        if modelOpt is not None:
             maxOutput = np.max(modelOpt)
 
             if maxOutput > 0:
@@ -503,21 +479,45 @@ class Visualization:
                 idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
                 ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
 
-                if motionDirection is not None:
+                if len(motionDirection):
                     nanStatus = ~np.isnan(motionDirection[idX, idY])
                     quiverX = idX[nanStatus]
                     quiverY = idY[nanStatus]
                     cosD = np.cos(motionDirection[quiverX, quiverY])
                     sinD = np.sin(motionDirection[quiverX, quiverY])
-                    lenArrow = 20
-                    ax.quiver(quiverY, 
-                            quiverX, 
-                            lenArrow * cosD, 
-                            -lenArrow * sinD, 
+                    lenArrow = 8
+
+                    '''
+                    In the figure of imshow, the positive direction of
+                      the x axis is downward, that is 'axis IJ'.
+                    
+                    %---------------------------------------%
+                    %   --------> x         y               %
+                    %   |                   ^               %
+                    %   |                   |               %
+                    %   V                   |               %
+                    %   y                   --------> x     %
+                    %                                       %
+                    %   IJ # angles='xy'    image           %
+                    %---------------------------------------%
+                    ax.quiver(quiverY, quiverX, 
+                            lenArrow * cosD, -lenArrow * sinD, 
                             angles='xy', 
                             scale_units='xy', 
-                            scale=1, 
-                            color='b')
+                            scale=0.5, 
+                            color='red',
+                            width=0.003)
+                    the above code is same with Matlab, which also works inpython, 
+                        but in Python, we can use the below code:
+                    '''
+
+                    # angles='uv', which has the same orientation with plane coordinates
+                    ax.quiver(quiverY, quiverX,
+                            lenArrow * cosD, lenArrow * sinD, 
+                            scale_units='xy', 
+                            scale=0.5, 
+                            color='red',
+                            width=0.003)
 
         plt.draw()
         plt.pause(0.001)
@@ -575,6 +575,170 @@ class Visualization:
             self.uiHandle['pauseButton'].bool = False   
     
 
+class ModelSelectorGUI:
+    def __init__(self, root):
+        self.root = root
+
+    def create_gui(self, modelList):
+        self.modelLabel = ttk.Label(self.root, text="Select a model:")
+        self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
+
+        self.modelCombobox = ttk.Combobox(self.root, values=modelList)
+        self.modelCombobox.current(0)
+        self.modelCombobox.grid(row=0, column=1, padx=10, pady=10)
+        
+
+class InputSelectorGUI:
+    def __init__(self, root):
+        self.root = root
+
+        self.vidElement = {}
+        self.imgElement = {}
+
+        self.imgSelectFolder = None
+
+        self.input_type = None
+        self.start_frame = None
+        self.end_frame = None
+        self.video_file = None
+        self.check = False
+        self.vidName = None
+        self.startImgName = None
+        self.endImgName = None
+
+    def create_gui(self):
+        self.inputTypeLabel = ttk.Label(self.root, text="Select input type:")
+        self.inputTypeLabel.grid(row=1, column=0, padx=10, pady=10)
+
+        self.selectedOption = tk.BooleanVar(value=True)
+
+        self.imgLabel = ttk.Radiobutton(self.root, 
+                                        text='Image stream', 
+                                        variable=self.selectedOption,
+                                        value=True, 
+                                        command=self.select_imgstream)
+        self.imgLabel.grid(row=2, column=0, padx=10, pady=10)
+
+        self.vidLabel = ttk.Radiobutton(self.root, 
+                                        text='Video stream', 
+                                        variable=self.selectedOption,
+                                        value=False, 
+                                        command=self.select_vidstream)
+        self.vidLabel.grid(row=2, column=1, padx=10, pady=10)
+
+    def select_vidstream(self):
+        for element in self.imgElement.values():
+            element.destroy()
+        self.vidElement['btn'] = ttk.Button(self.root, text="Select a video", command=self._clicked_vid)
+        self.vidElement['btn'].grid(row=3, column=0, padx=10, pady=10)
+
+    def _clicked_vid(self):
+        self.vidName = filedialog.askopenfilenames(initialdir=self.vidDefaultFolder)
+        self.vidName = self.vidName[0]
+        self.vidElement['lbl'] = ttk.Label(self.root, text=self.vidName, wraplength=150)
+        self.vidElement['lbl'].grid(row=3, column=1, padx=50, pady=10)
+
+    def select_imgstream(self):
+        for element in self.vidElement.values():
+            element.destroy()
+        self.imgElement['btnStart'] = ttk.Button(self.root, text="select start frame", command=self._clicked_start_img)
+        self.imgElement['btnStart'].grid(row=4, column=0,  padx=10, pady=10)
+        self.imgElement['btnEnd'] = ttk.Button(self.root, text="select end frame", command=self._clicked_end_img)
+        self.imgElement['btnEnd'].grid(row=5, column=0,  padx=10, pady=10)
+        self.imgElement['lblFolder'] = ttk.Label(self.root, text="Image floder: ")
+        self.imgElement['lblFolder'].grid(row=3, column=0, padx=10, pady=10)
+        self.imgElement['lblFloderName'] = ttk.Label(self.root, text="", wraplength=150)
+        self.imgElement['lblFloderName'].grid(row=3, column=1, padx=10, pady=30)
+
+    def _clicked_start_img(self):
+        startImgFullPath = filedialog.askopenfilenames(
+            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else self.imgSelectFolder)
+        startFolder, self.startImgName = os.path.split(startImgFullPath[0])
+        if self.imgSelectFolder is not None:
+            if os.path.basename(startFolder) == os.path.basename(self.imgSelectFolder):
+                if self.endImgName is not None:
+                    if check_same_ext_name(self.startImgName, self.endImgName):
+                        self.check = True
+                    else:
+                        messagebox.showinfo("Message title", "Start image has a different extension than end image.")
+            else:
+                messagebox.showinfo("Message title", "The image stream must be in the same folder!")
+
+        self.imgSelectFolder = startFolder
+        self.imgElement['lblFloderName'].config(text=self.imgSelectFolder)
+
+        self.imgElement['lblStartImg'] = ttk.Label(self.root, text=self.startImgName)
+        self.imgElement['lblStartImg'].grid(row=4, column=1, padx=10, pady=10)
+
+    def _clicked_end_img(self):
+        endImgFullPath = filedialog.askopenfilenames(
+            initialdir=self.imgDefaultFolder if self.imgSelectFolder is None else self.imgSelectFolder)
+        endFolder , self.endImgName = os.path.split(endImgFullPath[0])
+
+        if self.imgSelectFolder is not None:
+            if os.path.basename(endFolder) == os.path.basename(self.imgSelectFolder):
+                if self.startImgName is not None:
+                    if check_same_ext_name(self.startImgName, self.endImgName):
+                        self.check = True
+                    else:
+                        messagebox.showinfo("Message title", "Start image has a different extension than end image.")
+            else:
+                messagebox.showinfo("Message title", "The image stream must be in the same folder!")
+
+                
+        self.imgSelectFolder = endFolder
+        self.imgElement['lblFloderName'].config(text=self.imgSelectFolder)
+
+        self.imgElement['lblEndImg'] = ttk.Label(self.root, text=self.endImgName)
+        self.imgElement['lblEndImg'].grid(row=5, column=1, padx=10, pady=10)
+
+
+class ModelAndInputSelectorGUI:
+    def __init__(self, root):
+        self.root = root
+
+        self.root.title("Small target motion detector - Runner")
+
+        self.objModelSelector = ModelSelectorGUI(root)
+        self.objInputSelector = InputSelectorGUI(root)
+        
+        self.btnRun = ttk.Button(self.root, text="run", command=self._run)
+        self.btnRun.grid(row=6, column=1, padx=10, pady=10)
+
+    def create_gui(self):
+        self.objModelSelector.create_gui(ALL_MODEL)
+        self.objInputSelector.create_gui()
+
+        self.root.mainloop()
+
+        if self.objInputSelector.selectedOption.get():  
+            return self.modelName, self.startImgName, self.endImgName
+        else:
+            return self.modelName, self.vidName, False
+
+    def _run(self):
+
+        self.modelName = self.objModelSelector.modelCombobox.get()
+        if self.modelName not in ALL_MODEL:
+            messagebox.showinfo("Message title", "Please select a STMD-based model!")
+            return
+
+        if self.objInputSelector.selectedOption.get():
+            if self.objInputSelector.check:
+                self.startImgName = os.path.join(self.objInputSelector.imgSelectFolder, 
+                                        self.objInputSelector.startImgName)
+                self.endImgName = os.path.join(self.objInputSelector.imgSelectFolder, 
+                                        self.objInputSelector.endImgName)
+                self.root.destroy()
+            else:
+                messagebox.showinfo("Message title", "The image stream must be in the same folder!")
+        elif self.objInputSelector.vidName is not None:
+            self.vidName = self.objInputSelector.vidName
+            messagebox.showinfo("Message title", "Please select a input video!")
+            self.root.destroy()
+        
+        
+
 def create_waitbar_handle(self):
     '''
     create_waitbar_handle - Creates a waitbar for displaying progress.
@@ -613,3 +777,15 @@ def call_waitbar(self):
 
     pass
     # self.hWaitbar = waitbar(floatBar, self.hWaitbar, waitbarStr)
+
+
+def check_same_ext_name(startImgName, endImgName):
+    _, ext1 = os.path.splitext(startImgName)
+    _, ext2 = os.path.splitext(endImgName)
+    # Check if the extensions of the start and end images are the same
+    if ext1 != ext2:
+        return False
+    else:
+        return True
+    
+

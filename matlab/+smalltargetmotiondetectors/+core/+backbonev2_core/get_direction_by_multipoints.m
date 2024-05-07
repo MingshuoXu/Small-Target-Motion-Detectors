@@ -23,7 +23,8 @@ function theta = get_direction_by_multipoints(points)
 
     veloX = numPoint*sumXT - sumX*sumT;
     veloY = numPoint*SumYT - sumY*sumT;
-
+    
+    %%
     %---------------------------------------%
     %   --------> y         y               %
     %   |                   ^               %
@@ -34,7 +35,6 @@ function theta = get_direction_by_multipoints(points)
     %   matrix              image           %
     %---------------------------------------%
 
-    % theta = atan2(-veloX, veloY);
-    theta = atan2(veloY, veloX) - pi/2;
+    theta = atan2(-veloX, veloY);
 
 end

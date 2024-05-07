@@ -3,8 +3,8 @@ import math
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_fracdiff_kernel
-from ..util.datarecord import CircularCell
-from ..util.compute_module import compute_circularcell_conv
+from ..util.datarecord import CircularList
+from ..util.compute_module import compute_circularlist_conv
 
 class Lamina(BaseCore):
     """Lamina class for the lamina layer."""
@@ -29,7 +29,7 @@ class Lamina(BaseCore):
         self.fracKernel = create_fracdiff_kernel(self.alpha, self.delta)
         self.paraCur = self.fracKernel[0]
         self.paraPre = math.exp(-self.alpha / (1 - self.alpha))
-        self.cellRetinaOutput = CircularCell(self.delta)
+        self.cellRetinaOutput = CircularList(self.delta)
     
     def process(self, LaminaIpt):
         """Processing method."""
@@ -40,17 +40,17 @@ class Lamina(BaseCore):
             # First order difference
             diffLaminaIpt = LaminaIpt - self.preLaminaIpt
         
-        laminaopt = self.compute_by_iteration(diffLaminaIpt)
+        laminaOpt = self.compute_by_iteration(diffLaminaIpt)
         
-        self.Opt = laminaopt
+        self.Opt = laminaOpt
         self.preLaminaIpt = LaminaIpt
-        return laminaopt
+        return laminaOpt
     
     def compute_by_conv(self, diffLaminaIpt):
         """Computes the lamina output by convolution."""
        
         self.cellRetinaOutput.circrecord(diffLaminaIpt)
-        laminaopt = compute_circularcell_conv(self.cellRetinaOutput, self.fracKernel)
+        laminaopt = compute_circularlist_conv(self.cellRetinaOutput, self.fracKernel)
         return laminaopt
     
     def compute_by_iteration(self, diffLaminaIpt):

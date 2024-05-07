@@ -16,7 +16,7 @@ classdef LaminaLateralInhibition < smalltargetmotiondetectors.core.BaseCore
     %   LastEditTime: 2023-02-22
     
     properties
-        sizeW1 = [15, 15, 7];  % Size of the inhibition kernel W1
+        sizeW1 = [11, 11, 7];  % Size of the inhibition kernel W1
         sigma2 = 1.5;      % Standard deviation for the positive part of W1
         sigma3;            % Standard deviation for the negative part of W1
         lambda1 = 3;       % Time constant for the positive part of W1
@@ -61,15 +61,30 @@ classdef LaminaLateralInhibition < smalltargetmotiondetectors.core.BaseCore
         function init_config(self)
             % Initialization method
             % Initializes the inhibition kernel W1
-            import smalltargetmotiondetectors.util.CircularCell;
-            import smalltargetmotiondetectors.util.compute.compute_circularcell_conv;
+            import smalltargetmotiondetectors.util.*;
+            import smalltargetmotiondetectors.util.compute.*;
+            import smalltargetmotiondetectors.util.kernel.*;
             
             if isempty(self.sigma3)
                 self.sigma3 = 2 * self.sigma2;
             end
-
-            gaussionSigma2 = fspecial('gaussian', self.sizeW1(1:2), self.sigma2);
-            gaussionSigma3 = fspecial('gaussian', self.sizeW1(1:2), self.sigma3);
+            
+            try
+                gaussionSigma2 = ...
+                    fspecial('gaussian', self.sizeW1(1:2), self.sigma2);
+            catch
+                gaussionSigma2 = ...
+                    create_gaussian_kernel(self.sizeW1(1:2), self.sigma2);
+            end
+            
+            try
+                gaussionSigma3 = ...
+                    fspecial('gaussian', self.sizeW1(1:2), self.sigma3);
+            catch
+                gaussionSigma3 = ...
+                    create_gaussian_kernel(self.sizeW1(1:2), self.sigma3);
+            end
+            
             DiffOfGaussion = gaussionSigma2 - gaussionSigma3;
             % W_{S}^{P} in formulate (8) of DSTMD
             self.spatialPositiveKernel = max(DiffOfGaussion, 0);

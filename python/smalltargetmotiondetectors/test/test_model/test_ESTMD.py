@@ -14,7 +14,7 @@ from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
 
 # Model instantiation
-model = instancing_model('ESTMD')
+objModel = instancing_model('ESTMD')
 
 # Input
 # Demo video (RIST)
@@ -22,10 +22,10 @@ hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_
 
 # Visualization and model init
 # Get visualization handle
-hVisual = get_visualize_handle(model.__class__.__name__)
+hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 # Initialize the model
-model.init_config()
+objModel.init_config()
 
 # Run inference
 while hSteam.hasFrame and hVisual.hasFigHandle:
@@ -33,7 +33,7 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     grayImg, colorImg = hSteam.get_next_frame()
     
     # Perform inference using the model
-    result = inference(model, grayImg)
+    result = inference(objModel, grayImg)
     
     # Visualize the result
     hVisual.show_result(colorImg, result)

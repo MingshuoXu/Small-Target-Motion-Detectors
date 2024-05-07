@@ -23,7 +23,7 @@ class AttentionModule(BaseCore):
         self.alpha = 1
         self.attention_kernel = None
     
-    def init(self):
+    def init_config(self):
         """
         Initialization method.
         
@@ -42,8 +42,9 @@ class AttentionModule(BaseCore):
         Processes the retina_opt and prediction_map to generate the
         attention-optimal output.
         """
-        r, s = self.attention_kernel.shape
-        
+        r = len(self.attention_kernel)
+        s = len(self.attention_kernel[0])
+
         if prediction_map is None:
             attention_opt = retina_opt
         else:

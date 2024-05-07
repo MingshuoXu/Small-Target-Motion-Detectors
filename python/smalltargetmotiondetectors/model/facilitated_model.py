@@ -54,8 +54,8 @@ class STMDPlus(DSTMDBackbone):
             self.lobulaOpt, self.direContrastOpt)
 
         # Compute response and direction
-        self.modelOpt.response = compute_response(self.mushroomBodyOpt)
-        self.modelOpt.direction = compute_direction(self.mushroomBodyOpt)
+        self.modelOpt['response'] = compute_response(self.mushroomBodyOpt)
+        self.modelOpt['direction'] = compute_direction(self.mushroomBodyOpt)
 
 
 class ApgSTMD(STMDPlus):
@@ -78,6 +78,8 @@ class ApgSTMD(STMDPlus):
         self.hLobula.hLateralInhi.Sigma1 = 1.25
         self.hLobula.hLateralInhi.Sigma2 = 2.5
         self.hLobula.hLateralInhi.e = 1.2
+
+        self.predictionMap = None
 
     def init_config(self):
         """

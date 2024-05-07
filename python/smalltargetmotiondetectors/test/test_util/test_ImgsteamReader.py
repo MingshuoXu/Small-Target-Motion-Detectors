@@ -9,7 +9,7 @@ indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath+len('/smalltargetmotiondetectors/')])
 
-from util.inputstream import ImgstreamReader
+from util.iostream import ImgstreamReader
 
 # Create test object
 test_obj = ImgstreamReader()

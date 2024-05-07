@@ -1,8 +1,8 @@
 import numpy as np
 import cv2
-from scipy.spatial.distance import pdist2
+from scipy.spatial.distance import cdist
 
-from base_core import BaseCore
+from .base_core import BaseCore
 from ..util.create_kernel import create_T1_kernels
 from ..util.matrixnms import MatrixNMS
 from ..util.compute_module import compute_response
@@ -79,7 +79,7 @@ class MushroomBody(BaseCore):
         if maxNumber <= 0:
             self.trackID = None
             self.trackInfo = []
-            return
+            return mushroomBodyOpt
 
         idX, idY = np.where(nmsLobulaOpt > 0)
         newID = np.column_stack((idX, idY))
@@ -89,17 +89,16 @@ class MushroomBody(BaseCore):
         numContrast = len(contrastOpt)
 
         if self.trackID is not None:
-            DD = pdist2(self.trackID, newID)
+            DD = cdist(self.trackID, newID)
             D1 = np.min(DD, axis=1)
 
-            for idxI in range(len(D1)):
-                if D1[idxI] <= self.DBSCANDist:
+            for idxI, d1 in enumerate(D1):
+                if d1 <= self.DBSCANDist:
                     idxJ = np.argmin(DD[idxI])
                     if shouldAddNewID[idxJ]:
                         self.trackID[idxI] = newID[idxJ]
-                        nowContrast = np.zeros((numContrast, 1))
-                        for idCont in range(numContrast):
-                            nowContrast[idCont, 0] = contrastOpt[idCont](newID[idxJ, 0], newID[idxJ, 1])
+                        nowContrast = np.array(
+                            [[contrastOpt[idCont][newID[idxJ, 0], newID[idxJ, 1]]] for idCont in range(numContrast)])
                         self.trackInfo[idxI] = np.hstack((self.trackInfo[idxI], nowContrast))
                         shouldTrackID[idxI] = False
                         shouldAddNewID[idxJ] = False
@@ -111,10 +110,12 @@ class MushroomBody(BaseCore):
 
         isxNew = np.where(shouldAddNewID)[0]
         for kk in isxNew:
-            self.trackID = np.vstack((self.trackID, newID[kk]))
-            nowContrast = np.zeros((numContrast, 1))
-            for idCont in range(numContrast):
-                nowContrast[idCont, 0] = contrastOpt[idCont](newID[kk, 0], newID[kk, 1])
+            if self.trackID is None:
+                self.trackID = newID[kk]
+            else:
+                self.trackID = np.vstack((self.trackID, newID[kk]))
+            nowContrast = np.array(
+                [[contrastOpt[idCont][newID[kk, 0], newID[kk, 1]]] for idCont in range(numContrast)])
             self.trackInfo.append(nowContrast)
 
         for idx in range(oldTractNum):
@@ -128,4 +129,5 @@ class MushroomBody(BaseCore):
                 self.trackInfo[idx] = self.trackInfo[idx][:, 1:]
 
         self.Opt = mushroomBodyOpt
+        return mushroomBodyOpt
 

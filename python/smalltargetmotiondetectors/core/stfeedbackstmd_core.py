@@ -2,15 +2,14 @@ import cv2
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
-from . import BaseCore
-from .surround_inhibition import SurroundInhibition
-from .estmd_backbone import Medulla as BaseMedulla
-from .math_operator import GammaDelay
-from ..util import CircularCell
+from .base_core import BaseCore
+from .math_operator import SurroundInhibition, GammaDelay
+from . import estmd_backbone 
+from ..util.datarecord import CircularList
 from ..util.create_kernel import *
 from ..util.compute_module import slice_matrix_holding_size
 
-class Medulla(BaseMedulla):
+class Medulla(estmd_backbone.Medulla):
     # Medulla layer of the motion detection system
 
     def __init__(self):
@@ -31,7 +30,7 @@ class Medulla(BaseMedulla):
         self.hPara5Mi1 = GammaDelay(25, 30)
         self.hPara5Tm1 = GammaDelay(25, 30)
 
-        self.cellTm1Ipt = CircularCell()
+        self.cellTm1Ipt = CircularList()
 
         self.hTm1.init_config(False)
         self.hPara5Mi1.init_config()
@@ -97,7 +96,7 @@ class Lobula(BaseCore):
         # Store the output in Opt property
         self.Opt = lobulaOpt
 
-        return lobulaOpt
+        return lobulaOpt, []
 
 
 class Stmdcell(BaseCore):
@@ -113,13 +112,14 @@ class Stmdcell(BaseCore):
         self.gaussKernel = None  # Gaussian kernel
         self.hGammaDelay = None
         self.cellDPlusE = None
+        self.paraGaussKernel = {'size': 3, 'eta': 1.5}
 
     def init_config(self):
         # Initialization method
         # This method initializes the Lobula layer component
         self.hSubInhi = SurroundInhibition()
         self.hGammaDelay = GammaDelay(6, 12)
-        self.cellDPlusE = CircularCell()
+        self.cellDPlusE = CircularList()
 
         self.hSubInhi.init_config()
         self.hGammaDelay.init_config()
@@ -133,14 +133,14 @@ class Stmdcell(BaseCore):
             self.paraGaussKernel['eta']
         )
 
-    def lateralInhiSTMDOpt_process(self, tm3Signal, tm1Signal, faiList, psiList):
+    def process(self, tm3Signal, tm1Signal, faiList, psiList):
         # Processing method
         # Performs temporal convolution, correlation, and surround inhibition
         convnIpt = [None] * self.cellDPlusE.len
 
-        point = self.cellDPlusE.point
         for idxT in range(len(convnIpt)-1, -1, -1):
-            if self.cellDPlusE.data[point]:
+            point = self.cellDPlusE.point
+            if self.cellDPlusE.data[point] is not None:
                 fai = faiList[idxT]
                 psi = psiList[idxT]
                 convnIpt[idxT] = slice_matrix_holding_size(self.cellDPlusE.data[point], psi, fai)
@@ -150,14 +150,15 @@ class Stmdcell(BaseCore):
             else:
                 point -= 1
 
-        feedbackSignal = self.alpha * self.hGammaDelay.process(convnIpt)
+        feedbackSignal = self.hGammaDelay.process_list(convnIpt)         
 
-        if feedbackSignal:
+        if feedbackSignal is not None:
+            feedbackSignal *= self.alpha 
             correlationD = np.maximum(tm3Signal - feedbackSignal, 0) * np.maximum(tm1Signal - feedbackSignal, 0)
         else:
             correlationD = np.maximum(tm3Signal, 0) * np.maximum(tm1Signal, 0)
 
-        correlationE = cv2.fliter2D(tm3Signal * tm1Signal, -1, self.gaussKernel)
+        correlationE = cv2.filter2D(tm3Signal * tm1Signal, -1, self.gaussKernel)
 
         lateralInhiSTMDOpt = self.hSubInhi.process(correlationD)
 
@@ -195,7 +196,7 @@ class Lptcell(BaseCore):
         self.tuningCurvef[0, :300] = gaussianDistribution[100:400]
         self.tuningCurvef[-1, -300:] = gaussianDistribution[:300]
         for id in range(1, lenBataList - 1):
-            idRange = slice(id * 100 - 200, id * 100 + 200)
+            idRange = slice((id+1) * 100 - 200, (id+1) * 100 + 200)
             self.tuningCurvef[id, idRange] = gaussianDistribution
 
     def process(self, tm1Signal, tm2Signal, tm3Signal, mi1Signal, tau5):
@@ -223,8 +224,8 @@ class Lptcell(BaseCore):
 
         # background velocity
         self.velocity = np.roll(self.velocity, -1)
-        min_index = np.argmin(np.sum((firingRate - self.tuningCurvef) ** 2, axis=0))
-        self.velocity[-1] = min_index
+        temp = [np.sum((firingRate[i] - self.tuningCurvef[i,:]) ** 2) for i in range(len(firingRate))]
+        self.velocity[-1] = np.argmin(temp)
 
         sumV = np.zeros_like(self.velocity)
         for idV in range(len(self.velocity)):

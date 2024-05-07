@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 def compute_temporal_conv(iptCell, kernel, headPointer=None):
     """
@@ -74,7 +75,7 @@ def compute_response(ipt):
     # Compute maximum response
     if k > 1:
         for idx in range(1, k):
-            response = max(response, ipt[idx])
+            response = np.maximum(response, ipt[idx])
 
     return response
 
@@ -101,14 +102,14 @@ def compute_direction(ipt):
 
     # Compute the weighted sum of cosine and sine components for each direction
     for idx in range(numDirection):
-        outputCos += ipt[idx] * np.cos((idx) * 2 * np.pi / numDirection)
-        outputSin += ipt[idx] * np.sin((idx) * 2 * np.pi / numDirection)
+        outputCos += ipt[idx] * math.cos(idx * 2 * math.pi / numDirection)
+        outputSin += ipt[idx] * math.sin(idx * 2 * math.pi / numDirection)
 
     # Compute the direction based on the arctan2 function
     directionOpt = np.arctan2(outputSin, outputCos)
 
     # Adjust directions to be in the range [0, 2*pi]
-    directionOpt[directionOpt < 0] += 2 * np.pi
+    directionOpt[directionOpt < 0] += 2 * math.pi
 
     # Set directions where both sine and cosine components are zero to NaN
     nonId = ~(outputSin.astype(bool) & outputCos.astype(bool))

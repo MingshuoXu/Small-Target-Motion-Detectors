@@ -5,7 +5,7 @@ from .base_core import BaseCore
 from .math_operator import GaussianBlur
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
 from .math_operator import *
-from .surround_inhibition import SurroundInhibition
+from .math_operator import SurroundInhibition
 
 
 class Retina(BaseCore):

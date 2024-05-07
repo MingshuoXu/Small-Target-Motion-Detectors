@@ -26,7 +26,7 @@ class BaseModel(ABC):
         self.lobulaOpt = None # Lobula layer output
 
         # Model output structure
-        self.odelOpt = {'response': [], 'direction': []}
+        self.modelOpt = {'response': [], 'direction': []}
 
     @abstractmethod
     def init_config(self):
@@ -131,10 +131,10 @@ class ESTMDBackbone(BaseModel):
         self.laminaOpt = self.hLamina.process(self.retinaOpt)
         self.hMedulla.process(self.laminaOpt)
         self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
+        self.lobulaOpt, _ = self.hLobula.process(self.medullaOpt)
 
         # Set model response
-        self.modelOpt.response = self.lobulaOpt
+        self.modelOpt['response'] = self.lobulaOpt
 
 
 class FracSTMD(ESTMDBackbone):
@@ -198,8 +198,8 @@ class DSTMD(BaseModel):
         self.lobulaOpt = self.hLobula.process(self.medullaOpt)
 
         # Compute response and direction
-        self.modelOpt.response = compute_response(self.lobulaOpt)
-        self.modelOpt.direction = compute_direction(self.lobulaOpt)
+        self.modelOpt['response'] = compute_response(self.lobulaOpt)
+        self.modelOpt['direction'] = compute_direction(self.lobulaOpt)
 
 
 class DSTMDBackbone(BaseModel):
@@ -285,8 +285,8 @@ class Backbonev2(BaseModel):
         self.laminaOpt = self.hLamina.process(self.retinaOpt)
         self.hMedulla.process(self.laminaOpt)
         self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt, self.modelOpt.direction = self.hLobula.process(self.medullaOpt)
-        self.modelOpt.response = self.lobulaOpt
+        self.lobulaOpt, self.modelOpt['direction'], _ = self.hLobula.process(self.medullaOpt)
+        self.modelOpt['response'] = self.lobulaOpt
 
 
 

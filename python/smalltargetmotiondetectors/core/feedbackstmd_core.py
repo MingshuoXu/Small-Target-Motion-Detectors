@@ -1,9 +1,9 @@
-from . import BaseCore
-from .surround_inhibition import SurroundInhibition
-from .math_operator import GammaDelay
-from scipy.signal import convolve2d
 from scipy.ndimage import gaussian_filter
 import numpy as np
+
+from .base_core import BaseCore
+from .math_operator import SurroundInhibition, GammaDelay
+
 
 class Lobula(BaseCore):
     """Lobula layer of the motion detection system."""
@@ -37,13 +37,15 @@ class Lobula(BaseCore):
         feedbackSignal = self.alpha * self.hGammaDelay.process(np.zeros_like(onSignal))
 
         # Formula (8)
-        correlationD = np.maximum((onSignal - feedbackSignal), 0) * np.maximum((offSignal - feedbackSignal), 0)
+        correlationD \
+            = np.maximum((onSignal - feedbackSignal), 0) \
+            * np.maximum((offSignal - feedbackSignal), 0)
 
         # Formula (10)
-        correlationE = convolve2d(onSignal * offSignal, self.gaussKernel, mode='same')
+        correlationE = np.filter2D(onSignal * offSignal, -1, self.gaussKernel)
 
         # Only record correlationD + correlationE
-        self.hGammaDelay.hCellInput.cover(correlationD + correlationE)
+        self.hGammaDelay.listInput.cover(correlationD + correlationE)
 
         # Formula (14)
         lobulaOpt = self.hSubInhi.process(correlationD)

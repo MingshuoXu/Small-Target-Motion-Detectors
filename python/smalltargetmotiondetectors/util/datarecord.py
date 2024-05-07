@@ -31,7 +31,7 @@ class CircularList:
         if self.len is None:
             self.len = 2
         self.data = [None] * self.len
-        self.point = self.len
+        self.point = self.len - 1
 
     def move_point(self):
         """

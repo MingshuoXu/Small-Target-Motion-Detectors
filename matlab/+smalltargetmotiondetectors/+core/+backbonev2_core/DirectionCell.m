@@ -42,9 +42,7 @@ classdef DirectionCell < smalltargetmotiondetectors.core.BaseCore
 
             self = self@smalltargetmotiondetectors.core.BaseCore();
         end
-    end
 
-    methods
         function init_config(self)
             % Initialization method
             % Initializes the non-maximum suppression

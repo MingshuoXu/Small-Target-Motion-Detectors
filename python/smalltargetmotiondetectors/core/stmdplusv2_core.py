@@ -26,7 +26,7 @@ class MushroomBody(BaseCore):
 
         if not sTrajectory:
             self.contrastRecord = []
-            return
+            return np.zeros_like(lobulaOpt)
 
         lenT = len(sTrajectory)
         newContrastRecord = [None] * lenT
@@ -45,7 +45,7 @@ class MushroomBody(BaseCore):
 
             nowContrast = np.zeros((numContrast, 1))
             for idCont in range(numContrast):
-                nowContrast[idCont, 0] = contrastOpt[idCont](xNew, yNew)
+                nowContrast[idCont, 0] = contrastOpt[idCont][xNew, yNew]
 
             if np.isnan(oldId):
                 # new response
@@ -64,3 +64,4 @@ class MushroomBody(BaseCore):
 
         self.contrastRecord = newContrastRecord
         self.Opt = mushroomBodyOpt
+        return mushroomBodyOpt

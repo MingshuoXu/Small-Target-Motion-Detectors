@@ -1,4 +1,4 @@
-from . import BaseCore
+from .base_core import BaseCore
 from ..util.create_kernel import create_prediction_kernel
 import numpy as np
 

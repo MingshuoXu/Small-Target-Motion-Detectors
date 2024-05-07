@@ -23,7 +23,14 @@ classdef GaussianBlur < smalltargetmotiondetectors.core.BaseCore
         function init_config(self)
             % Initialization method
             % Creates the Gaussian filter kernel using fspecial function
-            self.gaussKernel = fspecial('gaussian', self.size, self.sigma);
+            import smalltargetmotiondetectors.util.kernel.*;
+            try
+                self.gaussKernel = ...
+                    fspecial('gaussian', self.size, self.sigma);
+            catch
+                self.gaussKernel = ...
+                    create_gaussian_kernel(self.size, self.sigma);
+            end
         end
 
         function optMatrix = process(self, iptMatrix)

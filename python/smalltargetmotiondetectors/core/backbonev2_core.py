@@ -1,9 +1,9 @@
 import numpy as np
 
-from ..base_core import BaseCore
-from .. import SurroundInhibition
-from ...util.matrixnms import MatrixNMS
-from scipy.spatial.distance import pdist2
+from .base_core import BaseCore
+from .math_operator import SurroundInhibition
+from ..util.matrixnms import MatrixNMS
+from scipy.spatial.distance import cdist
 
 class MedullaCell(BaseCore):
     # MedullaCell cell in Medulla layer
@@ -196,17 +196,10 @@ class Lobula(BaseCore):
 
         inhiOpt = self.hSubInhi.process(correlationOutput)
 
-        if len(varagein) == 1:
-            varargout = (inhiOpt,)
-        elif len(varagein) == 2:
-            lobulaOpt, direction = self.hDireCell.process(inhiOpt)
-            varargout = (lobulaOpt, direction)
-        elif len(varagein) == 3:
-            lobulaOpt, direction = self.hDireCell.process(inhiOpt)
-            varargout = (lobulaOpt, direction, correlationOutput)
+        lobulaOpt, direction = self.hDireCell.process(inhiOpt)
 
-        self.Opt = varargout
-        return varargout
+        self.Opt = lobulaOpt, direction, correlationOutput
+        return lobulaOpt, direction, correlationOutput
 
 
 class DirectionCell(BaseCore):
@@ -279,7 +272,7 @@ class DirectionCell(BaseCore):
         if self.sTrajectory:
             trajectoryLocation = np.array([traj['location'] for traj in self.sTrajectory])
 
-            DD = pdist2(trajectoryLocation, newIndex)
+            DD = cdist(trajectoryLocation, newIndex)
 
             ind1 = np.argmin(DD, axis=1)
             D1 = np.min(DD, axis=1)
@@ -358,7 +351,7 @@ def get_direction_by_multipoints(points):
     veloX = numPoint * sumXT - sumX * sumT
     veloY = numPoint * SumYT - sumY * sumT
 
-    theta = np.arctan2(veloY, veloX) - np.pi / 2
+    theta = np.arctan2(-veloX, veloY) 
 
     return theta
 
