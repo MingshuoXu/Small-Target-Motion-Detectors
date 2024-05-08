@@ -47,7 +47,7 @@ classdef Visualization < handle
 
             if ~self.isTestPatter
                 set(self.hFig, 'menubar', 'none', 'toolbar', 'none');
-                %                 set(self.hFig, 'HandleVisibility', 'callback');
+
             end
 
             self.hNMS = ...

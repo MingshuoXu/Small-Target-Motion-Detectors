@@ -10,7 +10,6 @@ indexPath = strfind(filePath, ...
 % Add the path to the package containing the models
 addpath(filePath(1:indexPath));
 import smalltargetmotiondetectors.util.*;
-% import smalltargetmotiondetectors.util.MatrixNMS.*;
 
 %%
 intM = 250;

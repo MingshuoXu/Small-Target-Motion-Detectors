@@ -22,6 +22,7 @@ IMG_DEFAULT_FOLDER = os.path.join(VID_DEFAULT_FOLDER, 'imgstream')
 
 ALL_MODEL = model.__all__
 
+
 class ImgstreamReader:
     def __init__(self, 
                  imgsteamFormat=None, 
@@ -584,12 +585,12 @@ class ModelSelectorGUI:
         self.root = root
 
     def create_gui(self, modelList):
-        self.modelLabel = ttk.Label(self.root, text="Select a model:")
+        self.modelLabel = ttk.Label(self.root, text="Select a model:", width = 15)
         self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
 
-        self.modelCombobox = ttk.Combobox(self.root, values=modelList)
+        self.modelCombobox = ttk.Combobox(self.root, values=modelList, width = 30)
         self.modelCombobox.current(5)
-        self.modelCombobox.grid(row=0, column=1, padx=10, pady=10)
+        self.modelCombobox.grid(row=0, column=1, columnspan=2, padx=10, pady=10)
         
 
 class InputSelectorGUI:
@@ -611,52 +612,67 @@ class InputSelectorGUI:
         self.endImgName = None
 
     def create_gui(self):
-        self.inputTypeLabel = ttk.Label(self.root, text="Select input type:")
+        self.inputTypeLabel = ttk.Label(self.root, text="Select input from:", width = 15)
         self.inputTypeLabel.grid(row=1, column=0, padx=10, pady=10)
 
-        self.selectedOption = tk.BooleanVar(value=None)
+        self.selectedOption = tk.IntVar(value=0)
 
-        self.imgLabel = ttk.Radiobutton(self.root, 
-                                        text='Image stream', 
-                                        variable=self.selectedOption,
-                                        value=True, 
-                                        command=self.select_imgstream)
-        self.imgLabel.grid(row=2, column=0, padx=10, pady=10)
 
         self.vidLabel = ttk.Radiobutton(self.root, 
                                         text='Video stream', 
                                         variable=self.selectedOption,
-                                        value=False, 
+                                        value=1, 
                                         command=self.select_vidstream)
-        self.vidLabel.grid(row=2, column=1, padx=10, pady=10)
+        self.vidLabel.grid(row=1, column=2, padx=10, pady=10)
+        
+        self.imgLabel = ttk.Radiobutton(self.root, 
+                                        text='Image stream', 
+                                        variable=self.selectedOption,
+                                        value=2, 
+                                        command=self.select_imgstream)
+        self.imgLabel.grid(row=1, column=1, padx=10, pady=10)
 
     def select_vidstream(self):
+        self.imgSelectFolder = None
+        self.startImgName = None
+        self.endImgName = None
         for element in self.imgElement.values():
             element.destroy()
-        self.vidElement['btn'] = ttk.Button(self.root, text="Select a video", command=self._clicked_vid)
-        self.vidElement['btn'].grid(row=3, column=0, padx=10, pady=10)
 
+        self.vidElement['lblVidIndicate'] = ttk.Label(self.root, text= 'Video\'s path:',  width = 15)
+        self.vidElement['lblVidIndicate'].grid(row=2, column=0, padx=10, pady=30)
+        self.vidElement['lblVidPath'] = ttk.Label(self.root, 
+                                           text="Waiting for the selection",
+                                           wraplength=220
+                                           )
+        self.vidElement['lblVidPath'].grid(row=2, column=1, columnspan=2, padx=10, pady=10)
+        
+        self.vidElement['btn'] = ttk.Button(self.root, text="Select a video", command=self._clicked_vid)
+        self.vidElement['btn'].grid(row=3, column=2, padx=10, pady=10)
+        
     def _clicked_vid(self):
         self.vidName = filedialog.askopenfilenames(initialdir=VID_DEFAULT_FOLDER)
         self.vidName = self.vidName[0]
-        self.vidElement['lbl'] = ttk.Label(self.root, text=self.vidName, wraplength=150)
-        self.vidElement['lbl'].grid(row=3, column=1, padx=50, pady=10)
+        self.vidElement['lblVidPath'].config(text=self.vidName)
 
     def select_imgstream(self):
+        self.vidName = None
         for element in self.vidElement.values():
             element.destroy()
-        self.imgElement['btnStart'] = ttk.Button(self.root, text="select start frame", command=self._clicked_start_img)
-        self.imgElement['btnStart'].grid(row=4, column=0,  padx=10, pady=10)
-        self.imgElement['btnEnd'] = ttk.Button(self.root, text="select end frame", command=self._clicked_end_img)
-        self.imgElement['btnEnd'].grid(row=5, column=0,  padx=10, pady=10)
-        self.imgElement['lblFolder'] = ttk.Label(self.root, text="Image floder: ")
-        self.imgElement['lblFolder'].grid(row=3, column=0, padx=10, pady=10)
-        self.imgElement['lblFloderName'] = ttk.Label(self.root, text="", wraplength=150)
-        self.imgElement['lblFloderName'].grid(row=3, column=1, padx=10, pady=30)
 
+        self.imgElement['lblFolder'] = ttk.Label(self.root, text="Image's folder: ",  width = 15)
+        self.imgElement['lblFolder'].grid(row=2, column=0, padx=10, pady=10)
+        self.imgElement['lblFolderName'] = ttk.Label(self.root, text="Waiting for the selection", wraplength=220)
+        self.imgElement['lblFolderName'].grid(row=2, column=1, columnspan=2, padx=10, pady=30)
+
+        self.imgElement['btnStart'] = ttk.Button(self.root, text="Select start frame", command=self._clicked_start_img)
+        self.imgElement['btnStart'].grid(row=3, column=1,  padx=10, pady=10)
+        self.imgElement['btnEnd'] = ttk.Button(self.root, text="Select end frame", command=self._clicked_end_img)
+        self.imgElement['btnEnd'].grid(row=4, column=1,  padx=10, pady=10)
+        
     def _clicked_start_img(self):
         startImgFullPath = filedialog.askopenfilenames(
-            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else self.imgSelectFolder)
+            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
         startFolder, self.startImgName = os.path.split(startImgFullPath[0])
         if self.imgSelectFolder is not None:
             if os.path.basename(startFolder) == os.path.basename(self.imgSelectFolder):
@@ -669,14 +685,14 @@ class InputSelectorGUI:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
 
         self.imgSelectFolder = startFolder
-        self.imgElement['lblFloderName'].config(text=self.imgSelectFolder)
+        self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
         self.imgElement['lblStartImg'] = ttk.Label(self.root, text=self.startImgName)
-        self.imgElement['lblStartImg'].grid(row=4, column=1, padx=10, pady=10)
+        self.imgElement['lblStartImg'].grid(row=3, column=2, padx=10, pady=10)
 
     def _clicked_end_img(self):
         endImgFullPath = filedialog.askopenfilenames(
-            initialdir=self.imgDefaultFolder if self.imgSelectFolder is None else self.imgSelectFolder)
+            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
         endFolder , self.endImgName = os.path.split(endImgFullPath[0])
 
         if self.imgSelectFolder is not None:
@@ -691,23 +707,31 @@ class InputSelectorGUI:
 
                 
         self.imgSelectFolder = endFolder
-        self.imgElement['lblFloderName'].config(text=self.imgSelectFolder)
+        self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
         self.imgElement['lblEndImg'] = ttk.Label(self.root, text=self.endImgName)
-        self.imgElement['lblEndImg'].grid(row=5, column=1, padx=10, pady=10)
+        self.imgElement['lblEndImg'].grid(row=4, column=2, padx=10, pady=10)
 
 
 class ModelAndInputSelectorGUI:
     def __init__(self, root):
         self.root = root
 
-        self.root.title("Small target motion detector - Runner")
+        windowHeight = 350
+        windowWidth = 400
+        
+        startHeight = (root.winfo_screenheight() - windowHeight) // 2
+        startWidth = (root.winfo_screenwidth() - windowWidth) // 2
 
+        self.root.geometry('{}x{}+{}+{}'.format(windowWidth, windowHeight, startWidth, startHeight))
+        self.root.title("Small target motion detector - Runner")
+        self.root.iconbitmap( os.path.join(filePath[:indexPath-7], 'ico.ico'))
+        
         self.objModelSelector = ModelSelectorGUI(root)
         self.objInputSelector = InputSelectorGUI(root)
         
-        self.btnRun = ttk.Button(self.root, text="run", command=self._run)
-        self.btnRun.grid(row=6, column=1, padx=10, pady=10)
+        self.btnRun = ttk.Button(self.root, text="Run", command=self._run)
+        self.btnRun.place(x = 20, y=300)
 
     def create_gui(self):
         self.objModelSelector.create_gui(ALL_MODEL)
@@ -715,10 +739,11 @@ class ModelAndInputSelectorGUI:
 
         self.root.mainloop()
 
-        if self.objInputSelector.selectedOption.get():  
-            return self.modelName, self.startImgName, self.endImgName
-        else:
+        if self.objInputSelector.selectedOption.get() == 1:  
             return self.modelName, self.vidName, False
+        elif self.objInputSelector.selectedOption.get() == 2:
+            return self.modelName, self.startImgName, self.endImgName
+
 
     def _run(self):
 
@@ -727,7 +752,21 @@ class ModelAndInputSelectorGUI:
             messagebox.showinfo("Message title", "Please select a STMD-based model!")
             return
 
-        if self.objInputSelector.selectedOption.get():
+        if self.objInputSelector.selectedOption.get() == 1:
+            if self.objInputSelector.vidName is not None:
+                self.vidName = self.objInputSelector.vidName
+                self.root.destroy()
+            else:
+                messagebox.showinfo("Message title", "Please select a video")
+        elif self.objInputSelector.selectedOption.get() == 2:
+            if self.objInputSelector.startImgName is None:
+                messagebox.showinfo("Message title", "Please select start frame!")
+                return
+            
+            if self.objInputSelector.endImgName is None:
+                messagebox.showinfo("Message title", "Please select end frame!")
+                return
+
             if self.objInputSelector.check:
                 self.startImgName = os.path.join(self.objInputSelector.imgSelectFolder, 
                                         self.objInputSelector.startImgName)
@@ -736,12 +775,9 @@ class ModelAndInputSelectorGUI:
                 self.root.destroy()
             else:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
-        elif self.objInputSelector.vidName is not None:
-            self.vidName = self.objInputSelector.vidName
-            self.root.destroy()
         else:
-            messagebox.showinfo("Message title", "Please select a input video!")
-        
+            messagebox.showinfo("Message title", "Please select input")
+
 
 def create_waitbar_handle(self):
     '''

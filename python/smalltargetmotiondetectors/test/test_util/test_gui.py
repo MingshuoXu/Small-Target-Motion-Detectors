@@ -35,13 +35,5 @@ objVisual = get_visualize_handle(objModel.__class__.__name__)
 # Initialize the model
 objModel.init_config()
 
-# Run inference
-while objIptStream.hasFrame and objVisual.hasFigHandle:
-    # Get the next frame from the input source
-    grayImg, colorImg = objIptStream.get_next_frame()
+print('success')
     
-    # Perform inference using the model
-    result = inference(objModel, grayImg)
-    
-    # Visualize the result
-    objVisual.show_result(colorImg, result)

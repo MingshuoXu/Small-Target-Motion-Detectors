@@ -1,0 +1,128 @@
+classdef InputSelectorGUI
+    properties
+        root
+        vidElement
+        imgElement
+        imgSelectFolder
+        input_type
+        start_frame
+        end_frame
+        video_file
+        check
+        vidName
+        startImgName
+        endImgName
+        selectedOption
+        uiHandle = struct();
+    end
+    
+    methods
+        function self = InputSelectorGUI(root)
+            self.root = root;
+            self.vidElement = containers.Map;
+            self.imgElement = containers.Map;
+            self.imgSelectFolder = '';
+            self.vidName = '';
+            self.startImgName = '';
+            self.endImgName = '';
+            self.selectedOption = 0;
+        end
+        
+        function create_gui(self)
+            
+            group1 = uibuttongroup(self.root, ...
+                'Position', [0 0.7 1 0.1],...
+                'SelectionChangedFcn', @self.select_vidstream);
+           
+            self.uiHandle.inputTypeLabel = uicontrol(group1, ...
+                'Style', 'text', ...
+                'String', 'Select input from:', ...
+                'Position', [10 10 120 20]);
+            
+            self.uiHandle.vidLabel = uicontrol(group1, ...
+                'Style','Radio', ...
+                'String', 'Video stream', ...
+                'pos', [180 10 100 20]);
+            
+            self.uiHandle.imgLabel = uicontrol(group1, ...
+                'Style','Radio', ...
+                'String', 'Image stream', ...
+                'pos', [300 10 100 20]);
+            group1.SelectedObject = [];
+
+        end
+        
+        function callback_group1(hObject, ~, ~)
+            self = hObject.Parent;
+            if self.uiHandle.vidLabel
+            	self.select_vidstream();
+            elseif self.uiHandle.imgLabel
+                self.select_imgstream();
+            end
+        end
+        
+        function select_vidstream(self)
+
+            self.vidElement.lblVidIndicate = uicontrol(self.root, ...
+                'Style', 'text', ...
+                'String', 'Video''s path:', ...
+                'Position', [10 200 150 20]);
+            self.vidElement.lblVidPath = uicontrol(self.root, ...
+                'Style', 'text', ...
+                'String', 'Waiting for the selection', ...
+                'Position', [180 200 220 20]);
+            self.vidElement.btn = uicontrol(self.root, ...
+                'Style', 'pushbutton', ...
+                'String', 'Select a video', ...
+                'Position', [320 100 100 30], ...
+                'Callback', @self.clicked_vid);
+        end
+        
+        function clicked_vid(self)
+            self.vidName = uigetfile({'*.avi;*.mp4;*.mov'}, 'Select a video file');
+            self.vidElement('lblVidPath').String = self.vidName;
+        end
+        
+        function select_imgstream(self, ~, ~)
+            self.vidName = '';
+            self.imgElement.remove('lblVidIndicate');
+            self.imgElement.remove('lblVidPath');
+            self.imgElement.remove('btn');
+            
+            self.imgElement('lblFolder') = uicontrol(self.root, ...
+                'Style', 'text', ...
+                'String', 'Image''s folder:', ...
+                'Position', [10 100 150 20]);
+            self.imgElement('lblFolderName') = uicontrol(self.root, ...
+                'Style', 'text', ...
+                'String', 'Waiting for the selection', ...
+                'Position', [180 100 220 20]);
+            self.imgElement('btnStart') = uicontrol(self.root, ...
+                'Style', 'pushbutton', ...
+                'String', 'Select start frame', ...
+                'Position', [320 100 150 30], ...
+                'Callback', @self.clicked_start_img);
+            self.imgElement('btnEnd') = uicontrol(self.root, ...
+                'Style', 'pushbutton', ...
+                'String', 'Select end frame', ...
+                'Position', [320 50 150 30], ...
+                'Callback', @self.clicked_end_img);
+        end
+        
+        function clicked_start_img(self, ~, ~)
+            [startImgName, startImgFolder] = ...
+                uigetfile({'*.jpg; *.png'}, 'Select start frame');
+            self.startImgName = startImgName;
+            self.imgSelectFolder = startImgFolder;
+            self.imgElement('lblFolderName').String = self.imgSelectFolder;
+        end
+        
+        function clicked_end_img(self, ~, ~)
+            [endImgName, endImgFolder] = ...
+                uigetfile({'*.jpg;*.png'}, 'Select end frame');
+            self.endImgName = endImgName;
+            self.imgSelectFolder = endImgFolder;
+            self.imgElement('lblFolderName').String = self.imgSelectFolder;
+        end
+    end
+end
