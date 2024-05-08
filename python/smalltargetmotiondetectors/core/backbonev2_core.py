@@ -125,8 +125,7 @@ class Tm2(MedullaCell):
         Returns:
         - tm2Opt (array-like): Output of the Tm2 cell.
         """
-        offSignal = tm2Ipt.copy()
-        offSignal[offSignal > 0] = 0
+        offSignal = np.maximum(-tm2Ipt, 0)
         tm2Opt = super().process(offSignal)
         self.Opt = tm2Opt
         return tm2Opt
@@ -156,8 +155,7 @@ class Tm3(MedullaCell):
         Returns:
         - tm3Opt (array-like): Output of the Tm3 cell.
         """
-        onSignal = tm3Ipt.copy()
-        onSignal[onSignal < 0] = 0
+        onSignal = np.maximum(tm3Ipt, 0)
         tm3Opt = super().process(onSignal)
         self.Opt = tm3Opt
         return tm3Opt
@@ -372,15 +370,14 @@ def get_multi_direction_opt(modelResponse, modelDirection, numDirection):
     directionList = np.arange(0, 2 * np.pi, 2 * np.pi / numDirection)
 
     notNanId = ~np.isnan(modelDirection)
-    nanSub = np.where(notNanId)[0]
-    nanInd = np.unravel_index(nanSub, modelDirection.shape)
+    notNanInd = np.where(notNanId)
 
     for idxDire in range(numDirection):
-        cosDire = np.cos(modelDirection[nanInd] - directionList[idxDire])
+        cosDire = np.cos(modelDirection[notNanInd] - directionList[idxDire])
         cosDire[cosDire < 0] = 0
 
         Opt = np.zeros_like(modelResponse)
-        Opt[nanInd] = modelResponse[nanInd] * cosDire
+        Opt[notNanInd] = modelResponse[notNanInd] * cosDire
         directionOutput.append(Opt)
 
     return directionOutput

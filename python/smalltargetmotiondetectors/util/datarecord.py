@@ -21,6 +21,7 @@ class CircularList:
         - lenCell: Length of the circular buffer.
         """
         self.len = lenCell
+        self.point = 0
         if lenCell is not None:
             self.init_config()            
 
@@ -31,16 +32,15 @@ class CircularList:
         if self.len is None:
             self.len = 2
         self.data = [None] * self.len
-        self.point = self.len - 1
-
+        
     def move_point(self):
         """
         Method to move the circular buffer pointer to the next position.
         """
-        if self.point == 0:
-            self.point = self.len - 1
+        if self.point == self.len-1:
+            self.point =  0
         else:
-            self.point -= 1
+            self.point += 1
 
     def circrecord(self, iptMatrix):
         """

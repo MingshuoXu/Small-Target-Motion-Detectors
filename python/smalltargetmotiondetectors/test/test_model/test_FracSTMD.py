@@ -18,7 +18,9 @@ objModel = instancing_model('FracSTMD')
 
 # Input
 # Demo video (RIST)
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0.mp4'))
+
 
 # Visualization and model init
 # Get visualization handle

@@ -7,4 +7,5 @@ function gaussianFilter = create_gaussian_kernel(size, sigma)
     gaussianFilter = exp( -(x.^2 + y.^2) / (2 * sigma^2) );
     
     gaussianFilter = gaussianFilter / sum(gaussianFilter, 'all');
+    gaussianFilter(gaussianFilter<1e-4) = 0;
 end

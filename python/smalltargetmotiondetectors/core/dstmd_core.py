@@ -219,10 +219,12 @@ class Lobula(BaseCore):
         # Perform lateral inhibition
         lateralInhiOpt = [self.hLateralInhi.process(output) for output in correOutput]
 
+
         # Perform directional inhibition
         lobulaOpt = self.hDirectionInhi.process(lateralInhiOpt)
+
         self.Opt = lobulaOpt
-        return self.Opt
+        return lobulaOpt
 
 
 class DirectionInhi(BaseCore):
@@ -252,25 +254,22 @@ class DirectionInhi(BaseCore):
         
         len1 = len(iptCell)
         len2 = len(self.diretionalInhiKernel)
-
         certer = len2 // 2
-        RR = certer - 1
-
-        if len2 % 2 != 0:
-            LL = -RR
-        else:
-            LL = -RR + 1
-
         opt = []
-        m, n = iptCell[0].shape
 
         for idx in range(len1):
-            result = np.zeros((m, n))
-            for j in range(LL, RR + 1):
-                k = (idx - j) % len1
-                if k == 0:
-                    k = len1
-                result += iptCell[k - 1] * self.diretionalInhiKernel[j + certer - 1]
+            result = np.zeros_like(iptCell[0])
+            matrixPoint = idx
+            kernelPoint = certer
+
+            for shiftPoint in range(len(self.diretionalInhiKernel)):
+                matrixPoint = idx    - shiftPoint
+                kernelPoint = certer - shiftPoint
+                '''
+                  This takes advantage of the fact that the convolution kernel is symmetric, 
+                    there is no flip convolution kernel
+                '''
+                result += iptCell[matrixPoint] * self.diretionalInhiKernel[kernelPoint]
             opt.append(np.maximum(result, 0))
 
         return opt

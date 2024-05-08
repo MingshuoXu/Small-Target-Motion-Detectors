@@ -185,6 +185,7 @@ class ApgSTMDv2(STMDPlusv2):
         self.hLobula.hSubInhi.Sigma1 = 1.25
         self.hLobula.hSubInhi.Sigma2 = 2.5
         self.hLobula.hSubInhi.e = 1.2
+        self.predictionMap = None
 
     def init_config(self):
         """
@@ -200,7 +201,6 @@ class ApgSTMDv2(STMDPlusv2):
         """
         Defines the structure of the ApgSTMDv2 model.
         """
-        super().model_structure(iptMatrix)
 
         # Preprocessing Module
         self.retinaOpt = self.hRetina.process(iptMatrix)
@@ -216,7 +216,7 @@ class ApgSTMDv2(STMDPlusv2):
         self.hMedulla.process(self.laminaOpt)
         self.medullaOpt = self.hMedulla.Opt
 
-        self.lobulaOpt, self.modelOpt.direction = self.hLobula.process(self.medullaOpt)
+        self.lobulaOpt, self.modelOpt['direction'], _ = self.hLobula.process(self.medullaOpt)
 
         # STMDPlus
         self.direContrastOpt = self.hContrastPathway.process(self.retinaOpt)
@@ -229,14 +229,14 @@ class ApgSTMDv2(STMDPlusv2):
         # Prediction Module
         multiDirectoinOpt = get_multi_direction_opt(
             self.mushroomBodyOpt,
-            self.modelOpt.direction,
+            self.modelOpt['direction'],
             self.hPredictionPathway.numFilter
         )
         # self.predictionOpt is the facilitated STMD output Q(x; y; t; theta)
         self.predictionOpt, self.predictionMap = self.hPredictionPathway.process(multiDirectoinOpt)
 
         # Compute response and direction
-        self.modelOpt.response = compute_response(self.predictionOpt)
+        self.modelOpt['response'] = compute_response(self.predictionOpt)
 
 
 

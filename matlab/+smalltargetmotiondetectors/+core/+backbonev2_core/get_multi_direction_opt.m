@@ -8,17 +8,17 @@ function directionOutput = get_multi_direction_opt(...
 
     notNanId = ~isnan(modelDirection);
 
-    nanSub = find(notNanId);
+    notNanSub = find(notNanId);
 
-    nanInd = sub2ind([m,n], nanSub);
+    notNanInd = sub2ind([m,n], notNanSub);
 
 
     for idxDire = 1 : numDirection
-        cosDire = cos(modelDirection(nanInd) - directionList(idxDire));
+        cosDire = cos(modelDirection(notNanInd) - directionList(idxDire));
         cosDire(cosDire<0) = 0;
 
         Opt = zeros(m, n);
-        Opt(nanInd) = modelResponse(nanInd) .* cosDire;
+        Opt(notNanInd) = modelResponse(notNanInd) .* cosDire;
         directionOutput{idxDire} = Opt;
     end
 

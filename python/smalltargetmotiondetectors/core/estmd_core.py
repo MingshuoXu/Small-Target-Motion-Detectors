@@ -2,10 +2,10 @@ import numpy as np
 import cv2
 
 from .base_core import BaseCore
-from .math_operator import GaussianBlur
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
+from ..util.create_kernel import create_gaussian_kernel
 from .math_operator import *
-from .math_operator import SurroundInhibition
+
 
 
 class Retina(BaseCore):
@@ -345,7 +345,7 @@ class LaminaLateralInhibition(BaseCore):
     """
 
     def __init__(self, 
-                 sizeW1=[15, 15, 7], 
+                 sizeW1=[11, 11, 7], 
                  lambda1=3, 
                  lambda2=9, 
                  sigma2=1.5, 
@@ -381,13 +381,13 @@ class LaminaLateralInhibition(BaseCore):
         if self.sigma3 is None:
             self.sigma3 = 2 * self.sigma2
 
-        G_sigma2 = self._gaussian(self.sizeW1, self.sigma2)
-        G_sigma3 = self._gaussian(self.sizeW1, self.sigma3)
-        temp = G_sigma2 - G_sigma3
+        G_sigma2 = create_gaussian_kernel(self.sizeW1[:2], self.sigma2)
+        G_sigma3 = create_gaussian_kernel(self.sizeW1[:2], self.sigma3)
+        diffOfGaussian = G_sigma2 - G_sigma3
         # W_{S}^{P} in formulate (8) of DSTMD
-        self.spatialPositiveKernel = np.maximum(temp, 0) 
+        self.spatialPositiveKernel = np.maximum(diffOfGaussian, 0) 
         # W_{S}^{N} in formulate (9) of DSTMD
-        self.spatialNegativeKernel = np.maximum(-temp, 0) 
+        self.spatialNegativeKernel = np.maximum(-diffOfGaussian, 0) 
 
         t = np.arange(self.sizeW1[2])
         # W_{T}^{P} in formulate (10) of DSTMD
@@ -395,7 +395,8 @@ class LaminaLateralInhibition(BaseCore):
         # W_{T}^{N} in formulate (11) of DSTMD
         self.temporalNegativeKernel = np.exp(-t / self.lambda2) / self.lambda2
 
-        self.cellSpatialPositive = self.cellSpatialNagetive = CircularList(self.sizeW1[2])
+        self.cellSpatialPositive = CircularList(self.sizeW1[2])
+        self.cellSpatialNagetive = CircularList(self.sizeW1[2])
 
     def process(self, iptMatrix):
         """
@@ -423,15 +424,7 @@ class LaminaLateralInhibition(BaseCore):
 
         return optMatrix
 
-    def _gaussian(self, shape, sigma):
-        """
-        Generate a 2D Gaussian kernel
-        """
-        m, n = [(ss - 1.) / 2. for ss in shape[:2]] 
-        y, x = np.ogrid[-m:m+1, -n:n+1]
-        h = np.exp(-(x * x + y * y) / (2. * sigma * sigma))
-        h[h < np.finfo(h.dtype).eps * h.max()] = 0
-        return h
+    
 
 
 

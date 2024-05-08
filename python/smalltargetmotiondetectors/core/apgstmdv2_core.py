@@ -1,6 +1,9 @@
+import numpy as np
+import cv2
+
 from .base_core import BaseCore
 from ..util.create_kernel import create_prediction_kernel
-import numpy as np
+
 
 class PredictionModule(BaseCore):
     """PredictionModule class for ApgSTMD."""
@@ -45,11 +48,11 @@ class PredictionModule(BaseCore):
         predictionGain = []
         for idxD in range(numDict):
             predictionGain.append(
-                np.convolve(
-                    lobulaOpt[idxD].flatten(),
-                    self.predictionKernel[idxD].flatten(),
-                    mode='same'
-                ).reshape(imgH, imgW)
+                cv2.filter2D(
+                    lobulaOpt[idxD],
+                    -1,
+                    self.predictionKernel[idxD],
+                )
             )
 
         # Prediction Map
@@ -66,6 +69,7 @@ class PredictionModule(BaseCore):
 
         # Memorizer update
         maxPreMap = np.max(predictionMap)
+            # Logical Matrix
         predictionMap = (predictionMap > maxPreMap * 2e-1)
 
         # Output

@@ -85,11 +85,11 @@ classdef LaminaLateralInhibition < smalltargetmotiondetectors.core.BaseCore
                     create_gaussian_kernel(self.sizeW1(1:2), self.sigma3);
             end
             
-            DiffOfGaussion = gaussionSigma2 - gaussionSigma3;
+            diffOfGaussian = gaussionSigma2 - gaussionSigma3;
             % W_{S}^{P} in formulate (8) of DSTMD
-            self.spatialPositiveKernel = max(DiffOfGaussion, 0);
+            self.spatialPositiveKernel = max(diffOfGaussian, 0);
             % W_{S}^{N} in formulate (9) of DSTMD
-            self.spatialNegativeKernel = max(-DiffOfGaussion, 0);
+            self.spatialNegativeKernel = max(-diffOfGaussian, 0);
             
             t = (1:self.sizeW1(3)) - 1;
             % W_{T}^{P} in formulate (10) of DSTMD

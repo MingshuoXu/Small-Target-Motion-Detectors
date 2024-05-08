@@ -89,7 +89,7 @@ class GammaDelay(BaseCore):
         self.listInput = None
 
     def init_config(self, isRecord=True):
-        self.is_record = isRecord
+        self.isRecord = isRecord
 
         if self.order < 1:
             self.order = 1
@@ -102,7 +102,7 @@ class GammaDelay(BaseCore):
                                                    self.tau,
                                                    self.lenKernel)
 
-        if self.is_record:
+        if self.isRecord:
             self.listInput = CircularList(self.lenKernel)
 
     def process(self, inputData):

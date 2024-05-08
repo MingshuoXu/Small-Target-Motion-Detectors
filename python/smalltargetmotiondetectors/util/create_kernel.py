@@ -1,6 +1,30 @@
 import numpy as np
 from scipy.special import gamma
 
+def create_gaussian_kernel(size, sigma):
+    # Ensure size is a tuple containing two integers
+    if len(size) != 2:
+        raise ValueError("size must be a tuple containing two integers")
+
+    # Calculate the radius of the Gaussian filter
+    radius_x = (size[0] - 1) / 2
+    radius_y = (size[1] - 1) / 2
+
+    # Create meshgrid for x and y coordinates
+    x, y = np.meshgrid(np.arange(-radius_x, radius_x+1), np.arange(-radius_y, radius_y+1))
+
+    # Compute the Gaussian filter
+    gaussianFilter = np.exp(-(x**2 + y**2) / (2 * sigma**2))
+    
+    # Normalize the Gaussian filter
+    gaussianFilter = gaussianFilter / np.sum(gaussianFilter)
+    
+    # Set values below a threshold to zero
+    gaussianFilter[gaussianFilter < 1e-4] = 0
+    
+    return gaussianFilter
+
+
 def create_gamma_kernel(order=100, 
                         tau=25, 
                         wide=None):
@@ -77,6 +101,49 @@ def create_inhi_kernel_W2(kernelSize=15,
     return inhibitionKernelW2
 
 
+def create_direction_inhi_kernel(KernelSize=8, Sigma1=1.5, Sigma2=3.0):
+    """
+    Function Description:
+    This function generates lateral inhibition kernels along the Theta direction.
+    We adopt a one-dimensional DoG as the lateral inhibition kernel function here.
+    """
+
+    # Sampling for DoG
+    Zero_Point_DoG_X1 = -np.sqrt((np.log(Sigma2/Sigma1)*2*Sigma1**2*Sigma2**2)/(Sigma2**2-Sigma1**2))
+    Zero_Point_DoG_X2 = -Zero_Point_DoG_X1
+    Min_Point_DoG_X1 = -np.sqrt((3*np.log(Sigma2/Sigma1)*2*Sigma1**2*Sigma2**2)/(Sigma2**2-Sigma1**2))
+    Min_Point_DoG_X2 = -Min_Point_DoG_X1
+
+    if KernelSize % 2 == 0:
+        KernelSize += 1
+
+    Half_Kernel_Size = (KernelSize-1)//2
+    Quarter_Kernel_Size = (KernelSize-1)//4
+
+    Center_Range_DoG = Zero_Point_DoG_X2 - Zero_Point_DoG_X1
+    Center_Step = Center_Range_DoG / Half_Kernel_Size
+
+    Surround_Range_DoG = Min_Point_DoG_X2 - Zero_Point_DoG_X2
+    Surround_Step = 2 * Surround_Range_DoG / Quarter_Kernel_Size
+
+    X_Smaller = Zero_Point_DoG_X1 - np.arange(Quarter_Kernel_Size, 0, -1) * Surround_Step
+    X_Larger = Zero_Point_DoG_X2 + np.arange(1, Quarter_Kernel_Size+1, 1) * Surround_Step
+    X_Center = Zero_Point_DoG_X1 + np.arange(0, Half_Kernel_Size + 1) * Center_Step
+    X = np.concatenate((X_Smaller, X_Center, X_Larger))
+
+    Gauss1 = (1 / (np.sqrt(2 * np.pi) * Sigma1)) * np.exp(-(X**2) / (2 * Sigma1**2))
+    Gauss2 = (1 / (np.sqrt(2 * np.pi) * Sigma2)) * np.exp(-(X**2) / (2 * Sigma2**2))
+
+    Inhibition_Kernel = Gauss1 - Gauss2
+
+    Inhibition_Kernel[np.abs(Inhibition_Kernel) < 1e-4] = 0
+
+    directionalInhiKernel = np.reshape(Inhibition_Kernel, (1, 1, KernelSize))
+
+    return directionalInhiKernel
+
+
+
 def create_T1_kernels(filterNum=4, 
                       alpha=3.0, 
                       eta=1.5, 
@@ -114,51 +181,6 @@ def create_T1_kernels(filterNum=4,
         dictKernel.append(gauss1 - gauss2)
 
     return dictKernel
-
-
-def create_direction_inhi_kernel(KernelSize=8, Sigma1=1.5, Sigma2=3.0):
-
-    # Sampling for DoG
-    # Calculate two points where DoG equals zero
-    Zero_Point_DoG_X1 = -np.sqrt(
-        (np.log(Sigma2/Sigma1)*2*Sigma1**2*Sigma2**2) \
-            /(Sigma2**2-Sigma1**2)
-        )
-    Zero_Point_DoG_X2 = -Zero_Point_DoG_X1
-    # Calculate two points where DoG reaches its minimum value
-    Min_Point_DoG_X1 = -np.sqrt(
-        (3*np.log(Sigma2/Sigma1)*2*Sigma1**2*Sigma2**2) \
-            /(Sigma2**2-Sigma1**2)
-        )
-    Min_Point_DoG_X2 = -Min_Point_DoG_X1
-
-    # Set the size of the convolution kernel to be odd
-    if KernelSize % 2 == 0:
-        KernelSize += 1
-
-    Half_Kernel_Size = (KernelSize-1)//2
-    Quarter_Kernel_Size = (KernelSize-1)//4
-    # Sampling interval in the central area (>0 part)
-    Center_Range_DoG = Zero_Point_DoG_X2-Zero_Point_DoG_X1
-    Center_Step = Center_Range_DoG/Half_Kernel_Size
-    # Sampling interval in the surrounding area (<0 part)
-    Surround_Range_DoG = Min_Point_DoG_X2-Zero_Point_DoG_X2
-    Surround_Step = 2*Surround_Range_DoG/Quarter_Kernel_Size
-    # Integration of sampling ranges
-    X_Smaller = Zero_Point_DoG_X1-(np.arange(1, Quarter_Kernel_Size + 1))*Surround_Step
-    X_Larger = Zero_Point_DoG_X2+(np.arange(1, Quarter_Kernel_Size + 1))*Surround_Step
-    X_Center = Zero_Point_DoG_X1+(np.arange(Half_Kernel_Size + 1))*Center_Step
-    X = np.concatenate((X_Smaller, X_Center, X_Larger))
-    # Sampling
-    Gauss1 = (1/(np.sqrt(2*np.pi)*Sigma1))*np.exp(-(X**2)/(2*Sigma1**2))
-    Gauss2 = (1/(np.sqrt(2*np.pi)*Sigma2))*np.exp(-(X**2)/(2*Sigma2**2))
-
-    Inhibition_Kernel = Gauss1 - Gauss2
-
-    Inhibition_Kernel[np.abs(Inhibition_Kernel) < 1e-4] = 0
-    directionalInhiKernel = Inhibition_Kernel.reshape((1, 1, KernelSize))
-
-    return directionalInhiKernel
 
 
 def create_fracdiff_kernel(alpha=0.8, wide=3):

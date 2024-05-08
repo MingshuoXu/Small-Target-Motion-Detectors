@@ -86,11 +86,7 @@ class ESTMD(BaseModel):
         self.medullaOpt = self.hMedulla.Opt
         self.lobulaOpt = self.hLobula.process(self.medullaOpt)
         # direction not set in the  ESTMD model
-        self.modelOpt = {
-            'response': self.lobulaOpt,
-            'direction': None
-            } 
-
+        self.modelOpt['response'] = self.lobulaOpt
 
 class ESTMDBackbone(BaseModel):
     """
@@ -245,8 +241,8 @@ class DSTMDBackbone(BaseModel):
         self.lobulaOpt = self.hLobula.process(self.medullaOpt)
 
         # Compute response and direction
-        self.modelOpt.response = compute_response(self.lobulaOpt)
-        self.modelOpt.direction = compute_direction(self.lobulaOpt)
+        self.modelOpt['response'] = compute_response(self.lobulaOpt)
+        self.modelOpt['direction'] = compute_direction(self.lobulaOpt)
 
 
 class Backbonev2(BaseModel):

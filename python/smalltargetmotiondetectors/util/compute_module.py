@@ -101,9 +101,9 @@ def compute_direction(ipt):
     outputSin = np.zeros((m, n))
 
     # Compute the weighted sum of cosine and sine components for each direction
-    for idx in range(numDirection):
-        outputCos += ipt[idx] * math.cos(idx * 2 * math.pi / numDirection)
-        outputSin += ipt[idx] * math.sin(idx * 2 * math.pi / numDirection)
+    for idx, iptDire in enumerate(ipt):
+        outputCos += iptDire * math.cos(idx * 2 * math.pi / numDirection)
+        outputSin += iptDire * math.sin(idx * 2 * math.pi / numDirection)
 
     # Compute the direction based on the arctan2 function
     directionOpt = np.arctan2(outputSin, outputCos)

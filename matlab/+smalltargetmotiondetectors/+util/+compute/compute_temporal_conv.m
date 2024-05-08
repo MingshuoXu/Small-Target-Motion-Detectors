@@ -37,9 +37,9 @@ function optMatrix = compute_temporal_conv(iptCell, kernel, headPointer)
     
     % Perform temporal convolution
     for t = 1:len
-        j = mod(headPointer - t, k1);
-        if abs(kernel(t)) > 1e-16 && ~isempty(iptCell{j + 1})
-            optMatrix = optMatrix + iptCell{j + 1} * kernel(t);
+        j = mod(headPointer - t, k1) + 1;
+        if abs(kernel(t)) > 1e-16 && ~isempty(iptCell{j})
+            optMatrix = optMatrix + iptCell{j} * kernel(t);
         end
     end
 end

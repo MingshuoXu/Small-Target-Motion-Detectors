@@ -6,26 +6,27 @@ import sys
 filePath = os.path.realpath(__file__)
 # Find the index of '/+smalltargetmotiondetectors/'
 # in the file path
-indexPath = filePath.rfind(os.path.sep + '+smalltargetmotiondetectors' + os.path.sep)
+indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.sep)
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath])
 
 # Import necessary modules
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
+from smalltargetmotiondetectors.model import *
 
 # Instantiate the model
-model = instancing_model()
+model = instancing_model('Backbonev2')
 
 # Create a video stream reader
 # Specify the path to the video file or uncomment one of the provided options
-hSteam = VidstreamReader()
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
 
 # Alternatively, uncomment the following options for different inputs:
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'), 10)
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'), 10,100)
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0.mp4'))
 
-# Demo video (RIST)
-# hSteam = VidstreamReader( ...
-#     filePath[:indexPath-7] + 'demodata' + os.path.sep + 'RIST_GX010290.mp4')
 
 # Get visualization handle and initiate model
 

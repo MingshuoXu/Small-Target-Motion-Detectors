@@ -121,8 +121,8 @@ class ApgSTMD(STMDPlus):
             self.hPredictionPathway.process(self.mushroomBodyOpt)
 
         # Compute response and direction
-        self.modelOpt.response = compute_response(self.predictionOpt)
-        self.modelOpt.direction = compute_direction(self.predictionOpt)
+        self.modelOpt['response'] = compute_response(self.predictionOpt)
+        self.modelOpt['direction'] = compute_direction(self.predictionOpt)
 
 
 

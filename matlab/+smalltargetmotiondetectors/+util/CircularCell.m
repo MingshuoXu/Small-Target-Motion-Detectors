@@ -32,10 +32,10 @@ classdef CircularCell < handle
         end
             
         function move_point(self)
-            if self.point == 1
-                self.point = self.len;
+            if self.point == self.len
+                self.point = 1;
             else
-                self.point = self.point - 1;
+                self.point = self.point + 1;
             end
         end
 

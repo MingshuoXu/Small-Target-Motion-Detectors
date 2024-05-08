@@ -1,4 +1,6 @@
 import numpy as np
+import cv2
+
 from .base_core import BaseCore
 from ..util.create_kernel import create_attention_kernel, create_prediction_kernel
 from ..util.compute_module import compute_temporal_conv
@@ -54,18 +56,18 @@ class AttentionModule(BaseCore):
             for i in range(r):
                 for j in range(s):
                     if j == 0:
-                        attention_response_with_j = np.convolve(
+                        attention_response_with_j = cv2.filter2D(
                             map_retina_opt,
-                            self.attention_kernel[i, 0],
-                            mode='same'
+                            -1,
+                            self.attention_kernel[i][0],
                         )
                     else:
                         attention_response_with_j = np.minimum(
                             attention_response_with_j,
-                            np.convolve(
+                            cv2.filter2D(
                                 map_retina_opt,
-                                self.attention_kernel[i, j],
-                                mode='same'
+                                -1,
+                                self.attention_kernel[i][j],
                             )
                         )
                 
@@ -80,6 +82,7 @@ class AttentionModule(BaseCore):
             attention_opt = retina_opt + self.alpha * attention_response
         
         self.Opt = attention_opt
+        return attention_opt
 
 
 class PredictionModule(BaseCore):
@@ -150,16 +153,16 @@ class PredictionModule(BaseCore):
         prediction_gain = []
         for idxD in range(num_dict):
             if self.cell_prediction_gain[0][idxD] is None:
-                prediction_gain.append(np.convolve(
+                prediction_gain.append(cv2.filter2D(
                     self.mu * lobula_opt[idxD],
+                    -1,
                     self.prediction_kernel[idxD],
-                    mode='same'
                 ))
             else:
-                prediction_gain.append(np.convolve(
+                prediction_gain.append(cv2.filter2D(
                     self.mu * lobula_opt[idxD] + (1 - self.mu) * self.cell_prediction_gain[0][idxD],
+                    -1,
                     self.prediction_kernel[idxD],
-                    mode='same'
                 ))
         self.cell_prediction_gain[-1] = prediction_gain
         

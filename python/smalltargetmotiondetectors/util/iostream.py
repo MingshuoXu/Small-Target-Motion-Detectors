@@ -50,7 +50,7 @@ class ImgstreamReader:
         self.hasDeleteWaitbar = False   # Flag indicating whether waitbar has been deleted
         self.imgsteamFormat = imgsteamFormat
         self.startFrame = startFrame
-        self.endFrame = startFrame       # Index of the last frame
+        self.endFrame = endFrame       # Index of the last frame
         # Create waitbar handle
         # self.create_waitbar_handle()
 
@@ -63,6 +63,7 @@ class ImgstreamReader:
             self.get_filelist_from_imgsteamformat()
         else:
             raise Exception('')
+        
         
         self.get_idx()
 
@@ -91,6 +92,8 @@ class ImgstreamReader:
         # Check if fileList is empty
         if len(self.fileList) == 0:
             self.hasFrame = False
+        else:
+            self.hasFrame = True
 
         # Set frameIdx to startIdx
         self.frameIdx = startIdx
@@ -136,7 +139,7 @@ class ImgstreamReader:
         '''
 
         # Retrieve the list of files matching the image stream format
-        self.fileList = os.listdir(self.imgsteamFormat)
+        self.fileList = glob.glob(self.imgsteamFormat)
         
         # Extract the basename and extension from the specified format
         basename, ext1 = os.path.splitext(self.imgsteamFormat)
@@ -147,10 +150,10 @@ class ImgstreamReader:
             raise Exception('No files matching the format could be found.')
         else:
             # Determine the end frame index
-            if not endFrame:
-                endFrame = len(self.fileList)
+            if not self.endFrame:
+                self.endFrame = len(self.fileList)
             else:
-                endFrame = min(endFrame, len(self.fileList))
+                self.endFrame = min(self.endFrame, len(self.fileList))
             
             # Extract the names of the first and last files in the list
             name1 = os.path.splitext(self.fileList[0])[0]
@@ -163,12 +166,12 @@ class ImgstreamReader:
                 numDigits1 = len(num1)
                 
                 # Generate the start and end frame names with zero-padding
-                self.startImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % self.startFrame
-                self.endImgName = basename + '%0' + str(numDigits1) + 'd' + ext1 % self.endFrame
+                self.startImgName = "{}{:0{}}{}".format(basename, self.startFrame, numDigits1, ext1)
+                self.endImgName = "{}{:0{}}{}".format(basename, self.endFrame, numDigits1, ext1) 
             else:
                 # Generate the start and end frame names without zero-padding
-                self.startImgName = basename + '%d' + ext1 % self.startFrame
-                self.endImgName = basename + '%d' + ext1 % self.endFrame
+                self.startImgName = "{}{}{}".format(basename, self.startFrame, numDigits1, ext1) 
+                self.endImgName = "{}{}{}".format(basename, self.endFrame, numDigits1, ext1) 
     
     def get_next_frame(self):
         '''
@@ -479,45 +482,46 @@ class Visualization:
                 idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
                 ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
 
-                if len(motionDirection):
-                    nanStatus = ~np.isnan(motionDirection[idX, idY])
-                    quiverX = idX[nanStatus]
-                    quiverY = idY[nanStatus]
-                    cosD = np.cos(motionDirection[quiverX, quiverY])
-                    sinD = np.sin(motionDirection[quiverX, quiverY])
-                    lenArrow = 8
+                if motionDirection is not None:
+                    if len(motionDirection):
+                        nanStatus = ~np.isnan(motionDirection[idX, idY])
+                        quiverX = idX[nanStatus]
+                        quiverY = idY[nanStatus]
+                        cosD = np.cos(motionDirection[quiverX, quiverY])
+                        sinD = np.sin(motionDirection[quiverX, quiverY])
+                        lenArrow = 8
 
-                    '''
-                    In the figure of imshow, the positive direction of
-                      the x axis is downward, that is 'axis IJ'.
-                    
-                    %---------------------------------------%
-                    %   --------> x         y               %
-                    %   |                   ^               %
-                    %   |                   |               %
-                    %   V                   |               %
-                    %   y                   --------> x     %
-                    %                                       %
-                    %   IJ # angles='xy'    image           %
-                    %---------------------------------------%
-                    ax.quiver(quiverY, quiverX, 
-                            lenArrow * cosD, -lenArrow * sinD, 
-                            angles='xy', 
-                            scale_units='xy', 
-                            scale=0.5, 
-                            color='red',
-                            width=0.003)
-                    the above code is same with Matlab, which also works inpython, 
-                        but in Python, we can use the below code:
-                    '''
+                        '''
+                        In the figure of imshow, the positive direction of
+                        the x axis is downward, that is 'axis IJ'.
+                        
+                        %---------------------------------------%
+                        %   --------> x         y               %
+                        %   |                   ^               %
+                        %   |                   |               %
+                        %   V                   |               %
+                        %   y                   --------> x     %
+                        %                                       %
+                        %   IJ # angles='xy'    image           %
+                        %---------------------------------------%
+                        ax.quiver(quiverY, quiverX, 
+                                lenArrow * cosD, -lenArrow * sinD, 
+                                angles='xy', 
+                                scale_units='xy', 
+                                scale=0.5, 
+                                color='red',
+                                width=0.003)
+                        the above code is same with Matlab, which also works inpython, 
+                            but in Python, we can use the below code:
+                        '''
 
-                    # angles='uv', which has the same orientation with plane coordinates
-                    ax.quiver(quiverY, quiverX,
-                            lenArrow * cosD, lenArrow * sinD, 
-                            scale_units='xy', 
-                            scale=0.5, 
-                            color='red',
-                            width=0.003)
+                        # angles='uv', which has the same orientation with plane coordinates
+                        ax.quiver(quiverY, quiverX,
+                                lenArrow * cosD, lenArrow * sinD, 
+                                scale_units='xy', 
+                                scale=0.5, 
+                                color='red',
+                                width=0.003)
 
         plt.draw()
         plt.pause(0.001)
@@ -584,7 +588,7 @@ class ModelSelectorGUI:
         self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
 
         self.modelCombobox = ttk.Combobox(self.root, values=modelList)
-        self.modelCombobox.current(0)
+        self.modelCombobox.current(5)
         self.modelCombobox.grid(row=0, column=1, padx=10, pady=10)
         
 
@@ -610,7 +614,7 @@ class InputSelectorGUI:
         self.inputTypeLabel = ttk.Label(self.root, text="Select input type:")
         self.inputTypeLabel.grid(row=1, column=0, padx=10, pady=10)
 
-        self.selectedOption = tk.BooleanVar(value=True)
+        self.selectedOption = tk.BooleanVar(value=None)
 
         self.imgLabel = ttk.Radiobutton(self.root, 
                                         text='Image stream', 
@@ -633,7 +637,7 @@ class InputSelectorGUI:
         self.vidElement['btn'].grid(row=3, column=0, padx=10, pady=10)
 
     def _clicked_vid(self):
-        self.vidName = filedialog.askopenfilenames(initialdir=self.vidDefaultFolder)
+        self.vidName = filedialog.askopenfilenames(initialdir=VID_DEFAULT_FOLDER)
         self.vidName = self.vidName[0]
         self.vidElement['lbl'] = ttk.Label(self.root, text=self.vidName, wraplength=150)
         self.vidElement['lbl'].grid(row=3, column=1, padx=50, pady=10)
@@ -734,9 +738,9 @@ class ModelAndInputSelectorGUI:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
         elif self.objInputSelector.vidName is not None:
             self.vidName = self.objInputSelector.vidName
-            messagebox.showinfo("Message title", "Please select a input video!")
             self.root.destroy()
-        
+        else:
+            messagebox.showinfo("Message title", "Please select a input video!")
         
 
 def create_waitbar_handle(self):
