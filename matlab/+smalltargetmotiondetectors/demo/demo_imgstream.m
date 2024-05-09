@@ -18,7 +18,7 @@ import smalltargetmotiondetectors.util.iostream.*;
 %% Model
 
 % Instantiate the model
-model = instancing_model(); 
+objModel = instancing_model(); 
 
 %{
 Please refer to +model/Readme or Readme for smalltargetmotiondetectors.
@@ -47,10 +47,10 @@ hSteam = ImgstreamReader();
 
 %% Get visualization handle and initiate model
 % Get visualization handle
-hVisual = get_visualize_handle(class(model));
+hVisual = get_visualize_handle(class(objModel));
 
 % Initialize the model
-model.init_config();
+objModel.init_config();
 
 %% Run
 while hSteam.hasFrame && hVisual.hasFigHandle
@@ -58,7 +58,7 @@ while hSteam.hasFrame && hVisual.hasFigHandle
     [grayImg, colorImg] = hSteam.get_next_frame();
     
     % Perform inference using the model
-    result = inference(model, grayImg);
+    result = inference(objModel, grayImg);
     
     % Display the result
     hVisual.show_result(colorImg, result);

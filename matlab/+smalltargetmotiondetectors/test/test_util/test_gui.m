@@ -14,11 +14,6 @@ addpath(filePath(1:indexPath));
 import smalltargetmotiondetectors.util.iostream.*;
 
 %%
-
-
 selector_gui = ModelAndInputSelectorGUI();
-selector_gui.create_gui();
+[modelName, inputName] = selector_gui.create_gui();
 
-% 
-movegui(root, 'center');
-set(root, 'Visible', 'on');

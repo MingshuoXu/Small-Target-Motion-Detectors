@@ -1,4 +1,4 @@
-classdef ModelAndInputSelectorGUI
+classdef ModelAndInputSelectorGUI < handle
     properties
         root
         objModelSelector
@@ -8,11 +8,14 @@ classdef ModelAndInputSelectorGUI
         vidName
         startImgName
         endImgName
+        modelList
+        Tag
     end
     
     methods
         function self = ModelAndInputSelectorGUI()
             import smalltargetmotiondetectors.util.iostream.*;
+            import smalltargetmotiondetectors.model.*;
             
             self.root = figure(...
                 'Name', 'Small target motion detector - Run', ...
@@ -37,45 +40,43 @@ classdef ModelAndInputSelectorGUI
             
             self.objModelSelector = ModelSelectorGUI(self.root);
             self.objInputSelector = InputSelectorGUI(self.root);
+            self.modelList = BaseModel.get_model_list();
             
             self.btnRun = uicontrol(self.root, ...
                 'Style', 'pushbutton', ...
                 'String', 'Run', ...
-                'Position', [20 30 60 30]);
+                'Position', [20 30 60 30], ...
+                'Callback', @self.callback_run);
         end
         
         function varargout = create_gui(self)
-            self.objModelSelector.create_gui({'1', '2', '3'});
+            self.objModelSelector.create_gui();
             self.objInputSelector.create_gui();
             
             uiwait(self.root);
             
-            if self.objInputSelector.selectedOption == 1
-                varargout = {self.modelName, self.vidName};
-            elseif self.objInputSelector.selectedOption == 2
-                varargout = {self.modelName, self.startImgName, self.endImgName};
+            if strcmp(self.Tag, 'vidinput')
+                varargout = {self.modelName, {self.vidName}};
+            elseif strcmp(self.Tag, 'imginput')
+                varargout = {self.modelName, {self.startImgName, self.endImgName}};
             end
         end
         
-        function custom_run(self, ~, ~)
-            self.modelName = self.objModelSelector.modelCombobox.String{...
-                self.objModelSelector.modelCombobox.Value};
-            ALL_MODEL = {'Model1', 'Model2', 'Model3'};  % Define ALL_MODEL here
+        function callback_run(self, ~, ~)
+            modelOrder = get(self.objModelSelector.modelCombobox, 'Value');
+            self.modelName = self.modelList{modelOrder};
             
-            if ~any(strcmp(self.modelName, ALL_MODEL))
-                msgbox("Please select a STMD-based model!", 'Message title', 'modal');
-                return;
-            end
-            
-            switch self.objInputSelector.selectedOption
-                case 1
+            selectedTag = get(self.objInputSelector.group, 'SelectedObject');
+            self.Tag = selectedTag.Tag;
+            switch self.Tag
+                case 'vidinput'
                     if ~isempty(self.objInputSelector.vidName)
                         self.vidName = self.objInputSelector.vidName;
                         delete(self.root);
                     else
                         msgbox("Please select a video", 'Message title', 'modal');
                     end
-                case 2
+                case 'imginput'
                     if isempty(self.objInputSelector.startImgName)
                         msgbox("Please select start frame!", 'Message title', 'modal');
                         return;

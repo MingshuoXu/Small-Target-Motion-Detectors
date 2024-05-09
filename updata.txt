@@ -1,14 +1,25 @@
 
 ------------------------------------------
-updata -version 2.0.3 (in 30 April, 2024)
+updata -version 2.0.4 (May 09, 2024)
+
+1(Python). Upload all python code.
+2(Python). a better GUI for start <strat_by_python.py>
+3(Matlab). Extend the GUI <strat_by_matlab.m> and fix some mis-typing variable name 
+4(Python). Perfecting <reqiurement.txt> and <setup.py> in Python
+
+
+------------------------------------------
+updata -version 2.0.3 (April 30, 2024)
+
 1(Matlab). Rename function `init` to `init_config` to maintain consistency 
     with python.
 2(Matlab). Rename the module tool to util, which stands for utility.
-3(Python). Upload python code.
+3(Python). Upload part of python code.
 4(naming_conventions) Update the convention of type naming.
 
+
 ------------------------------------------
-updata -version 2.0.2 (in 12 March, 2024)
+updata -version 2.0.2 (March 12, 2024)
 
 1(Matlab). Corrected the implementation of the FeedbackSTMD model.
 (更正了FeedbackSTMD模型的实现。)
@@ -20,12 +31,8 @@ updata -version 2.0.2 (in 12 March, 2024)
 (增加了gitignore文件。)
 
 
-Next Version Preview:
-1(Matlab). Introducing the Spatio-Temporal Feedback model.
-(增加Spatio-Temporal Feedback模型。)
-
 ------------------------------------------
-updata -version 2.0.1 (in 08 March, 2024)
+updata -version 2.0.1 (March 08, 2024)
 
 1(Matlab). GitHub renaming the download package from "Small-Target-Motion-Detectors" 
     to "Small-Target-Motion-Detectors-main" caused issues with addpath. In this update, 
@@ -40,9 +47,9 @@ updata -version 2.0.1 (in 08 March, 2024)
     the size of the demodata has been reduced from 70MB to 12MB.
 (通过将演示数据集的格式从TIFF改为JPG，将demodata的大小从70MB减小到了10MB。)
 
-------------------------------------------
 
-first commit -version 2.00 (in 07 March, 2024)
+------------------------------------------
+first commit -version 2.00 (March 07, 2024)
 
 This project is a comprehensive upgrate of the previous version (Version 1, 
     https://github.com/MingshuoXu/ClassSTMD), mainly changing the implementation 

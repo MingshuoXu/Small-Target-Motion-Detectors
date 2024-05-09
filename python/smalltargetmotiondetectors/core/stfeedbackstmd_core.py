@@ -9,6 +9,7 @@ from ..util.datarecord import CircularList
 from ..util.create_kernel import *
 from ..util.compute_module import slice_matrix_holding_size
 
+
 class Medulla(estmd_backbone.Medulla):
     # Medulla layer of the motion detection system
 

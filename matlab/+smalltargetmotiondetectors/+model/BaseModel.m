@@ -6,7 +6,18 @@ classdef BaseModel < handle
     %   Author: Mingshuo Xu
     %   Date: 2024-01-20
     %   LastEditTime: 2024-03-06
+    methods(Static)
+        function ALL_MODEL = get_model_list()
+            ALL_MODEL = {...
+                'ESTMD', 'ESTMDBackbone', 'FracSTMD', ...
+                'DSTMD', 'DSTMDBackbone', 'Backbonev2', ...
+                'FeedbackSTMD', 'FSTMD', 'STFeedbackSTMD', ...
+                'STMDPlus', 'ApgSTMD', ...
+                'FeedbackSTMDv2', 'FSTMDv2', 'STMDPlusv2', 'ApgSTMDv2'};
+        end
     
+    end
+
     properties
         hRetina; % Handle for the retina layer
         hLamina; % Handle for the lamina layer

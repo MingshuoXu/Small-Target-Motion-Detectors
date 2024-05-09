@@ -1,13 +1,12 @@
 import os
 import sys
 import time
-import math
 
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import tkinter as tk
-from tkinter import ttk, filedialog, simpledialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 import glob
 
 from .matrixnms import MatrixNMS
@@ -602,13 +601,15 @@ class InputSelectorGUI:
 
         self.imgSelectFolder = None
 
-        self.input_type = None
-        self.start_frame = None
-        self.end_frame = None
+        self.inputType = None
+        self.startFrame = None
+        self.endFrame = None
         self.video_file = None
         self.check = False
         self.vidName = None
+        self.startFolder = None
         self.startImgName = None
+        self.endFolder = None
         self.endImgName = None
 
     def create_gui(self):
@@ -673,9 +674,9 @@ class InputSelectorGUI:
     def _clicked_start_img(self):
         startImgFullPath = filedialog.askopenfilenames(
             initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
-        startFolder, self.startImgName = os.path.split(startImgFullPath[0])
-        if self.imgSelectFolder is not None:
-            if os.path.basename(startFolder) == os.path.basename(self.imgSelectFolder):
+        self.startFolder, self.startImgName = os.path.split(startImgFullPath[0])
+        if self.endFolder is not None:
+            if os.path.basename(self.startFolder) == os.path.basename(self.endFolder):
                 if self.endImgName is not None:
                     if check_same_ext_name(self.startImgName, self.endImgName):
                         self.check = True
@@ -684,7 +685,7 @@ class InputSelectorGUI:
             else:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
 
-        self.imgSelectFolder = startFolder
+        self.imgSelectFolder = self.startFolder
         self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
         self.imgElement['lblStartImg'] = ttk.Label(self.root, text=self.startImgName)
@@ -693,10 +694,10 @@ class InputSelectorGUI:
     def _clicked_end_img(self):
         endImgFullPath = filedialog.askopenfilenames(
             initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
-        endFolder , self.endImgName = os.path.split(endImgFullPath[0])
+        self.endFolder , self.endImgName = os.path.split(endImgFullPath[0])
 
-        if self.imgSelectFolder is not None:
-            if os.path.basename(endFolder) == os.path.basename(self.imgSelectFolder):
+        if self.startFolder is not None:
+            if os.path.basename(self.endFolder) == os.path.basename(self.startFolder):
                 if self.startImgName is not None:
                     if check_same_ext_name(self.startImgName, self.endImgName):
                         self.check = True
@@ -706,7 +707,7 @@ class InputSelectorGUI:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
 
                 
-        self.imgSelectFolder = endFolder
+        self.imgSelectFolder = self.endFolder
         self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
         self.imgElement['lblEndImg'] = ttk.Label(self.root, text=self.endImgName)

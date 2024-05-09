@@ -2,6 +2,7 @@ import numpy as np
 
 from .base_core import BaseCore
 
+
 class MushroomBody(BaseCore):
     # MushroomBody class for STMDPlus
 
