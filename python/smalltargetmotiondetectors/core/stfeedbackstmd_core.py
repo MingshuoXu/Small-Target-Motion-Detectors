@@ -1,4 +1,4 @@
-import cv2
+from cv2 import filter2D
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
@@ -159,7 +159,7 @@ class Stmdcell(BaseCore):
         else:
             correlationD = np.maximum(tm3Signal, 0) * np.maximum(tm1Signal, 0)
 
-        correlationE = cv2.filter2D(tm3Signal * tm1Signal, -1, self.gaussKernel)
+        correlationE = filter2D(tm3Signal * tm1Signal, -1, self.gaussKernel)
 
         lateralInhiSTMDOpt = self.hSubInhi.process(correlationD)
 

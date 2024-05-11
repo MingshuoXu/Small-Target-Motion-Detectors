@@ -88,6 +88,7 @@ class ESTMD(BaseModel):
         # direction not set in the  ESTMD model
         self.modelOpt['response'] = self.lobulaOpt
 
+
 class ESTMDBackbone(BaseModel):
     """
     ESTMDBackbone - Backbone model based on ESTMD

@@ -1,6 +1,6 @@
 from scipy.ndimage import gaussian_filter
 import numpy as np
-import cv2
+from cv2 import filter2D
 
 from .base_core import BaseCore
 from .math_operator import SurroundInhibition, GammaDelay
@@ -43,7 +43,7 @@ class Lobula(BaseCore):
             * np.maximum((offSignal - feedbackSignal), 0)
 
         # Formula (10)
-        correlationE = cv2.filter2D(onSignal * offSignal, -1, self.gaussKernel)
+        correlationE = filter2D(onSignal * offSignal, -1, self.gaussKernel)
 
         # Only record correlationD + correlationE
         self.hGammaDelay.listInput.cover(correlationD + correlationE)

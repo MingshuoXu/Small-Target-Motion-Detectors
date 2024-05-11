@@ -1,6 +1,5 @@
 import os
 import sys
-import cv2
 import tkinter as tk
 
 # Get the full path of this file
@@ -10,8 +9,8 @@ indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath])
 
-from smalltargetmotiondetectors.util.iostream import *
-from smalltargetmotiondetectors.api import *
+from smalltargetmotiondetectors.util.iostream import ModelAndInputSelectorGUI, ImgstreamReader, VidstreamReader
+from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference
 from smalltargetmotiondetectors.model import *
 
 '''

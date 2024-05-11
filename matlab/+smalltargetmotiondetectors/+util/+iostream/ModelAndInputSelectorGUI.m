@@ -36,8 +36,7 @@ classdef ModelAndInputSelectorGUI < handle
                 startWidth, startHeight, ...
                 windowWidth, windowHeight];
             self.root.Name = "Small target motion detector - Runner";
-%             self.root.Icon = fullfile(filePath(1:indexPath-7), 'ico.ico');
-            
+                        
             self.objModelSelector = ModelSelectorGUI(self.root);
             self.objInputSelector = InputSelectorGUI(self.root);
             self.modelList = BaseModel.get_model_list();

@@ -1,11 +1,10 @@
 import numpy as np
-import cv2
+from cv2 import filter2D
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
 from ..util.create_kernel import create_gaussian_kernel
 from .math_operator import *
-
 
 
 class Retina(BaseCore):
@@ -405,10 +404,10 @@ class LaminaLateralInhibition(BaseCore):
         """
         # Lateral inhibition
         self.cellSpatialPositive.circrecord(
-            cv2.filter2D(iptMatrix, -1, self.spatialPositiveKernel)
+            filter2D(iptMatrix, -1, self.spatialPositiveKernel)
             )
         self.cellSpatialPositive.circrecord(
-            cv2.filter2D(iptMatrix, -1, self.spatialNegativeKernel)
+            filter2D(iptMatrix, -1, self.spatialNegativeKernel)
             )
 
         optMatrix \
@@ -425,7 +424,6 @@ class LaminaLateralInhibition(BaseCore):
         return optMatrix
 
     
-
 
 
 

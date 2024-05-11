@@ -726,7 +726,7 @@ class ModelAndInputSelectorGUI:
 
         self.root.geometry('{}x{}+{}+{}'.format(windowWidth, windowHeight, startWidth, startHeight))
         self.root.title("Small target motion detector - Runner")
-        self.root.iconbitmap( os.path.join(filePath[:indexPath-7], 'ico.ico'))
+        self.root.iconbitmap( os.path.join(filePath[:indexPath-7], 'stmd.ico'))
         
         self.objModelSelector = ModelSelectorGUI(root)
         self.objInputSelector = InputSelectorGUI(root)

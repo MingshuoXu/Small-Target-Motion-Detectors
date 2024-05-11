@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+from cv2 import filter2D
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_prediction_kernel
@@ -48,7 +48,7 @@ class PredictionModule(BaseCore):
         predictionGain = []
         for idxD in range(numDict):
             predictionGain.append(
-                cv2.filter2D(
+                filter2D(
                     lobulaOpt[idxD],
                     -1,
                     self.predictionKernel[idxD],

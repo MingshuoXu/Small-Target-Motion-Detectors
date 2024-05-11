@@ -1,6 +1,7 @@
+from cv2 import filter2D
 import numpy as np
 from scipy.ndimage import gaussian_filter
-import cv2
+
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
@@ -250,7 +251,7 @@ class SurroundInhibition(BaseCore):
         Returns:
         - inhiOpt: Output of the surround inhibition filter
         """
-        inhiOpt = cv2.filter2D(iptMatrix, -1, self.inhiKernelW2)
+        inhiOpt = filter2D(iptMatrix, -1, self.inhiKernelW2)
         inhiOpt = np.maximum(inhiOpt, 0)
         return inhiOpt
 

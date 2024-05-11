@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+from cv2 import filter2D
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_attention_kernel, create_prediction_kernel
@@ -56,7 +56,7 @@ class AttentionModule(BaseCore):
             for i in range(r):
                 for j in range(s):
                     if j == 0:
-                        attention_response_with_j = cv2.filter2D(
+                        attention_response_with_j = filter2D(
                             map_retina_opt,
                             -1,
                             self.attention_kernel[i][0],
@@ -64,7 +64,7 @@ class AttentionModule(BaseCore):
                     else:
                         attention_response_with_j = np.minimum(
                             attention_response_with_j,
-                            cv2.filter2D(
+                            filter2D(
                                 map_retina_opt,
                                 -1,
                                 self.attention_kernel[i][j],
@@ -153,13 +153,13 @@ class PredictionModule(BaseCore):
         prediction_gain = []
         for idxD in range(num_dict):
             if self.cell_prediction_gain[0][idxD] is None:
-                prediction_gain.append(cv2.filter2D(
+                prediction_gain.append(filter2D(
                     self.mu * lobula_opt[idxD],
                     -1,
                     self.prediction_kernel[idxD],
                 ))
             else:
-                prediction_gain.append(cv2.filter2D(
+                prediction_gain.append(filter2D(
                     self.mu * lobula_opt[idxD] + (1 - self.mu) * self.cell_prediction_gain[0][idxD],
                     -1,
                     self.prediction_kernel[idxD],

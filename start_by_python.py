@@ -1,11 +1,7 @@
-import os
-import sys
-import cv2
 import tkinter as tk
 
-
-from python.smalltargetmotiondetectors.util.iostream import *
-from python.smalltargetmotiondetectors.api import *
+from python.smalltargetmotiondetectors.util.iostream import ModelAndInputSelectorGUI, ImgstreamReader, VidstreamReader
+from python.smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference
 from python.smalltargetmotiondetectors.model import *
 
 '''
