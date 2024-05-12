@@ -143,6 +143,7 @@ def create_direction_inhi_kernel(KernelSize=8, Sigma1=1.5, Sigma2=3.0):
     return directionalInhiKernel
 
 
+
 def create_T1_kernels(filterNum=4, 
                       alpha=3.0, 
                       eta=1.5, 

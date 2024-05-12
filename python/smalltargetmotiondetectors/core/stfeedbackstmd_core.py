@@ -37,10 +37,10 @@ class Medulla(estmd_backbone.Medulla):
         self.hPara5Mi1.init_config()
         self.hPara5Tm1.init_config(False)
 
-        if not self.cellTm1Ipt.initLen:
-            self.cellTm1Ipt.initLen = max(self.hPara5Mi1.lenKernel, self.hPara5Tm1.lenKernel)
+        if not self.cellTm1Ipt.len:
+            self.cellTm1Ipt.len = max(self.hPara5Mi1.lenKernel, self.hPara5Tm1.lenKernel)
 
-        self.cellTm1Ipt.reset()
+        self.cellTm1Ipt.init_config()
 
     def process(self, MedullaIpt):
         # Processing method
@@ -50,7 +50,7 @@ class Medulla(estmd_backbone.Medulla):
         tm3Signal = self.hTm3.process(MedullaIpt)
 
         # Process Tm1 component using output of Tm2
-        self.cellTm1Ipt.record_next(tm3Signal)
+        self.cellTm1Ipt.circrecord(tm3Signal)
         tm1Para3Signal = self.hTm1.process(self.cellTm1Ipt)
         tm1Para5Signal = self.hPara5Tm1.process(self.cellTm1Ipt)
 
@@ -125,9 +125,9 @@ class Stmdcell(BaseCore):
         self.hSubInhi.init_config()
         self.hGammaDelay.init_config()
 
-        if not self.cellDPlusE.initLen:
-            self.cellDPlusE.initLen = self.hGammaDelay.lenKernel
-        self.cellDPlusE.reset()
+        if not self.cellDPlusE.len:
+            self.cellDPlusE.len = self.hGammaDelay.lenKernel
+        self.cellDPlusE.init_config()
 
         self.gaussKernel = gaussian_filter(
             np.zeros((self.paraGaussKernel['size'], self.paraGaussKernel['size'])),
@@ -137,15 +137,19 @@ class Stmdcell(BaseCore):
     def process(self, tm3Signal, tm1Signal, faiList, psiList):
         # Processing method
         # Performs temporal convolution, correlation, and surround inhibition
-        convnIpt = [None] * self.cellDPlusE.initLen
+        convnIpt = [None] * self.cellDPlusE.len
 
         for idxT in range(len(convnIpt)-1, -1, -1):
-            pointer = self.cellDPlusE.pointer
-            if self.cellDPlusE[pointer] is not None:
+            point = self.cellDPlusE.point
+            if self.cellDPlusE.data[point] is not None:
                 fai = faiList[idxT]
                 psi = psiList[idxT]
-                convnIpt[idxT] = slice_matrix_holding_size(self.cellDPlusE[pointer], psi, fai)
-                pointer = (pointer - 1) % self.cellDPlusE.initLen
+                convnIpt[idxT] = slice_matrix_holding_size(self.cellDPlusE.data[point], psi, fai)
+
+            if point == 0:
+                point = self.cellDPlusE.len - 1
+            else:
+                point -= 1
 
         feedbackSignal = self.hGammaDelay.process_list(convnIpt)         
 
@@ -159,7 +163,7 @@ class Stmdcell(BaseCore):
 
         lateralInhiSTMDOpt = self.hSubInhi.process(correlationD)
 
-        self.cellDPlusE.record_next(correlationD + correlationE)
+        self.cellDPlusE.circrecord(correlationD + correlationE)
 
         self.Opt = lateralInhiSTMDOpt
 
