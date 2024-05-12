@@ -1,5 +1,4 @@
 import os
-import cv2
 import sys
 
 # Get the full path of this file
