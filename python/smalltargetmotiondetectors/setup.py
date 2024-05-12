@@ -14,7 +14,7 @@ setup(
     install_requires=[  
         'numpy',
         'scipy',
-        'opencv-python-headless',
+        'opencv-python',
         'matplotlib'
     ],
     classifiers=[  
