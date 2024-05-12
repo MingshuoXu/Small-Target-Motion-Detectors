@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-def compute_temporal_conv(iptCell, kernel, pointer=None):
+def compute_temporal_conv(iptCell, kernel, headPointer=None):
     """
     Computes temporal convolution.
 
@@ -15,11 +15,11 @@ def compute_temporal_conv(iptCell, kernel, pointer=None):
     """
 
     # Default value for headPointer
-    if pointer is None:
-        pointer = len(iptCell) - 1
+    if headPointer is None:
+        headPointer = len(iptCell) - 1
 
     # Initialize output matrix
-    if iptCell[pointer] is None:
+    if iptCell[headPointer] is None:
         return None
 
     # Ensure kernel is a vector
@@ -32,10 +32,10 @@ def compute_temporal_conv(iptCell, kernel, pointer=None):
     k2 = len(kernel)
     length = min(k1, k2)
 
-    optMatrix = np.zeros_like(iptCell[pointer])
+    optMatrix = np.zeros_like(iptCell[headPointer])
     # Perform temporal convolution
     for t in range(length):
-        j = (pointer - t) % k1
+        j = (headPointer - t) % k1
         if np.abs(kernel[t]) > 1e-16 and iptCell[j] is not None:
             optMatrix += iptCell[j] * kernel[t]
 
@@ -53,9 +53,9 @@ def compute_circularlist_conv(circularCell, temporalKernel):
     Returns:
     - opt_matrix: The result of the convolution.
     """
-    optMatrix = compute_temporal_conv(circularCell, 
-                                      temporalKernel, 
-                                      circularCell.pointer )
+    optMatrix = compute_temporal_conv(circularCell.data, 
+                                       temporalKernel, 
+                                       circularCell.point )
     return optMatrix
 
 

@@ -41,12 +41,12 @@ class Medulla(BaseCore):
         self.hTm1Para5.init_config()
         self.hTm1Para6.init_config()
 
-        if self.cellTm1Ipt.initLen == 0:
-            self.cellTm1Ipt.initLen = max(
+        if not self.cellTm1Ipt.len:
+            self.cellTm1Ipt.len = max(
                 self.hTm1Para5.hGammaDelay.lenKernel,
                 self.hTm1Para6.hGammaDelay.lenKernel
             )
-        self.cellTm1Ipt.reset()
+        self.cellTm1Ipt.init_config()
 
     def process(self, MedullaInput):
         """Processing method."""
@@ -59,7 +59,7 @@ class Medulla(BaseCore):
         # Process signals with delays
         mi1Para4Signal = self.hMi1Para4.process(tm3Signal)
         
-        self.cellTm1Ipt.record_next(tm2Signal)
+        self.cellTm1Ipt.circrecord(tm2Signal)
         tm1Para5Signal = self.hTm1Para5.process(self.cellTm1Ipt)
         tm1Para6Signal = self.hTm1Para6.process(self.cellTm1Ipt)
 

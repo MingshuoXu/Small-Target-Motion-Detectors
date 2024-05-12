@@ -197,10 +197,9 @@ class Lobula(BaseCore):
         lobulaOpt, direction = self.hDireCell.process(inhiOpt)
 
         self.Opt = lobulaOpt, direction, correlationOutput
-
         return lobulaOpt, direction, correlationOutput
 
-        
+
 class DirectionCell(BaseCore):
     """
     Direction in backbonev2.
