@@ -403,10 +403,10 @@ class LaminaLateralInhibition(BaseCore):
         Applies lateral inhibition to the input matrix
         """
         # Lateral inhibition
-        self.cellSpatialPositive.circrecord(
+        self.cellSpatialPositive.record_next(
             filter2D(iptMatrix, -1, self.spatialPositiveKernel)
             )
-        self.cellSpatialPositive.circrecord(
+        self.cellSpatialPositive.record_next(
             filter2D(iptMatrix, -1, self.spatialNegativeKernel)
             )
 

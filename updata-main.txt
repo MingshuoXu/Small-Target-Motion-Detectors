@@ -1,3 +1,7 @@
+------------------------------------------
+updata -version 2.0.5 (May 12, 2024)
+1(Python). Modify the class 'CircularList' to be based on the list data structure and annotate it with the @dataclass decorator.
+
 
 ------------------------------------------
 updata -version 2.0.4 (May 09, 2024)
