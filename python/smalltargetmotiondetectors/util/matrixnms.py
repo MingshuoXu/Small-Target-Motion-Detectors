@@ -1,7 +1,8 @@
-import time
 import copy
+import time
 
 import numpy as np
+
 
 class MatrixNMS:
     """
