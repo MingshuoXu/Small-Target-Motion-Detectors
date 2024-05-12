@@ -118,7 +118,7 @@ class GammaDelay(BaseCore):
         if self.isInLoop:
             self.listInput.cover(inputMatrix)
         else:
-            self.listInput.circrecord(inputMatrix)
+            self.listInput.record_next(inputMatrix)
 
         return self.process_circularlist(self.listInput)
 
@@ -167,10 +167,10 @@ class GammaBandPassFilter(BaseCore):
         self.hGammaDelay2.init_config(False)
 
         # Determine the length of the circular cell input
-        if self.objListIpt.len is None:
-            self.objListIpt.len = max(self.hGammaDelay1.lenKernel, 
+        if self.objListIpt.initLen == 0: # or len(self.objListIpt) == 0
+            self.objListIpt.initLen = max(self.hGammaDelay1.lenKernel, 
                                       self.hGammaDelay2.lenKernel)
-        self.objListIpt.init_config()
+        self.objListIpt.reset()
 
     def process(self, iptMatrix):
         """
@@ -184,7 +184,7 @@ class GammaBandPassFilter(BaseCore):
         - optMatrix: Processed output matrix
         """
         # Record input matrix in circular cell
-        self.objListIpt.circrecord(iptMatrix)
+        self.objListIpt.record_next(iptMatrix)
 
         # Compute outputs of gamma delays
         gamma1Output = self.hGammaDelay1.process_circularlist(self.objListIpt)
