@@ -1,6 +1,6 @@
 import os
-import cv2
 import sys
+import time
 
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
@@ -30,6 +30,8 @@ objModel.init_config()
 
 # Run inference
 while hSteam.hasFrame and hVisual.hasFigHandle:
+    startTime = time.time()
+
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
     
@@ -37,4 +39,7 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     result = inference(objModel, grayImg)
     
     # Visualize the result
-    hVisual.show_result(colorImg, result)
+    # hVisual.show_result(colorImg, result)
+    
+    endTime = time.time()
+    print('Time for last frame: ' + str((endTime-startTime)*1000) + ' ms')
