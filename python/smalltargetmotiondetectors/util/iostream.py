@@ -2,12 +2,14 @@ import os
 import sys
 import time
 
+import cv2
+import glob
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import glob
 
 from .matrixnms import MatrixNMS
 from .. import model
