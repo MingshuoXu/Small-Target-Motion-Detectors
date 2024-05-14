@@ -3,7 +3,6 @@ import numpy as np
 from .backbone import Backbonev2
 from ..core import fstmd_core, fstmdv2_core, stmdplus_core, stmdplusv2_core, apgstmd_core, apgstmdv2_core
 from ..util.compute_module import compute_response
-from ..core.backbonev2_core import get_multi_direction_opt
 
 class FeedbackSTMDv2(Backbonev2):
     """
@@ -20,7 +19,6 @@ class FeedbackSTMDv2(Backbonev2):
         # Call superclass constructor
         super().__init__()
         
-
         # Import necessary packages
         from smalltargetmotiondetectors.core.feedbackstmdv2_core import Lobula
 
@@ -46,7 +44,7 @@ class FeedbackSTMDv2(Backbonev2):
 
         # Process through Lobula and get response and direction
         self.lobulaOpt, self.modelOpt['direction'] = self.hLobula.process(
-            self.medullaOpt[0], self.medullaOpt[1])
+            self.medullaOpt[0], self.medullaOpt[1], self.laminaOpt)
 
         # Set model response
         self.modelOpt['response'] = self.lobulaOpt
@@ -103,7 +101,10 @@ class FSTMDv2(Backbonev2):
             self.hMedulla.process(self.laminaOpt)
             self.medullaOpt = self.hMedulla.Opt
 
-            self.lobulaOpt, direction, correlationOpt = self.hLobula.process(self.medullaOpt)
+            self.lobulaOpt, direction, correlationOpt\
+                 = self.hLobula.process(self.medullaOpt[0],
+                                        self.medullaOpt[1],
+                                        self.laminaOpt )
             self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt)
 
             iterationCount += 1
@@ -144,6 +145,7 @@ class STMDPlusv2(Backbonev2):
 
         # Initialize contrast pathway and mushroom body
         self.hContrastPathway.init_config()
+        self.hMushroomBody.init_config()
 
     def model_structure(self, iptMatrix):
         """
@@ -156,7 +158,6 @@ class STMDPlusv2(Backbonev2):
 
         # D. Mushroom Body
         self.mushroomBodyOpt = self.hMushroomBody.process(
-            self.hLobula.hDireCell.sTrajectory,
             self.lobulaOpt,
             self.direContrastOpt
         )
@@ -216,27 +217,78 @@ class ApgSTMDv2(STMDPlusv2):
         self.hMedulla.process(self.laminaOpt)
         self.medullaOpt = self.hMedulla.Opt
 
-        self.lobulaOpt, self.modelOpt['direction'], _ = self.hLobula.process(self.medullaOpt)
+        self.lobulaOpt, self.modelOpt['direction'], _ \
+            = self.hLobula.process(self.medullaOpt[0],
+                                   self.medullaOpt[1],
+                                   self.laminaOpt)
 
         # STMDPlus
         self.direContrastOpt = self.hContrastPathway.process(self.retinaOpt)
         self.mushroomBodyOpt = self.hMushroomBody.process(
-            self.hLobula.hDireCell.sTrajectory,
             self.lobulaOpt,
             self.direContrastOpt
         )
 
         # Prediction Module
-        multiDirectoinOpt = get_multi_direction_opt(
+        multiDirectoinOpt = self.get_multi_direction_opt(
             self.mushroomBodyOpt,
-            self.modelOpt['direction'],
-            self.hPredictionPathway.numFilter
+            self.hLobula.hDireCell.direMatrix,
         )
         # self.predictionOpt is the facilitated STMD output Q(x; y; t; theta)
         self.predictionOpt, self.predictionMap = self.hPredictionPathway.process(multiDirectoinOpt)
 
         # Compute response and direction
         self.modelOpt['response'] = compute_response(self.predictionOpt)
+
+    @classmethod
+    def get_multi_direction_opt(cls, mushroomBodyOpt, direMatrix):
+        multiDireOpt = []
+        m, n = mushroomBodyOpt.shape
+
+        # Right
+        direCoeff = np.zeros((m, n))  
+        direCoeff[:, :-1] = direMatrix[:, 1:] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+        
+        # UpRight
+        direCoeff = np.zeros((m, n))  
+        direCoeff[1:, :-1] = direMatrix[:-1, 1:] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # Up
+        direCoeff = np.zeros((m, n))  
+        direCoeff[1:, :] = direMatrix[:-1, :] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # UpLeft
+        direCoeff = np.zeros((m, n))  
+        direCoeff[1:, 1:] = direMatrix[:-1, :-1] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # Left
+        direCoeff = np.zeros((m, n))  
+        direCoeff[:, 1:] = direMatrix[:, :-1] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # BottomLeft
+        direCoeff = np.zeros((m, n))  
+        direCoeff[:-1, 1:] = direMatrix[1:, :-1] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # Bottom
+        direCoeff = np.zeros((m, n))  
+        direCoeff[:-1, :] = direMatrix[1:, :] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+        # BottomRight
+        direCoeff = np.zeros((m, n))  
+        direCoeff[:-1, :-1] = direMatrix[1:, 1:] 
+        multiDireOpt.append(mushroomBodyOpt * direCoeff)
+
+
+        return multiDireOpt
+
+
 
 
 

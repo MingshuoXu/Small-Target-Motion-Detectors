@@ -18,8 +18,8 @@ objModel = instancing_model('Backbonev2')
 
 # Input
 # Demo video (RIST)
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0.mp4'))
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0in250Hz.mp4'))
 
 # Visualization and model init
 # Get visualization handle
@@ -28,9 +28,10 @@ hVisual = get_visualize_handle(objModel.__class__.__name__)
 # Initialize the model
 objModel.init_config()
 
-# Run inference
+
+'''Run inference'''
 while hSteam.hasFrame and hVisual.hasFigHandle:
-    startTime = time.time()
+    # startTime = time.time()
 
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
@@ -39,7 +40,9 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     result = inference(objModel, grayImg)
     
     # Visualize the result
-    # hVisual.show_result(colorImg, result)
+    hVisual.show_result(colorImg, result)
+
     
-    endTime = time.time()
-    print('Time for last frame: ' + str((endTime-startTime)*1000) + ' ms')
+    # endTime = time.time()
+    # print('Time for last frame: ' + str((endTime-startTime)*1000) + ' ms')
+

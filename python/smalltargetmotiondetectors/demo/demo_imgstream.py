@@ -10,36 +10,33 @@ indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath])
 
-# Import necessary modules
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
 from smalltargetmotiondetectors.model import *
 
-# Instantiate the model
-model = instancing_model('Backbonev2')
+''' Instantiate the model '''
+objModel = instancing_model('Backbonev2')
 
-# Create an image stream reader
-hSteam = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'))
+''' Create an image stream reader '''
+objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'))
 
-# Alternatively, uncomment the following options for different inputs:
-# hSteam = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10,)
-# hSteam = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10, 100 )
+''' Alternatively, uncomment the following options for different inputs: '''
+# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10,)
+# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10, 100 )
 
-# Get visualization handle and initiate model
-
+''' Get visualization handle and initiate model '''
 # Get visualization handle
-hVisual = get_visualize_handle(model.__class__.__name__)
-
+objVisualize = get_visualize_handle(objModel.__class__.__name__)
 # Initialize the model
-model.init_config()
+objModel.init_config()
 
-# Run
-while hSteam.hasFrame and hVisual.hasFigHandle:
+''' Run '''
+while objIptStream.hasFrame and objVisualize.hasFigHandle:
     # Read the next frame from the image stream
-    grayImg, colorImg = hSteam.get_next_frame()
+    grayImg, colorImg = objIptStream.get_next_frame()
     
-    # Perform inference using the model
-    result = inference(model, grayImg)
+    # Perform inference using the objModel
+    result = inference(objModel, grayImg)
     
     # Display the result
-    hVisual.show_result(colorImg, result)
+    objVisualize.show_result(colorImg, result)

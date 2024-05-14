@@ -29,8 +29,6 @@ model: Contains models and neural networks used in small target motion detection
 
 util: Provides additional tools and utilities for data processing and visualization.
 
-config: Contains configuration files for setting up parameters and options.
-
 demo: Includes demonstration scripts showcasing the usage of the package.
 
 test: Contains unit tests to verify the correctness of algorithms.
@@ -41,10 +39,7 @@ test: Contains unit tests to verify the correctness of algorithms.
 Clone or download the repository and follow the setup instructions for your preferred programming language.
 
 ### Examples: 
-Refer to the demo scripts provided in the demo folder for examples on how to use the package for small target motion detection.
-
-### Parameter Adjustment: 
-Adjust parameters as needed for different input sources and application scenarios.
+Running start_by_matlab.m via Matlab or running start_by_python.py via Python.
 
 ## Support and Feedback
 If you encounter any issues or have any suggestions while using the STMD package, feel free to reach out to me. 
@@ -82,8 +77,6 @@ model: 包含用于小目标运动检测的模型和神经网络。
 
 util: 提供额外的数据处理和可视化工具和实用程序。
 
-config: 包含用于设置参数和选项的配置文件。
-
 demo: 包含演示脚本，展示该包的使用方法。
 
 test: 包含单元测试，验证算法的正确性。
@@ -94,7 +87,7 @@ test: 包含单元测试，验证算法的正确性。
 克隆或下载存储库，并按照所选编程语言的设置说明进行设置。
 
 ### 示例: 
-参考 demo 文件夹中提供的演示脚本，了解如何使用该包进行小目标运动检测。
+在 Matlab 中运行 start_by_matlab.m 或者在 Python 中运行 start_by_python.py。
 
 ### 参数调整: 
 根据不同的输入源和应用场景调整参数。
