@@ -453,7 +453,7 @@ class Visualization:
         self.hasFigHandle = True
         self.timeTic = time.time()
 
-    def show_result(self, colorImg=None, result=None):
+    def show_result(self, colorImg=None, result={'response': None, 'direction': None}):
         """
         Display the result.
         
