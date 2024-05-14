@@ -13,12 +13,8 @@ from smalltargetmotiondetectors.util.iostream import ModelAndInputSelectorGUI, I
 from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference
 from smalltargetmotiondetectors.model import *
 
-'''
-    main
-'''
-
+''' open gui to get modelName and type of inputstream '''
 root = tk.Tk()
-
 obj = ModelAndInputSelectorGUI(root)
 modelName, opt1, opt2 = obj.create_gui()
 
@@ -28,14 +24,14 @@ if opt2:
 else:
     objIptStream = VidstreamReader(vidName=opt1)
 
-# Get visualization handle
-objVisual = get_visualize_handle(objModel.__class__.__name__)
+''' Get visualization handle '''
+objVisualize = get_visualize_handle(objModel.__class__.__name__)
 
-# Initialize the model
+''' Initialize the model '''
 objModel.init_config()
 
-# Run inference
-while objIptStream.hasFrame and objVisual.hasFigHandle:
+''' Run inference '''
+while objIptStream.hasFrame and objVisualize.hasFigHandle:
     # Get the next frame from the input source
     grayImg, colorImg = objIptStream.get_next_frame()
     
@@ -43,4 +39,4 @@ while objIptStream.hasFrame and objVisual.hasFigHandle:
     result = inference(objModel, grayImg)
     
     # Visualize the result
-    objVisual.show_result(colorImg, result)
+    objVisualize.show_result(colorImg, result)

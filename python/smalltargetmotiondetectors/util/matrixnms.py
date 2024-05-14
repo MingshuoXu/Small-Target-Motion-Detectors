@@ -22,7 +22,7 @@ class MatrixNMS:
         - mapping_auto_method: Maps auto method based on key-value pairs.
     """
 
-    _mappingAutoMethod = {}
+    __dictOptimalMethod = {}
 
     def __init__(self, maxRegionSize=5, method=None):
         """
@@ -52,12 +52,12 @@ class MatrixNMS:
                 # If auto method is not determined yet
                 M, N = inputMatrix.shape
                 # Determine auto method based on input matrix size
-                self.autoMethod = self.mapping_auto_method(f'{M}-{N}-{maxRS}')
+                self.autoMethod = self.get_optimalmethod(f'{M}-{N}-{maxRS}')
                 if not self.autoMethod:
                     # Select auto method if not determined before
                     self.select_auto_method(inputMatrix)
                     # Save auto method in mapping
-                    self.mapping_auto_method(f'{M}-{N}-{maxRS}', self.autoMethod)
+                    self.set_optimalmethod(f'{M}-{N}-{maxRS}', self.autoMethod)
                 self.nullAutoMethod = False
 
         else:
@@ -128,15 +128,14 @@ class MatrixNMS:
             raise ValueError('Invalid method index.')
 
         return self.autoMethod
-
+    
     @classmethod
-    def mapping_auto_method(cls, map_key, add_map_value=None):
-        # If no added value is passed, it represents a query operation
-        if add_map_value is None:
-            return cls._mappingAutoMethod.get(map_key)
-        else:
-            cls._mappingAutoMethod[map_key] = add_map_value
-
+    def get_optimalmethod(cls, mapKey):
+        return cls.__dictOptimalMethod.get(mapKey)
+    
+    @classmethod
+    def set_optimalmethod(cls, mapKey, mapValue):
+        cls.__dictOptimalMethod[mapKey] = mapValue
 
 def conv2_nms(inputMatrix, maxRegionSize):
     """
@@ -302,10 +301,18 @@ def greedy_nms(inputMatrix, maxRegionSize):
 if __name__ == "__main__":
     from numpy.random import default_rng
 
-    obj = MatrixNMS(maxRegionSize=5, method='auto')
-    rng = default_rng(42)
-    Ipt =  rng.random((250, 500))
-    Opt = obj.nms(Ipt)
+    # obj = MatrixNMS(maxRegionSize=5, method='auto')
+    # rng = default_rng(42)
+    # Ipt =  rng.random((250, 500))
+    # opt = obj.nms(Ipt)
+    obj1 = MatrixNMS()
+    obj2 = MatrixNMS()
+    print(obj1._MatrixNMS__dictOptimalMethod)
+    print(obj2._MatrixNMS__dictOptimalMethod)
+
+    obj1.set_optimalmethod('3', [3])
+    obj2.set_optimalmethod('2', [2])
+    print(obj1.get_optimalmethod('3'))
 
 
 

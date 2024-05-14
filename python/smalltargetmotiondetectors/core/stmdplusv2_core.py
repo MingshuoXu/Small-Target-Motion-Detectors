@@ -1,9 +1,9 @@
 import numpy as np
+from scipy.spatial.distance import cdist
 
-from .base_core import BaseCore
+from . import stmdplus_core
 
-
-class MushroomBody(BaseCore):
+class MushroomBody(stmdplus_core.MushroomBody):
     # MushroomBody class for STMDPlus
 
     def __init__(self):
@@ -11,58 +11,75 @@ class MushroomBody(BaseCore):
         # Initializes the MushroomBody object
         super().__init__()
 
-        self.maxLenRecordContrast = 100  # Length of Record
-        self.SDThres = 5  # Threshold of standard deviation
-        self.contrastRecord = []  # trackInfo data
 
     def init_config(self):
         # Initialization method
         # Initializes the non-maximum suppression
-        pass
+        super().init_config()
 
-    def process(self, sTrajectory, lobulaOpt, contrastOpt):
+    def process(self, lobulaOpt, contrastOpt):
         # Processing method
         # Processes the input lobulaOpt and contrastOpt to generate mushroomBodyOpt
-        mushroomBodyOpt = lobulaOpt
 
-        if not sTrajectory:
-            self.contrastRecord = []
-            return np.zeros_like(lobulaOpt)
+        nmsLobulaOpt = self.hNMS.nms(lobulaOpt)
 
-        lenT = len(sTrajectory)
-        newContrastRecord = [None] * lenT
+        numDirection = len(lobulaOpt)
+        mushroomBodyOpt = [None] * numDirection
+
+        mushroomBodyOpt = lobulaOpt * np.logical_not(nmsLobulaOpt)
+
+        maxNumber = np.max(nmsLobulaOpt)
+
+        if maxNumber <= 0:
+            self.trackID = None
+            self.trackInfo = []
+            return mushroomBodyOpt
+
+        idX, idY = np.where(nmsLobulaOpt > 0)
+        newID = np.column_stack((idX, idY))
+
+        shouldTrackID = np.ones(len(self.trackID), dtype=bool) if self.trackID is not None else np.array([], dtype=bool)
+        shouldAddNewID = np.ones(len(idX), dtype=bool)
         numContrast = len(contrastOpt)
 
-        for newId in range(lenT):
-            oldId = sTrajectory[newId]['oldId']
+        if self.trackID is not None:
+            DD = cdist(self.trackID, newID)
+            D1 = np.min(DD, axis=1)
 
-            # lost tract
-            if sTrajectory[newId]['lostCount'] > 1:
-                newContrastRecord[newId] = self.contrastRecord[oldId]
-                continue
+            for idxI, d1 in enumerate(D1):
+                if d1 <= self.DBSCANDist:
+                    idxJ = np.argmin(DD[idxI])
+                    if shouldAddNewID[idxJ]:
+                        self.trackID[idxI] = newID[idxJ]
+                        nowContrast = np.array(
+                            [[contrastOpt[idCont][newID[idxJ, 0], newID[idxJ, 1]]] for idCont in range(numContrast)])
+                        self.trackInfo[idxI] = np.hstack((self.trackInfo[idxI], nowContrast))
+                        shouldTrackID[idxI] = False
+                        shouldAddNewID[idxJ] = False
 
-            # contrast of new index
-            xNew, yNew = sTrajectory[newId]['location']
+            self.trackID = np.delete(self.trackID, np.where(shouldTrackID), axis=0)
+            self.trackInfo = [x for idx, x in enumerate(self.trackInfo) if not shouldTrackID[idx]]
 
-            nowContrast = np.zeros((numContrast, 1))
-            for idCont in range(numContrast):
-                nowContrast[idCont, 0] = contrastOpt[idCont][xNew, yNew]
+        oldTractNum = len(self.trackInfo)
 
-            if np.isnan(oldId):
-                # new response
-                newContrastRecord[newId] = nowContrast
+        isxNew = np.where(shouldAddNewID)[0]
+        for kk in isxNew:
+            if self.trackID is None:
+                self.trackID = newID[kk]
             else:
-                if len(self.contrastRecord[oldId]) >= self.maxLenRecordContrast:
-                    newContrast_newId = np.roll(self.contrastRecord[oldId], -1, axis=1)
-                    newContrast_newId[:, -1] = nowContrast[:, 0]
-                    newContrastRecord[newId] = newContrast_newId
-                else:
-                    newContrastRecord[newId] = np.hstack((self.contrastRecord[oldId], nowContrast))
+                self.trackID = np.vstack((self.trackID, newID[kk]))
+            nowContrast = np.array(
+                [[contrastOpt[idCont][newID[kk, 0], newID[kk, 1]]] for idCont in range(numContrast)])
+            self.trackInfo.append(nowContrast)
 
-                # Small Target Discrimination
-                if np.max(np.std(newContrastRecord[newId], axis=1)) < self.SDThres:
-                    mushroomBodyOpt[xNew, yNew] = 0
+        for idx in range(oldTractNum):
+            if np.max(np.std(self.trackInfo[idx], axis=1)) < self.SDThres:
+                idX = self.trackID[idx, 0]
+                idY = self.trackID[idx, 1]
+                mushroomBodyOpt[idX, idY] = 0
 
-        self.contrastRecord = newContrastRecord
+            if self.trackInfo[idx].shape[1] > self.lenDBSCAN:
+                self.trackInfo[idx] = self.trackInfo[idx][:, 1:]
+
         self.Opt = mushroomBodyOpt
         return mushroomBodyOpt

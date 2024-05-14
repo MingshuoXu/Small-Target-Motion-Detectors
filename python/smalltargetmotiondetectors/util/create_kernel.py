@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import gamma
 
+
 def create_gaussian_kernel(size, sigma):
     # Ensure size is a tuple containing two integers
     if len(size) != 2:
@@ -81,12 +82,10 @@ def create_inhi_kernel_W2(kernelSize=15,
                                  np.arange(kernelSize, 0, -1) - cenY)
         
     # Generate gauss functions 1 and 2
-    gauss1 \
-        = (1 / (2 * np.pi * sigma1**2)) \
-        * np.exp(-(shiftX**2 + shiftY**2) / (2 * sigma1**2))
-    gauss2 \
-        = (1 / (2 * np.pi * sigma2**2)) \
-        * np.exp(-(shiftX**2 + shiftY**2) / (2 * sigma2**2))
+    gauss1 = (1 / (2 * np.pi * sigma1**2)) \
+             * np.exp(-(shiftX**2 + shiftY**2) / (2 * sigma1**2))
+    gauss2 = (1 / (2 * np.pi * sigma2**2)) \
+             * np.exp(-(shiftX**2 + shiftY**2) / (2 * sigma2**2))
     
     # Generate DoG, subtracting two gaussian functions
     dogFilter = gauss1 - e * gauss2 - rho
@@ -260,6 +259,9 @@ def create_attention_kernel(kernel_size=17,
                 ) * np.exp(-(shift_x**2 + shift_y**2) / 2 / zeta[i]**2)
 
             attention_kernel_with_ij[np.abs(attention_kernel_with_ij) < 1e-4] = 0
+            # flip the kernel used for np.fliter2D
+            attention_kernel_with_ij = np.flip(attention_kernel_with_ij, axis=0)
+            attention_kernel_with_ij = np.flip(attention_kernel_with_ij, axis=1)
             attention_kernel[i][j] = attention_kernel_with_ij
 
     return attention_kernel
@@ -315,9 +317,14 @@ def create_prediction_kernel(Vel=0.25,
 
         # To speed up the calculation
         PredictionKernalWithIdx[PredictionKernalWithIdx < 5e-4] = 0
+        PredictionKernalWithIdx /= np.sum(PredictionKernalWithIdx)
 
+        # flip the kernel used for np.fliter2D
+        PredictionKernalWithIdx = np.flip(PredictionKernalWithIdx, axis=0)
+        PredictionKernalWithIdx = np.flip(PredictionKernalWithIdx, axis=1)
+    
         # normalizing again
-        PredictionKernal.append(PredictionKernalWithIdx / np.sum(PredictionKernalWithIdx))
+        PredictionKernal.append(PredictionKernalWithIdx)
 
     return PredictionKernal
 

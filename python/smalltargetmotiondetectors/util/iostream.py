@@ -402,9 +402,6 @@ class Visualization:
         self.hasFigHandle = False
         self.uiHandle = None
 
-        self.inputClassName = className
-        self.showThreshold = showThreshold
-
     def __del__(self):
         if self.isSaveAsVideo:
             self.hVideo.release()
@@ -419,6 +416,11 @@ class Visualization:
         Creates a figure handle.
         """
         self.hFig = plt.figure(f'Show result for {self.inputClassName}')
+        manager = self.hFig.canvas.manager
+        manager.window.geometry("+{}+{}".format(
+            int((manager.window.winfo_screenwidth() - manager.window.winfo_reqwidth()) / 3), 
+            int((manager.window.winfo_screenheight() - manager.window.winfo_reqheight()) / 3) 
+            ) )
         plt.axis('off')
         
         if not self.isTestPatter:

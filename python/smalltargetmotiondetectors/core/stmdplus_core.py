@@ -1,5 +1,5 @@
-import numpy as np
 from cv2 import filter2D
+import numpy as np
 from scipy.spatial.distance import cdist
 
 from .base_core import BaseCore
@@ -66,6 +66,7 @@ class MushroomBody(BaseCore):
     def process(self, lobulaOpt, contrastOpt):
         # Processing method
         # Processes the input lobulaOpt and contrastOpt to generate mushroomBodyOpt
+
         maxLobulaOpt = compute_response(lobulaOpt)
         nmsLobulaOpt = self.hNMS.nms(maxLobulaOpt)
 

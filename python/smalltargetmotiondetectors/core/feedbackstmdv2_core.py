@@ -8,7 +8,7 @@ class Lobula(feedbackstmd_core.Lobula):
         """Constructor method."""
         # Initializes the Lobula object
         super().__init__()
-        self.hDireCell = backbonev2_core.DirectionCell()
+        self.hDireCell = backbonev2_core.CustomDirection()
 
     def init_config(self):
         """Initialization method."""
@@ -16,10 +16,10 @@ class Lobula(feedbackstmd_core.Lobula):
         super().init_config()
         self.hDireCell.init_config()
 
-    def process(self, onSignal, offSignal):
+    def process(self, onSignal, offSignal, laminaOpt):
         """Processing method."""
         # Processing
-        inhiOpt = super().process(onSignal, offSignal)
-        lobulaOpt, direction = self.hDireCell.process(inhiOpt)
+        lobulaOpt = super().process(onSignal, offSignal)
+        direction = self.hDireCell.process(laminaOpt, onSignal, offSignal)
         self.Opt = [lobulaOpt, direction]
         return lobulaOpt, direction
