@@ -1,19 +1,17 @@
 % demo_gui
 clc, clear, close all;
 
-%%
-% Get the full path of this file
-filePath = mfilename('fullpath');
-addpath(fullfile(filePath(1:end-15), 'matlab'));
+%% import stmd class and necessary api
+addpath('./matlab');
 
 import smalltargetmotiondetectors.util.iostream.*;
 import smalltargetmotiondetectors.api.*;
 
-%%
+%% get names of model and input from gui
 selector_gui = ModelAndInputSelectorGUI();
 [modelName, inputName] = selector_gui.create_gui();
 
-%%
+%% instancing the model and input stream
 objModel = instancing_model(modelName); 
 
 if length(inputName) == 1

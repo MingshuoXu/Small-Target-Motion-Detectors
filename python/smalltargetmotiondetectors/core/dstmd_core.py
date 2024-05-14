@@ -215,10 +215,8 @@ class Lobula(BaseCore):
                 * tm1Para6Signal[shiftXRange, shiftYRange]
             )
 
-
         # Perform lateral inhibition
         lateralInhiOpt = [self.hLateralInhi.process(output) for output in correOutput]
-
 
         # Perform directional inhibition
         lobulaOpt = self.hDirectionInhi.process(lateralInhiOpt)
