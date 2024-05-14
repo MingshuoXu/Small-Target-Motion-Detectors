@@ -282,7 +282,10 @@ class Backbonev2(BaseModel):
         self.laminaOpt = self.hLamina.process(self.retinaOpt)
         self.hMedulla.process(self.laminaOpt)
         self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt, self.modelOpt['direction'], _ = self.hLobula.process(self.medullaOpt)
+        self.lobulaOpt, self.modelOpt['direction'], _ \
+            = self.hLobula.process(self.medullaOpt[0], 
+                                   self.medullaOpt[1], 
+                                   self.laminaOpt )
         self.modelOpt['response'] = self.lobulaOpt
 
 

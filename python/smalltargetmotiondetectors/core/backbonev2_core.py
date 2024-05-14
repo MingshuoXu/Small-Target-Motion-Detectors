@@ -1,9 +1,12 @@
+from cv2 import filter2D
+import math
 import numpy as np
 
 from .base_core import BaseCore
 from .math_operator import SurroundInhibition
 from ..util.matrixnms import MatrixNMS
 from scipy.spatial.distance import cdist
+
 
 class MedullaCell(BaseCore):
     # MedullaCell cell in Medulla layer
@@ -169,7 +172,7 @@ class Lobula(BaseCore):
     def __init__(self):
         super().__init__()
         self.hSubInhi = SurroundInhibition()
-        self.hDireCell = DirectionCell()
+        self.hDireCell = CustomDirection()
 
     def init_config(self):
         """
@@ -178,7 +181,8 @@ class Lobula(BaseCore):
         self.hSubInhi.init_config()
         self.hDireCell.init_config()
 
-    def process(self, varagein):
+
+    def process(self, onSignal, offSignal, laminaOpt):
         """
         Processing method.
 
@@ -188,197 +192,67 @@ class Lobula(BaseCore):
         Returns:
         - varargout (tuple): Tuple containing the processed output(s).
         """
-        onSignal, offSignal = varagein
+
+        direction = self.hDireCell.process(laminaOpt, onSignal, offSignal)
 
         correlationOutput = onSignal * offSignal
-
-        inhiOpt = self.hSubInhi.process(correlationOutput)
-
-        lobulaOpt, direction = self.hDireCell.process(inhiOpt)
+        lobulaOpt = self.hSubInhi.process(correlationOutput)
 
         self.Opt = lobulaOpt, direction, correlationOutput
 
         return lobulaOpt, direction, correlationOutput
 
-        
-class DirectionCell(BaseCore):
-    """
-    Direction in backbonev2.
-    """
 
-    def __init__(self):
-        """
-        Constructor method.
-        """
-        super().__init__()
-        self.paraNMS = {
-            'maxRegionSize': 10,
-            'method': 'sort'
-        }
-        self.detectThreshold = 0.01
-        self.DBSCANDist = 5
-        self.lenDBSCAN = 10
-        self.sTrajectory = []
+class CustomDirection(BaseCore):
+    def __init__(self, kernelSize=3):
+        self.kernelSize = kernelSize
+        self.kernelCos = np.zeros((self.kernelSize, self.kernelSize))
+        self.kernelSin = np.zeros((self.kernelSize, self.kernelSize))
 
-        self.hNMS = MatrixNMS(self.paraNMS['maxRegionSize'], self.paraNMS['method'])
-        self.numResponse = 0
-        self.lostThreshold = 8
-
-        self.initSturct = {
-            'location': [np.nan, np.nan],
-            'oldId': np.nan,
-            'history': np.nan * np.ones((6, 2)),
-            'direction': np.nan,
-            'velocity': np.nan,
-            'accuV': np.nan,
-            'lostCount': 1
-        }
+        self.direMatrix = None
 
     def init_config(self):
         """
         Initialization method.
         """
-        pass
 
-    def process(self, lobulaOpt):
-        """
-        Processing method.
+        half_kernel = self.kernelSize // 2
+        for x in range(-half_kernel, half_kernel + 1):
+            for y in range(-half_kernel, half_kernel + 1):
+                r = math.sqrt(x ** 2 + y ** 2)
+                if r == 0:
+                    continue
+                # 计算cosine值
+                self.kernelCos[y + half_kernel, x + half_kernel] = x / r
+                self.kernelSin[y + half_kernel, x + half_kernel] = -y / r
 
-        Args:
-        - lobulaOpt (numpy.ndarray): Lobula output.
+    def process(self,
+            laminaOpt,
+            tm3Opt, # On
+            tm2Opt  # Off
+            ):
+        
+        m,n = laminaOpt.shape
+        directionCos = np.zeros((m,n))
+        directionSin = np.zeros((m,n))
+        self.direMatrix = np.zeros((m,n))
+         
+        isNotZero = (tm3Opt > 0)
+        self.direMatrix[isNotZero] = tm2Opt[isNotZero] / tm3Opt[isNotZero]
 
-        Returns:
-        - mBodyResponse (numpy.ndarray): Mushroom body response.
-        - mBodyDirection (numpy.ndarray): Mushroom body direction.
-        """
-        mBodyResponse = self.hNMS.nms(lobulaOpt)
-        mBodyDirection = np.full_like(mBodyResponse, np.nan)
+        isReciprocal = (laminaOpt < 0) & (self.direMatrix > 0)
+        self.direMatrix[isReciprocal] = 1 / self.direMatrix[isReciprocal]
 
-        self.record_trajectory_id()
+        directionCos = filter2D(self.direMatrix, -1, self.kernelCos)
+        directionSin = filter2D(self.direMatrix, -1, self.kernelSin)
 
-        idX, idY = np.where(mBodyResponse > 0)
-        self.numResponse = len(idX)
+        direction = np.arctan2(directionSin, directionCos)
 
-        if self.numResponse == 0:
-            self.sTrajectory = []
-            return mBodyResponse, mBodyDirection
-
-        newIndex = np.column_stack((idX, idY))
-
-        shouldTrackID = np.ones(len(self.sTrajectory), dtype=bool)
-        shouldAddNewID = np.ones(self.numResponse, dtype=bool)
-
-        if self.sTrajectory:
-            trajectoryLocation = np.array([traj['location'] for traj in self.sTrajectory])
-
-            DD = cdist(trajectoryLocation, newIndex)
-
-            ind1 = np.argmin(DD, axis=1)
-            D1 = np.min(DD, axis=1)
-
-            for idxI, D1_val in enumerate(D1):
-                if D1_val <= self.DBSCANDist:
-                    idxJ = ind1[idxI]
-                    if shouldAddNewID[idxJ]:
-                        self.sTrajectory[idxI]['location'] = newIndex[idxJ]
-
-                        self.sTrajectory[idxI]['history'] = np.roll(self.sTrajectory[idxI]['history'], -1, axis=0)
-                        self.sTrajectory[idxI]['history'][-1] = newIndex[idxJ]
-
-                        notNanHist = self.sTrajectory[idxI]['history'][~np.isnan(self.sTrajectory[idxI]['history'][:, 0])]
-                        if notNanHist.shape[0] > 1:
-                            self.sTrajectory[idxI]['direction'] = get_direction_by_multipoints(notNanHist)
-
-                        self.sTrajectory[idxI]['lostCount'] = 1
-                        shouldTrackID[idxI] = False
-                        shouldAddNewID[idxJ] = False
-
-            idxLost = np.where(shouldTrackID)[0]
-            for idx in idxLost:
-                self.sTrajectory[idx]['history'] = np.roll(self.sTrajectory[idx]['history'], -1, axis=0)
-                self.sTrajectory[idx]['history'][-1] = [np.nan, np.nan]
-                self.sTrajectory[idx]['lostCount'] += 1
-                self.sTrajectory[idx]['direction'] = np.nan
-
-            self.sTrajectory = [traj for traj in self.sTrajectory if traj['lostCount'] <= self.lostThreshold]
-
-        listNewID = np.where(shouldAddNewID)[0]
-        for IdNew in listNewID:
-            self.sTrajectory.append(self.initSturct.copy())
-            self.sTrajectory[-1]['location'] = newIndex[IdNew]
-            self.sTrajectory[-1]['history'][-1] = newIndex[IdNew]
-
-        for idx, traj in enumerate(self.sTrajectory):
-            idX, idY = traj['location']
-            if not np.isnan(traj['direction']) and not np.isnan(idX) and not np.isnan(idY):
-                mBodyDirection[idX, idY] = traj['direction']
-
-        self.Opt = [mBodyResponse, mBodyDirection]
-        return mBodyResponse, mBodyDirection
-
-    def record_trajectory_id(self):
-        """
-        Record trajectory ID method.
-        """
-        for idx, traj in enumerate(self.sTrajectory):
-            traj['oldId'] = idx
-
-
-def get_direction_by_multipoints(points):
-    """
-    get_direction_by_multipoints
+        # Adjust directions to be in the range [0, 2*pi]
+        direction[direction < 0] += 2 * math.pi
+        
+        return direction
     
-    ref: https://blog.csdn.net/qwertyu_1234567/article/details/117918602
-    """
-
-    differences = np.diff(points, axis=0)
-    if np.all(differences == 0):
-        theta = np.nan
-        return theta
-
-    numPoint = points.shape[0]
-    listT = np.arange(1, numPoint + 1)
-    listX = points[:, 0]
-    listY = points[:, 1]
-
-    sumX = np.sum(listX)
-    sumY = np.sum(listY)
-    sumT = np.sum(listT)
-    sumXT = np.dot(listX, listT)
-    SumYT = np.dot(listY, listT)
-
-    veloX = numPoint * sumXT - sumX * sumT
-    veloY = numPoint * SumYT - sumY * sumT
-
-    theta = np.arctan2(-veloX, veloY) 
-
-    return theta
 
 
-def get_multi_direction_opt(modelResponse, modelDirection, numDirection):
-    """
-    Computes the response for multiple directions based on model response and direction.
 
-    Parameters:
-        modelResponse (ndarray): Model response.
-        modelDirection (ndarray): Model direction.
-        numDirection (int): Number of directions.
-
-    Returns:
-        list: List of response for multiple directions.
-    """
-    directionOutput = []
-    directionList = np.arange(0, 2 * np.pi, 2 * np.pi / numDirection)
-
-    notNanId = ~np.isnan(modelDirection)
-    notNanInd = np.where(notNanId)
-
-    for idxDire in range(numDirection):
-        cosDire = np.cos(modelDirection[notNanInd] - directionList[idxDire])
-        cosDire[cosDire < 0] = 0
-
-        Opt = np.zeros_like(modelResponse)
-        Opt[notNanInd] = modelResponse[notNanInd] * cosDire
-        directionOutput.append(Opt)
-
-    return directionOutput
