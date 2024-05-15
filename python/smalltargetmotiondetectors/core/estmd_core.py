@@ -405,7 +405,7 @@ class LaminaLateralInhibition(BaseCore):
         # Lateral inhibition
         self.cellSpatialPositive.record_next(
             filter2D(iptMatrix, -1, self.spatialPositiveKernel)
-            )
+            ) # conv2(iptMatrix, self.spatialPositiveKernel, 'same')
         self.cellSpatialPositive.record_next(
             filter2D(iptMatrix, -1, self.spatialNegativeKernel)
             )
