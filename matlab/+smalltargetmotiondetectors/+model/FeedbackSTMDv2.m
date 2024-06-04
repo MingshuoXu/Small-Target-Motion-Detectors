@@ -64,15 +64,13 @@ classdef FeedbackSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             
             % Process input matrix through model components
             self.retinaOpt = self.hRetina.process(iptMatrix);
-
             self.laminaOpt = self.hLamina.process(self.retinaOpt);
-
             self.hMedulla.process(self.laminaOpt);
             self.medullaOpt = self.hMedulla.Opt;
 
             [self.lobulaOpt, self.modelOpt.direction] = ...
                 self.hLobula.process(...
-                self.medullaOpt{1}, self.medullaOpt{2});
+                self.medullaOpt{1}, self.medullaOpt{2}, self.laminaOpt);
 
             %%
             self.modelOpt.response = self.lobulaOpt;

@@ -1,7 +1,8 @@
 import numpy as np
 
 from .backbone import Backbonev2
-from ..core import fstmd_core, fstmdv2_core, stmdplus_core, stmdplusv2_core, apgstmd_core, apgstmdv2_core
+from ..core import (feedbackstmdv2_core, fstmd_core, fstmdv2_core,
+                     stmdplus_core, stmdplusv2_core, apgstmd_core, apgstmdv2_core)
 from ..util.compute_module import compute_response
 
 class FeedbackSTMDv2(Backbonev2):
@@ -18,12 +19,9 @@ class FeedbackSTMDv2(Backbonev2):
         """
         # Call superclass constructor
         super().__init__()
-        
-        # Import necessary packages
-        from smalltargetmotiondetectors.core.feedbackstmdv2_core import Lobula
 
         # Customize Lobula component
-        self.hLobula = Lobula()
+        self.hLobula = feedbackstmdv2_core.Lobula()
 
     def init_config(self):
         """
@@ -32,9 +30,8 @@ class FeedbackSTMDv2(Backbonev2):
         super().init_config()
 
     def model_structure(self, iptMatrix):
-        """
-        MODEL_STRUCTURE Method
-        Defines the structure of the FeedbackSTMD model.
+        """ MODEL_STRUCTURE Method
+        Defines the structure of the FeedbackSTMDv2 model.
         """
         # Process input matrix through model components
         self.retinaOpt = self.hRetina.process(iptMatrix)
@@ -232,7 +229,7 @@ class ApgSTMDv2(STMDPlusv2):
         # Prediction Module
         multiDirectoinOpt = self.get_multi_direction_opt(
             self.mushroomBodyOpt,
-            self.hLobula.hDireCell.direMatrix,
+            self.hLobula.hLPTC.lptcMatrix,
         )
         # self.predictionOpt is the facilitated STMD output Q(x; y; t; theta)
         self.predictionOpt, self.predictionMap = self.hPredictionPathway.process(multiDirectoinOpt)
@@ -284,7 +281,6 @@ class ApgSTMDv2(STMDPlusv2):
         direCoeff = np.zeros((m, n))  
         direCoeff[:-1, :-1] = direMatrix[1:, 1:] 
         multiDireOpt.append(mushroomBodyOpt * direCoeff)
-
 
         return multiDireOpt
 

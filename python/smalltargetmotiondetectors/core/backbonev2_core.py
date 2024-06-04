@@ -4,47 +4,97 @@ import numpy as np
 
 from .base_core import BaseCore
 from .math_operator import SurroundInhibition
-from ..util.matrixnms import MatrixNMS
-from scipy.spatial.distance import cdist
 
 
-class MedullaCell(BaseCore):
-    # MedullaCell cell in Medulla layer
+class MECumulativeCell(BaseCore):
+    # CumulativeCell cell in Medulla layer
 
     def __init__(self):
         super().__init__()
 
-        self.afterhyperpolarizationV = -50
         self.coeffDecay = 0.8
         self.coeffInhi = 0.5
-        self.Voltage = None
-        self.lastInput = None
+        self.postMembranePotential = None
 
     def init_config(self):
         pass
 
     def process(self, iptMatrix):
-        if self.lastInput is None:
-            m, n = iptMatrix.shape
-            self.Voltage = np.zeros((m, n))
-            self.lastInput = np.zeros((m, n), dtype=bool)
+        if self.postMembranePotential is None:
+            self.postMembranePotential = np.zeros_like(iptMatrix)
 
         # Decay
-        isDecay = self.lastInput
-        self.Voltage[isDecay] = self.coeffDecay * self.Voltage[isDecay]
-
-        # Inhi
-        isInhi = ~self.lastInput
-        self.Voltage[isInhi] = self.coeffInhi * self.Voltage[isInhi]
+        postMP = self.coeffDecay * self.postMembranePotential
 
         # Accumulation
-        self.Voltage += iptMatrix
+        postMP = postMP + iptMatrix
+        
+        # Inhi
+        isInhi = (iptMatrix == 0)
+        postMP[isInhi] *= self.coeffInhi
 
-        # record
-        self.lastInput = iptMatrix.astype(bool)
+        self.postMembranePotential = postMP
 
-        return self.Voltage
+        return postMP
 
+
+class Mi4(MECumulativeCell):
+    """
+    Mi4 cell of ON pathway in the Medulla layer.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def init_config(self):
+        """
+        Initialization method.
+        """
+        pass
+
+    def process(self, iptMatrix: np.array):
+        """
+        Processing method.
+
+        Args:
+        - iptMatrix (array-like): Input
+
+        Returns:
+        - self.Opt (array-like): Output
+        """
+        onSignal = np.maximum(iptMatrix, 0)
+        self.Opt = super().process(onSignal)
+        return self.Opt
+
+
+class Tm9(MECumulativeCell):
+    """
+    Tm9 cell of OFF pathway in the Medulla layer.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def init_config(self):
+        """
+        Initialization method.
+        """
+        pass
+
+    def process(self, iptMatrix: np.array):
+        """
+        Processing method.
+
+        Args:
+        - iptMatrix (array-like): Input
+
+        Returns:
+        - self.Opt (array-like): Output
+        """
+        offSignal = np.maximum(-iptMatrix, 0)
+        self.Opt = super().process(offSignal)
+        return self.Opt
+    
 
 class Medulla(BaseCore):
     """
@@ -75,13 +125,13 @@ class Medulla(BaseCore):
     def __init__(self):
         super().__init__()
         # Initialize components
-        self.hTm2 = Tm2()
-        self.hTm3 = Tm3()
+        self.hMi4 = Mi4()
+        self.hTm9 = Tm9()
 
     def init_config(self):
         # Initialize configurations
-        self.hTm2.init_config()
-        self.hTm3.init_config()
+        self.hMi4.init_config()
+        self.hTm9.init_config()
 
     def process(self, medullaIpt):
         """
@@ -91,78 +141,68 @@ class Medulla(BaseCore):
         - medullaIpt (array-like): Input to the Medulla layer.
 
         Returns:
-        - tm3Signal (array-like): Output signal from Tm3.
-        - tm2Signal (array-like): Output signal from Tm2.
+        - onSignal (array-like): Output signal from Mi4.
+        - offSignal (array-like): Output signal from Tm9.
         """
-        # Process through Tm2 and Tm3
-        tm2Signal = self.hTm2.process(medullaIpt)
-        tm3Signal = self.hTm3.process(medullaIpt)
+        # Process through hMi4 and hTm9
+        onSignal = self.hMi4.process(medullaIpt)
+        offSignal = self.hTm9.process(medullaIpt)
 
         # Store the output signals
-        self.Opt = [tm3Signal, tm2Signal]
+        self.Opt = [onSignal, offSignal]
 
-        return tm3Signal, tm2Signal
+        return onSignal, offSignal
+    
 
-
-class Tm2(MedullaCell):
-    """
-    Tm2 cell in the Medulla layer.
-    """
-
-    def __init__(self):
-        super().__init__()
+class LPTangentialCell(BaseCore):
+    def __init__(self, kernelSize=3):
+        self.kernelSize = kernelSize
+        self.lptcMatrix = None
 
     def init_config(self):
         """
         Initialization method.
         """
-        pass
+        self.kernelCos = np.zeros((self.kernelSize, self.kernelSize))
+        self.kernelSin = np.zeros((self.kernelSize, self.kernelSize))
 
-    def process(self, tm2Ipt):
-        """
-        Processing method.
+        halfKernel = self.kernelSize // 2
+        for x in range(-halfKernel, halfKernel + 1):
+            for y in range(-halfKernel, halfKernel + 1):
+                r = math.sqrt(x ** 2 + y ** 2)
+                if r == 0:
+                    continue
+                # 计算cosine值
+                self.kernelCos[y + halfKernel, x + halfKernel] = x / r
+                self.kernelSin[y + halfKernel, x + halfKernel] = -y / r
 
-        Args:
-        - tm2Ipt (array-like): Input to the Tm2 cell.
+    def process(self,
+            laminaOpt: np.array,
+            onSignal: np.array, # On
+            offSignal: np.array  # Off
+            ):
+        
+        # get indexes
+        onDire = (onSignal>0) & (laminaOpt>0)
+        offDire = (offSignal>0) & (laminaOpt<0)
+        
+        direMatrix = np.zeros_like(laminaOpt)
+        # On direction
+        direMatrix[onDire] = offSignal[onDire] / onSignal[onDire]
+        # Off direction
+        direMatrix[offDire] = onSignal[offDire] / offSignal[offDire]
 
-        Returns:
-        - tm2Opt (array-like): Output of the Tm2 cell.
-        """
-        offSignal = np.maximum(-tm2Ipt, 0)
-        tm2Opt = super().process(offSignal)
-        self.Opt = tm2Opt
-        return tm2Opt
-
-
-class Tm3(MedullaCell):
-    """
-    Tm3 cell in the Medulla layer.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def init_config(self):
-        """
-        Initialization method.
-        """
-        pass
-
-    def process(self, tm3Ipt):
-        """
-        Processing method.
-
-        Args:
-        - tm3Ipt (array-like): Input to the Tm3 cell.
-
-        Returns:
-        - tm3Opt (array-like): Output of the Tm3 cell.
-        """
-        onSignal = np.maximum(tm3Ipt, 0)
-        tm3Opt = super().process(onSignal)
-        self.Opt = tm3Opt
-        return tm3Opt
-
+        directionCos = filter2D(direMatrix, -1, self.kernelCos)
+        directionSin = filter2D(direMatrix, -1, self.kernelSin)
+        direction = np.arctan2(directionSin, directionCos)
+        # Adjust directions to be in the range [0, 2*pi]
+        direction[direction < 0] += 2 * math.pi
+        
+        self.lptcMatrix = direMatrix
+        self.Opt = {'direction': direction, 
+                    'lptcMatric': direMatrix}
+        return direction
+    
 
 class Lobula(BaseCore):
     """
@@ -172,28 +212,31 @@ class Lobula(BaseCore):
     def __init__(self):
         super().__init__()
         self.hSubInhi = SurroundInhibition()
-        self.hDireCell = CustomDirection()
+        self.hLPTC = LPTangentialCell()
 
     def init_config(self):
         """
         Initialization method.
         """
         self.hSubInhi.init_config()
-        self.hDireCell.init_config()
-
+        self.hLPTC.init_config()
 
     def process(self, onSignal, offSignal, laminaOpt):
         """
         Processing method.
 
         Args:
-        - varagein (tuple): Tuple containing the ON and OFF channel signals.
+        - onSignal (np.array):  ON channel signal from medulla layer.
+        - offSignal (np.array):  OFF channel signal from medulla layer.
+        - laminaOpt (np.array):  output signal from medulla layer.
 
         Returns:
-        - varargout (tuple): Tuple containing the processed output(s).
+        - lobulaOpt (np.array): output for location.
+        - direction (np.array): output for direction.
+        - correlationOutput (np.array): output without inhibition.
         """
 
-        direction = self.hDireCell.process(laminaOpt, onSignal, offSignal)
+        direction = self.hLPTC.process(laminaOpt, onSignal, offSignal)
 
         correlationOutput = onSignal * offSignal
         lobulaOpt = self.hSubInhi.process(correlationOutput)
@@ -201,58 +244,6 @@ class Lobula(BaseCore):
         self.Opt = lobulaOpt, direction, correlationOutput
 
         return lobulaOpt, direction, correlationOutput
-
-
-class CustomDirection(BaseCore):
-    def __init__(self, kernelSize=3):
-        self.kernelSize = kernelSize
-        self.kernelCos = np.zeros((self.kernelSize, self.kernelSize))
-        self.kernelSin = np.zeros((self.kernelSize, self.kernelSize))
-
-        self.direMatrix = None
-
-    def init_config(self):
-        """
-        Initialization method.
-        """
-
-        half_kernel = self.kernelSize // 2
-        for x in range(-half_kernel, half_kernel + 1):
-            for y in range(-half_kernel, half_kernel + 1):
-                r = math.sqrt(x ** 2 + y ** 2)
-                if r == 0:
-                    continue
-                # 计算cosine值
-                self.kernelCos[y + half_kernel, x + half_kernel] = x / r
-                self.kernelSin[y + half_kernel, x + half_kernel] = -y / r
-
-    def process(self,
-            laminaOpt,
-            tm3Opt, # On
-            tm2Opt  # Off
-            ):
-        
-        m,n = laminaOpt.shape
-        directionCos = np.zeros((m,n))
-        directionSin = np.zeros((m,n))
-        self.direMatrix = np.zeros((m,n))
-         
-        isNotZero = (tm3Opt > 0)
-        self.direMatrix[isNotZero] = tm2Opt[isNotZero] / tm3Opt[isNotZero]
-
-        isReciprocal = (laminaOpt < 0) & (self.direMatrix > 0)
-        self.direMatrix[isReciprocal] = 1 / self.direMatrix[isReciprocal]
-
-        directionCos = filter2D(self.direMatrix, -1, self.kernelCos)
-        directionSin = filter2D(self.direMatrix, -1, self.kernelSin)
-
-        direction = np.arctan2(directionSin, directionCos)
-
-        # Adjust directions to be in the range [0, 2*pi]
-        direction[direction < 0] += 2 * math.pi
-        
-        return direction
-    
 
 
 

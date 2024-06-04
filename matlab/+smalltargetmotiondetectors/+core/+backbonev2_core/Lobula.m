@@ -1,15 +1,8 @@
 classdef Lobula < smalltargetmotiondetectors.core.BaseCore
-    %UNTITLED2 此处提供此类的摘要
-    %   此处提供详细说明
-
+    
     properties
         hSubInhi;
-        hDireCell;
-        % spikingThreshold = 6000;
-    end
-
-    properties(Hidden)
-        
+        hLPTC;
     end
 
 
@@ -20,40 +13,28 @@ classdef Lobula < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.core.backbonev2_core.*;
 
             self.hSubInhi = SurroundInhibition();
-            self.hDireCell = ...
-                smalltargetmotiondetectors.core.backbonev2_core.DirectionCell();
+            self.hLPTC = ...
+                smalltargetmotiondetectors.core.backbonev2_core.LPTangentialCell();
         end
-    end
 
-    methods
         function init_config(self)
             self.hSubInhi.init_config();
-            self.hDireCell.init_config();
+            self.hLPTC.init_config();
         end
 
-        %function [lobulaOpt, IsSpike] = process(self, varagein)
-        function varargout = process(self, varagein)
-            onSignal = varagein{1};
-            offSignal = varagein{2};
-
-            correlationOutput = onSignal.*offSignal;
-
-%             IsSpike = correlationOutput > self.spikingThreshold;
-
-%             lobulaOpt = ...
-%                 self.hSubInhi.process(correlationOutput.*IsSpike);
-            % lobulaOpt = self.hSubInhi.process(correlationOutput);
-
-            inhiOpt = self.hSubInhi.process(correlationOutput);
-
+        function varargout = process(self, onSignal, offSignal, laminaOpt)
+            if nargout > 1
+                direciton = self.hLPTC.process(laminaOpt, onSignal, offSignal);
+            end
+            
+            correlationOutput = onSignal .* offSignal;
+            lobulaOpt = self.hSubInhi.process(correlationOutput);            
             
             if nargout == 1
                 varargout = {inhiOpt}; 
-            elseif nargout == 2
-                [lobulaOpt, direciton] = self.hDireCell.process(inhiOpt);
+            elseif nargout == 2               
                 varargout = {lobulaOpt, direciton};
             elseif nargout == 3
-                [lobulaOpt, direciton] = self.hDireCell.process(inhiOpt);
                 varargout = {lobulaOpt, direciton, correlationOutput};
             end
             

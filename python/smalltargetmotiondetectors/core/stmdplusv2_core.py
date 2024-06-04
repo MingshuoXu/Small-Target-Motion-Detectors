@@ -23,10 +23,7 @@ class MushroomBody(stmdplus_core.MushroomBody):
 
         nmsLobulaOpt = self.hNMS.nms(lobulaOpt)
 
-        numDirection = len(lobulaOpt)
-        mushroomBodyOpt = [None] * numDirection
-
-        mushroomBodyOpt = lobulaOpt * np.logical_not(nmsLobulaOpt)
+        mushroomBodyOpt = lobulaOpt * (nmsLobulaOpt > 0)
 
         maxNumber = np.max(nmsLobulaOpt)
 

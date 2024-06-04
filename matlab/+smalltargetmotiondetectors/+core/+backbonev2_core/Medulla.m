@@ -1,6 +1,5 @@
 classdef Medulla < smalltargetmotiondetectors.core.BaseCore
-    %UNTITLED2 此处提供此类的摘要
-    %   此处提供详细说明
+    %Medulla
     %
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %
     % Lamina   LMC1 (L1)            LMC2 (L2)   %
@@ -21,59 +20,52 @@ classdef Medulla < smalltargetmotiondetectors.core.BaseCore
     % Lobula    v                    v          %
     %                                           %
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %
-
+    
     properties
-        hTm1;
-        hTm2;
-        hTm3;
-        hMi1;
+        hMi4;
+        hTm9;
     end
-
-
+    
     methods
         function self = Medulla()
             self = self@smalltargetmotiondetectors.core.BaseCore();
-
-%             self.hTm1 = indevelopment.core.spikingstmd_core.Tm1();
-%             self.hMi1 = indevelopment.core.spikingstmd_core.Mi1();
-
-            self.hTm2 = ...
-                smalltargetmotiondetectors.core.backbonev2_core.Tm2();
-            self.hTm3 = ...
-                smalltargetmotiondetectors.core.backbonev2_core.Tm3();
-
-        end
-    end
-
-    methods
-        function init_config(self)
-%             self.hTm1.init_config();
-            self.hTm2.init_config();
-            self.hTm3.init_config();
-%             self.hMi1.init_config();
-        end
-
-        function varargout = process(self, medullaIpt)%, IsSpike)
             
-%             if isempty(IsSpike)
-%                 IsSpike = false(size(medullaIpt));
-%             end
+            self.hMi4 = ...
+                smalltargetmotiondetectors.core.backbonev2_core.Mi4();
+            self.hTm9 = ...
+                smalltargetmotiondetectors.core.backbonev2_core.Tm9();
+        end
 
-            tm2Signal = self.hTm2.process(medullaIpt);%, IsSpike); % OFF
-            tm3Signal = self.hTm3.process(medullaIpt);%, IsSpike); % ON
-
-%             tm1Signal = self.hTm1.process(tm2Signal);
-
+        function init_config(self)
+            self.hMi4.init_config();
+            self.hTm9.init_config();
+        end
+        
+        function varargout = process(self, medullaIpt)
+            %process Process the input through the Medulla layer.
+            %
+            % Args:
+            %   - medullaIpt (array-like): Input to the Medulla layer.
+            %
+            % Returns:
+            %	- onSignal (array-like): Output signal from Mi4.
+            %	- offSignal (array-like): Output signal from Tm9.
+            %
+            % Process through hMi4 and hTm9
+            
+            onSignal = self.hMi4.process(medullaIpt); % ON
+            offSignal = self.hTm9.process(medullaIpt); % OFF
+            
             if nargout == 2
-                varargout = {tm3Signal, tm2Signal};
+                varargout = {onSignal, offSignal};
             end
             
-            self.Opt = {tm3Signal, tm2Signal};
+            self.Opt = {onSignal, offSignal};
         end
-
-
+        
+        
     end
-
+    
 end
 
 

@@ -62,6 +62,7 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
 
             % Initialize contrast pathway and mushroom body
             self.hContrastPathway.init_config();
+            self.hMushroomBody.init_config()
         end
 
         function model_structure(self, iptMatrix)
@@ -88,7 +89,6 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
 
             %% D. Mushroom Body
             self.mushroomBodyOpt = self.hMushroomBody.process( ...
-                self.hLobula.hDireCell.sTrajectory, ...
                 self.lobulaOpt, ...
                 self.direContrastOpt);
 

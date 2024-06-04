@@ -33,10 +33,10 @@ objModel.init_config();
 while hSteam.hasFrame && hVisual.hasFigHandle
     % Read the next frame from the image stream
     [grayImg, colorImg] = hSteam.get_next_frame();
-    
+
     % Perform inference using the model
     result = inference(objModel, grayImg);
-    
+
     % Display the result
     hVisual.show_result(colorImg, result);
 end

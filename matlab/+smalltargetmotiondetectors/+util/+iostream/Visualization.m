@@ -147,11 +147,9 @@ classdef Visualization < handle
                     'MarkerSize',       5 );
                 
                 if ~isempty(motionDirection) % Direction
-                   
                     indXY = sub2ind(size(nmsOutput), idX, idY);
                     nanStatus = ~isnan(motionDirection(indXY));
 
-                    
                     quiverX = idX(nanStatus);
                     quiverY = idY(nanStatus);
 

@@ -38,19 +38,17 @@ classdef Backbonev2 < smalltargetmotiondetectors.model.BaseModel
 
         function model_structure(self, modelIpt)
             
-
             self.retinaOpt = self.hRetina.process(modelIpt);
             self.laminaOpt = self.hLamina.process(self.retinaOpt);
-            %             self.medullaOpt = ...
-            %                 self.hMedulla.process(self.laminaOpt, self.isSpike);
-            %             [self.lobulaOpt, self.isSpike] = ...
-            %                 self.hLobula.process(self.medullaOpt);
 
             self.hMedulla.process(self.laminaOpt);
             self.medullaOpt = self.hMedulla.Opt;
 
-            [self.lobulaOpt, self.modelOpt.direction] = ...
-                self.hLobula.process(self.medullaOpt);
+            [self.lobulaOpt, self.modelOpt.direction] ...
+                = self.hLobula.process(...
+                self.medullaOpt{1}, ...
+                self.medullaOpt{2}, ...
+                self.laminaOpt);
 
             self.modelOpt.response = self.lobulaOpt;
         end

@@ -8,7 +8,7 @@ class Lobula(feedbackstmd_core.Lobula):
         """Constructor method."""
         # Initializes the Lobula object
         super().__init__()
-        self.hDireCell = backbonev2_core.CustomDirection()
+        self.hDireCell = backbonev2_core.LPTangentialCell()
 
     def init_config(self):
         """Initialization method."""
