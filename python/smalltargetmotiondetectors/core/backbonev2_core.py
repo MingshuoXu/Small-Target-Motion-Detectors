@@ -12,89 +12,29 @@ class MECumulativeCell(BaseCore):
     def __init__(self):
         super().__init__()
 
-        self.coeffDecay = 0.8
-        self.coeffInhi = 0.5
-        self.postMembranePotential = None
+        self.coeffDecay = 0.2
+        self.coeffInhi = 3
+        self.postMP = None
 
     def init_config(self):
         pass
 
-    def process(self, iptMatrix):
-        if self.postMembranePotential is None:
-            self.postMembranePotential = np.zeros_like(iptMatrix)
+    def process(self, samePolarity, oppoPolarity):
+        if self.postMP is None:
+            self.postMP = np.zeros_like(samePolarity)
 
         # Decay
-        postMP = self.coeffDecay * self.postMembranePotential
+        NegativeChange = self.coeffDecay * self.postMP
 
-        # Accumulation
-        postMP = postMP + iptMatrix
+        # Inhibition
+        isInhi = (oppoPolarity>0)
+        NegativeChange[isInhi] = self.coeffInhi * NegativeChange[isInhi]
         
-        # Inhi
-        isInhi = (iptMatrix == 0)
-        postMP[isInhi] *= self.coeffInhi
+        # Excitation
+        self.postMP = self.postMP - NegativeChange + samePolarity
 
-        self.postMembranePotential = postMP
+        return self.postMP
 
-        return postMP
-
-
-class Mi4(MECumulativeCell):
-    """
-    Mi4 cell of ON pathway in the Medulla layer.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def init_config(self):
-        """
-        Initialization method.
-        """
-        pass
-
-    def process(self, iptMatrix: np.array):
-        """
-        Processing method.
-
-        Args:
-        - iptMatrix (array-like): Input
-
-        Returns:
-        - self.Opt (array-like): Output
-        """
-        onSignal = np.maximum(iptMatrix, 0)
-        self.Opt = super().process(onSignal)
-        return self.Opt
-
-
-class Tm9(MECumulativeCell):
-    """
-    Tm9 cell of OFF pathway in the Medulla layer.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def init_config(self):
-        """
-        Initialization method.
-        """
-        pass
-
-    def process(self, iptMatrix: np.array):
-        """
-        Processing method.
-
-        Args:
-        - iptMatrix (array-like): Input
-
-        Returns:
-        - self.Opt (array-like): Output
-        """
-        offSignal = np.maximum(-iptMatrix, 0)
-        self.Opt = super().process(offSignal)
-        return self.Opt
-    
 
 class Medulla(BaseCore):
     """
@@ -125,8 +65,8 @@ class Medulla(BaseCore):
     def __init__(self):
         super().__init__()
         # Initialize components
-        self.hMi4 = Mi4()
-        self.hTm9 = Tm9()
+        self.hMi4 = MECumulativeCell()
+        self.hTm9 = MECumulativeCell()
 
     def init_config(self):
         # Initialize configurations
@@ -145,13 +85,16 @@ class Medulla(BaseCore):
         - offSignal (array-like): Output signal from Tm9.
         """
         # Process through hMi4 and hTm9
-        onSignal = self.hMi4.process(medullaIpt)
-        offSignal = self.hTm9.process(medullaIpt)
+        onSignal = np.maximum(medullaIpt, 0); # ON
+        offSignal = np.maximum(-medullaIpt, 0); # OFF
+        
+        mi4Opt = self.hMi4.process(onSignal, offSignal); # ON
+        tm9Opt = self.hTm9.process(offSignal, onSignal); # OFF
 
         # Store the output signals
-        self.Opt = [onSignal, offSignal]
+        self.Opt = (mi4Opt, tm9Opt)
 
-        return onSignal, offSignal
+        return mi4Opt, tm9Opt
     
 
 class LPTangentialCell(BaseCore):

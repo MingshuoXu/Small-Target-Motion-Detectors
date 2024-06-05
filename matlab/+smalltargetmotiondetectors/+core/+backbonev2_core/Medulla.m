@@ -31,9 +31,9 @@ classdef Medulla < smalltargetmotiondetectors.core.BaseCore
             self = self@smalltargetmotiondetectors.core.BaseCore();
             
             self.hMi4 = ...
-                smalltargetmotiondetectors.core.backbonev2_core.Mi4();
+                smalltargetmotiondetectors.core.backbonev2_core.MECumulativeCell();
             self.hTm9 = ...
-                smalltargetmotiondetectors.core.backbonev2_core.Tm9();
+                smalltargetmotiondetectors.core.backbonev2_core.MECumulativeCell();
         end
 
         function init_config(self)
@@ -53,14 +53,19 @@ classdef Medulla < smalltargetmotiondetectors.core.BaseCore
             %
             % Process through hMi4 and hTm9
             
-            onSignal = self.hMi4.process(medullaIpt); % ON
-            offSignal = self.hTm9.process(medullaIpt); % OFF
+            onSignal = max(medullaIpt, 0); % ON
+            offSignal = max(-medullaIpt, 0); % OFF
+            
+            mi4Opt = self.hMi4.process(onSignal, offSignal); % ON
+            tm9Opt = self.hTm9.process(offSignal, onSignal); % OFF
+            
+            self.Opt = {mi4Opt, tm9Opt};
             
             if nargout == 2
-                varargout = {onSignal, offSignal};
+                varargout = self.Opt;
             end
             
-            self.Opt = {onSignal, offSignal};
+            
         end
         
         
