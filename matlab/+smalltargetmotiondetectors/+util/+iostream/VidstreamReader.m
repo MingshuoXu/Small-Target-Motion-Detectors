@@ -119,7 +119,7 @@ classdef VidstreamReader < handle
                 else
                     colorImg =  readFrame(self.hVid);
                 end
-                garyImg = double(rgb2gray(colorImg));
+                garyImg = double(rgb2gray(colorImg)) / 255;
             else
                 error('Could not get the frame');
             end

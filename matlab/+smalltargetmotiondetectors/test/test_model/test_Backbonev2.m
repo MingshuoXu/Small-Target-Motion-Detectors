@@ -31,9 +31,9 @@ model = instancing_model('Backbonev2');
 %     10, 100 );
 
 % Demo video (RIST)
-hSteam = VidstreamReader();
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
+% hSteam = VidstreamReader();
+hSteam = VidstreamReader( ...
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
 % hSteam = VidstreamReader( ...
 %     [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo0in250Hz.mp4']);
 % Demo video (simulate)
@@ -78,3 +78,6 @@ while hSteam.hasFrame && hVisual.hasFigHandle
     % Visualize the result
     hVisual.show_result(colorImg, result);
 end
+
+delete(hVisual);
+fprintf('\tEnd of video inference.\n');

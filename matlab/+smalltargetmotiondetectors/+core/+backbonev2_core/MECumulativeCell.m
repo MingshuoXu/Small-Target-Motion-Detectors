@@ -2,18 +2,23 @@ classdef MECumulativeCell < smalltargetmotiondetectors.core.BaseCore
     %umulativeCell cell in Medulla layer 
     %
     properties
-        coeffDecay = 0.2;
-        coeffInhi = 3;
+        coeffDecay = 0.5; % coefficient of decay
+    end
+    
+    properties(Hidden)
         postMP;
+    end
+    
+    properties(Constant)
+        V_REST = 0;  % passive/rest potentials;
+        V_EXCI = 1;  % excitatory saturation potentials;
     end
 
     methods
         function self = MECumulativeCell()
             self = self@smalltargetmotiondetectors.core.BaseCore();
         end
-    end
 
-    methods
         function init_config(self)
             return;
         end
@@ -24,15 +29,16 @@ classdef MECumulativeCell < smalltargetmotiondetectors.core.BaseCore
             end
 
             % Decay
-            NegativeChange = self.coeffDecay * self.postMP;
-            
+            decayTerm = self.coeffDecay * (self.V_REST - self.postMP);
             % Inhibition
-            isInhi = (oppoPolarity>0);
-            NegativeChange(isInhi) = self.coeffInhi * NegativeChange(isInhi);
-            
+            inhiGain = 1 + oppoPolarity;
             % Excitation
-            self.postMP = self.postMP - NegativeChange + samePolarity;
+            exciTerm = samePolarity .* (self.V_EXCI - self.postMP);
             
+            % Euler method for solving ordinary differential equation
+            self.postMP = self.postMP + inhiGain .* decayTerm + exciTerm;
+            
+            % Output
             varargout = {self.postMP};
         end
 

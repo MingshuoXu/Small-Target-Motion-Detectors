@@ -202,7 +202,7 @@ classdef ImgstreamReader < handle
             end
             
             % Convert the color image to grayscale
-            grayImg = double(rgb2gray(colorImg));
+            grayImg = double(rgb2gray(colorImg)) / 255;
             
             % Update internal state to point to the next frame
             if self.currIdx < length(self.fileList)

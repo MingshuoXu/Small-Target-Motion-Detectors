@@ -203,7 +203,7 @@ class ImgstreamReader:
             raise Exception('Could not read the image.')
 
         # Convert the color image to grayscale
-        garyImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY)
+        garyImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
 
         # Update internal state to point to the next frame
         if self.currIdx < len(self.fileList)-1:
@@ -323,7 +323,7 @@ class VidstreamReader:
                 if not ret:
                     raise Exception('Could not get the frame')
                     
-            grayImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float)
+            grayImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
         else:
             raise Exception('Could not get the frame')
 
