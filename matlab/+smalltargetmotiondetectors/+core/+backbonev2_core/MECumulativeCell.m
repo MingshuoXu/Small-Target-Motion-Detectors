@@ -31,7 +31,11 @@ classdef MECumulativeCell < smalltargetmotiondetectors.core.BaseCore
             % Decay
             decayTerm = self.coeffDecay * (self.V_REST - self.postMP);
             % Inhibition
-            inhiGain = 1 + oppoPolarity;
+            %   inhiGain = exp(oppoPolarity);
+            % To reduce the computational load, a secone-order Taylor 
+            %   expansion was used.
+            inhiGain = 1 + oppoPolarity + oppoPolarity.*2;
+            
             % Excitation
             exciTerm = samePolarity .* (self.V_EXCI - self.postMP);
             

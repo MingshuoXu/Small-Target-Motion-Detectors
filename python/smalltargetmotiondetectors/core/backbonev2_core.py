@@ -28,7 +28,9 @@ class MECumulativeCell(BaseCore):
         # Decay
         decayTerm = self.coeffDecay * (self.V_REST - self.postMP)
         # Inhibition
-        inhiGain = 1 + oppoPolarity
+        # inhiGain = np.exp(oppoPolarity)
+        # To reduce the computational load, a first-order Taylor expansion was used.
+        inhiGain = 1 + oppoPolarity + oppoPolarity**2
         # Excitation
         exciTerm = samePolarity * (self.V_EXCI - self.postMP)
         
