@@ -65,13 +65,13 @@ class BaseModel(ABC):
         print(f'The parameter of {className} includes: ')
         for name, value in self.__dict__.items():
             if name.startswith(f"_{className}__"):
-                print(name[len(className)+3:], "=", value)
+                print(name[len(className)+3:], "\t=", value)
 
     def set_private_variables(self, **kwargs):
         for key, value in kwargs.items():
-            private_name = f"_{self.__class__.__name__}__{key}"
-            if private_name in self.__dict__:
-                self.__dict__[private_name] = value
+            privateName = f"_{self.__class__.__name__}__{key}"
+            if privateName in self.__dict__:
+                self.__dict__[privateName] = value
             else:
                 raise AttributeError(f"Private variable '{key}' does not exist.")
     

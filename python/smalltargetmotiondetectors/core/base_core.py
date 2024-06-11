@@ -12,14 +12,14 @@ class BaseCore(ABC):
         self.Opt = None
 
     @abstractmethod
-    def init_config(self):
+    def init_config(self, *args, **kwargs):
         """
         Abstract method for initialization.
         """
         pass
 
     @abstractmethod
-    def process(self):
+    def process(self, *args, **kwargs):
         """
         Abstract method for processing.
         """
