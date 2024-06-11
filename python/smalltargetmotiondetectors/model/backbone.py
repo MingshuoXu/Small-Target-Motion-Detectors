@@ -29,14 +29,14 @@ class BaseModel(ABC):
         self.modelOpt = {'response': [], 'direction': []}
 
     @abstractmethod
-    def init_config(self):
+    def init_config(self, *args, **kwargs):
         """
         Abstract method for initializing model components.
         """
         pass
 
     @abstractmethod
-    def model_structure(self, modelIpt):
+    def model_structure(self, modelIpt, *args, **kwargs):
         """
         Abstract method for defining model structure.
         
@@ -59,6 +59,21 @@ class BaseModel(ABC):
         self.model_structure(modelIpt)
         # Return the model output
         return self.modelOpt
+    
+    def print_private_variables(self):
+        className = self.__class__.__name__
+        print(f'The parameter of {className} includes: ')
+        for name, value in self.__dict__.items():
+            if name.startswith(f"_{className}__"):
+                print(name[len(className)+3:], "=", value)
+
+    def set_private_variables(self, **kwargs):
+        for key, value in kwargs.items():
+            private_name = f"_{self.__class__.__name__}__{key}"
+            if private_name in self.__dict__:
+                self.__dict__[private_name] = value
+            else:
+                raise AttributeError(f"Private variable '{key}' does not exist.")
     
 
 class ESTMD(BaseModel):
