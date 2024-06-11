@@ -260,7 +260,7 @@ class VidstreamReader:
         del vidReader
     """
 
-    def __init__(self, vidName=None, startFrame=1, endFrame=None):
+    def __init__(self, vidName=None, startFrame=0, endFrame=None):
         """
         Constructor method for VidstreamReader class.
         
@@ -327,7 +327,7 @@ class VidstreamReader:
         else:
             raise Exception('Could not get the frame')
 
-        if self.frameIdx < self.endFrame:
+        if self.frameIdx < self.endFrame-1:
             self.hasFrame = True
             self.currIdx += 1
             self.frameIdx += 1
