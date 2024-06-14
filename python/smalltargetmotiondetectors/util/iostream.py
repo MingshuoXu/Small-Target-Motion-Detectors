@@ -456,7 +456,7 @@ class Visualization:
         
         modelOpt = result['response']
         motionDirection = result['direction']
-        if modelOpt is not None:
+        if modelOpt is not None and np.any(modelOpt):
             maxOutput = np.max(modelOpt)
 
             if maxOutput > 0:

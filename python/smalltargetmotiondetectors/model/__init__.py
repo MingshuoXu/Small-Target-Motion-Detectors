@@ -2,9 +2,10 @@ from .backbone import ESTMD, ESTMDBackbone, FracSTMD, DSTMD, DSTMDBackbone, Back
 from .feedback_model import FeedbackSTMD, FSTMD, STFeedbackSTMD
 from .facilitated_model import STMDPlus, ApgSTMD
 from .version2_model import FeedbackSTMDv2, FSTMDv2, STMDPlusv2, ApgSTMDv2
+from .new_model import HaarSTMD
 
-__all__ = ['ESTMD', 'ESTMDBackbone', 'FracSTMD', 'DSTMD', 'DSTMDBackbone', 'Backbonev2',
-           'FeedbackSTMD', 'FSTMD', 'STFeedbackSTMD',
-           'STMDPlus', 'ApgSTMD',
-           'FeedbackSTMDv2', 'FSTMDv2', 'STMDPlusv2', 'ApgSTMDv2'
-        ]
+__all__ = ['ESTMD', 'ESTMDBackbone', 'FracSTMD', 'DSTMD', 'DSTMDBackbone', # backbone with four basis layers
+           'FeedbackSTMD', 'FSTMD', 'STFeedbackSTMD', # model with feedback pathway
+           'STMDPlus', 'ApgSTMD', # facilitated model
+           'HaarSTMD', 'Backbonev2', # under reviewed
+         ]
