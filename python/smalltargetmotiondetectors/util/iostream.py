@@ -571,7 +571,7 @@ class ModelSelectorGUI:
         self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
 
         self.modelCombobox = ttk.Combobox(self.root, values=modelList, width = 30)
-        self.modelCombobox.current(5)
+        self.modelCombobox.current(11)
         self.modelCombobox.grid(row=0, column=1, columnspan=2, padx=10, pady=10)
         
 
