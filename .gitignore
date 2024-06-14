@@ -3,6 +3,10 @@ indevelopment
 "`
 
 "`
+dev_*
+"`
+
+"`
 temp*
 "`
 
@@ -10,4 +14,7 @@ temp*
 in_RIST
 "`
 
+"`
 **/__pycache__
+"`
+
