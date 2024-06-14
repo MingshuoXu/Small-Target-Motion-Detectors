@@ -12,25 +12,30 @@ sys.path.append(filePath[:indexPath])
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
 
-
 ''' Model instantiation '''
 objModel = instancing_model('HaarSTMD')
 
 ''' Input '''
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0in250Hz.mp4'))
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_orignal_1000Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
 
 ''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 ''' Initialize the model '''
 # set the parameter list
-# objModel.set_private_variables(
-#         a=6,
-#     )
+objModel.set_parameter( sigma1  = 1,
+                        n1      = 10,
+                        tau1    = 3,
+                        n2      = 10,
+                        tau2    = 9,
+                        sigma2  = 1.5,
+                        sigma3  = 3,
+                        TAU     = 1,
+                        )
 # print the parameter list
-# objModel.print_private_variables()
+objModel.print_parameter()
+# init
 objModel.init_config()
 
 

@@ -23,6 +23,15 @@ class FeedbackSTMDv2(Backbonev2):
         # Customize Lobula component
         self.hLobula = feedbackstmdv2_core.Lobula()
 
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
+
     def init_config(self):
         """
         INIT Initializes the FeedbackSTMD components.
@@ -66,6 +75,15 @@ class FSTMDv2(Backbonev2):
 
         # Initialize feedback pathway component
         self.hFeedbackPathway.hGammaDelay.tau = 1
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -134,6 +152,15 @@ class STMDPlusv2(Backbonev2):
         self.hContrastPathway = stmdplus_core.ContrastPathway()
         self.hMushroomBody = stmdplusv2_core.MushroomBody()
 
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
+
     def init_config(self):
         """
         Initializes the STMDPlus components.
@@ -184,6 +211,15 @@ class ApgSTMDv2(STMDPlusv2):
         self.hLobula.hSubInhi.Sigma2 = 2.5
         self.hLobula.hSubInhi.e = 1.2
         self.predictionMap = None
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """

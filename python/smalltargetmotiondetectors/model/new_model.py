@@ -7,43 +7,48 @@ from .backbone import ESTMDBackbone
 class HaarSTMD(ESTMDBackbone):
     def __init__(self):
         super().__init__()
+
         self.hMedulla = haarstmd_core.Medulla()
         self.hLobula = haarstmd_core.Lobula()
+
+        self._map_and_init_parameter(sigma1 = 10,
+                                    n1      = 10,
+                                    tau1    = 3,
+                                    n2      = 10,
+                                    tau2    = 9,
+                                    sigma2  = 1.5,
+                                    sigma3  = 3,
+                                    TAU     = 1
+                                    )
+        # a       = 34,
+        # theta   = math.pi,
+        # r       = 4,
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {
+            'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+            'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
+            'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
+            'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
+            'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+            'sigma2'    : 'self.hLobula.hSubInhi.Sigma1',
+            'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
+            'TAU'       : 'self.hLobula.tau',
+            }
         
-        self.__sigma1 = 1
-        self.__n1 = 10
-        self.__tau1 = 3
-        self.__n2 = 10
-        self.__tau2 = 9
-        self.__a = 34
-        self.__theta = math.pi
-        self.__r = 4
-        self.__sigma2 = 1.5
-        self.__sigma3 = 3
-        self.__TAU = 1
-
-        self.__sigma1 = {'pointer': self.hRetina.hGaussianBlur.sigma}
-
+        # init parameters
+        self.set_parameter(**kwargs)
+        
 
     def init_config(self):                                  
-        self.hRetina.hGaussianBlur.sigma = self.__sigma1
-        self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = self.__n1
-        self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau = self.__tau1
-        self.hLamina.hGammaBandPassFilter.hGammaDelay2.order = self.__n2
-        self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau = self.__tau2
-
-        self.hLobula.hSubInhi.Sigma1 = self.__sigma2
-        self.hLobula.hSubInhi.Sigma2 = self.__sigma3
-        self.hLobula.tau = self.__TAU
-
         self.hRetina.init_config()
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
 
     def model_structure(self, iptMatrix):
-        ''' 
-        MODEL_STRUCTURE Method:
+        ''' MODEL_STRUCTURE:
             Defines the structure of the HaarSTMD model. Processes the input matrix 
             through the HaarSTMD model components (retina, lamina, medulla, and lobula)
             and generates the model's response.

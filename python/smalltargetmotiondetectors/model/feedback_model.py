@@ -31,6 +31,15 @@ class FeedbackSTMD(ESTMDBackbone):
         self.hMedulla.hTm1.hGammaDelay.order = 9
         self.hMedulla.hTm1.hGammaDelay.tau = 45
 
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
+
     def init_config(self):
         """
         INIT Initializes the FeedbackSTMD components.
@@ -75,6 +84,15 @@ class FSTMD(ESTMDBackbone):
 
         # Customize Medulla's Tm1 component properties
         self.hMedulla.hTm1.hGammaDelay.order = 5
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -139,14 +157,20 @@ class STFeedbackSTMD(ESTMDBackbone):
         """
         Constructor method
         """
-        super().__init__()
-
-        # Import necessary packages
-        
+        super().__init__()       
 
         # Customize Medulla and Lobula component
         self.hMedulla = stfeedbackstmd_core.Medulla()
         self.hLobula = stfeedbackstmd_core.Lobula()
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """

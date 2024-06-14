@@ -27,7 +27,13 @@ objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 
 ''' Get visualization handle and initiate model '''
 # Get visualization handle
 objVisualize = get_visualize_handle(objModel.__class__.__name__)
-# Initialize the model
+
+''' Initialize the model '''
+# set the parameter list
+objModel.set_parameter()
+# print the parameter list
+objModel.print_parameter()
+# init
 objModel.init_config()
 
 ''' Run '''

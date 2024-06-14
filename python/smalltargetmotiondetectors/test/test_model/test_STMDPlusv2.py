@@ -11,20 +11,25 @@ sys.path.append(import_path)
 
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
+from smalltargetmotiondetectors.model.version2_model import STMDPlusv2
 
-# Model instantiation
-objModel = instancing_model('STMDPlusv2')
+''' Model instantiation '''
+objModel = STMDPlusv2()
 
-# Input
+''' Input '''
 # Demo video (RIST)
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0in250Hz.mp4'))
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_compressed2_250Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
 
-# Visualization and model init
-# Get visualization handle
+''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)
 
-# Initialize the model
+''' Initialize the model '''
+# set the parameter list
+objModel.set_parameter()
+# print the parameter list
+objModel.print_parameter()
+# init
 objModel.init_config()
 
 # Run inference

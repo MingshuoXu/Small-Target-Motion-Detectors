@@ -13,12 +13,18 @@ class STMDPlus(DSTMDBackbone):
         """
         super().__init__()
 
-        # Import necessary packages
-        
-
         # Initialize contrast pathway and mushroom body components
         self.hContrastPathway = stmdplus_core.ContrastPathway()
         self.hMushroomBody = stmdplus_core.MushroomBody()
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -80,6 +86,15 @@ class ApgSTMD(STMDPlus):
         self.hLobula.hLateralInhi.e = 1.2
 
         self.predictionMap = None
+
+        self._map_and_init_parameter()
+
+    def _map_and_init_parameter(self, **kwargs):
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
+        # init parameters
+        self.set_parameter(**kwargs)
 
     def init_config(self):
         """

@@ -18,17 +18,23 @@ from smalltargetmotiondetectors.model import *
 objModel = instancing_model('Backbonev2')
 
 ''' Create a video stream reader '''
-objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'))
+objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
 
 ''' Alternatively, uncomment the following options for different inputs: '''
-# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'), 10)
-# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290.mp4'), 10,100)
-# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0.mp4'))
+# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'), 1)
+# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'), 1, 100)
+# objIptStream = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_orignal_1000Hz.mp4'))
 
 ''' Get visualization handle and initiate model '''
 # Get visualization handle
 objVisualize = get_visualize_handle(objModel.__class__.__name__)
-# Initialize the model
+
+''' Initialize the model '''
+# set the parameter list
+objModel.set_parameter()
+# print the parameter list
+objModel.print_parameter()
+# init
 objModel.init_config()
 
 ''' Run '''
