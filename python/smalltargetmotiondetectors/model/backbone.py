@@ -65,16 +65,15 @@ class BaseModel(ABC):
         print(f'The parameter of {className} includes: ')
         for name, value in self.__dict__.items():
             if name.startswith(f"_{className}__"):
-                print(name[len(className)+3:], "\t=", value)
+                print(name[len(className)+3:], "\t=", eval(value))
 
     def set_private_variables(self, **kwargs):
         for key, value in kwargs.items():
             privateName = f"_{self.__class__.__name__}__{key}"
             if privateName in self.__dict__:
-                self.__dict__[privateName] = value
+                exec(self.__dict__[privateName] + ' = value') 
             else:
                 raise AttributeError(f"Private variable '{key}' does not exist.")
-    
 
 class ESTMD(BaseModel):
     def __init__(self):

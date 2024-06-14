@@ -5,14 +5,14 @@ classdef VidstreamReader < handle
     %
     %   Properties:
     %       hasFrame - Indicates if there are more frames available.
+    %       startFrame - Starting frame number.
+    %       endFrame - Ending frame number.
     %
     %   Hidden Properties:
     %       hVid - VideoReader object for reading the video file.
-    %       startFrame - Starting frame number.
     %       currIdx - Index of the current frame being processed.
     %       frameIdx - Index of the current frame in the video.
     %       hWaitbar - Handle to the waitbar.
-    %       endFrame - Ending frame number.
     %       isShowWaitbar - Flag to indicate if waitbar is shown.
     %       hasDeleteWaitbar - Flag to indicate if waitbar has been deleted.
     %
@@ -36,18 +36,21 @@ classdef VidstreamReader < handle
     
     properties
         hasFrame = true;
+        startFrame;
+        endFrame;
+        
     end
+    
     
     properties(Hidden)
         hVid;
-        startFrame;
         currIdx = 1;
-        frameIdx;
+        frameIdx; 
         hWaitbar;
-        endFrame;
         isShowWaitbar = false;
         hasDeleteWaitbar = false;
     end
+    
     
     methods
         function self = VidstreamReader(vidName, startFrame, endFrame)

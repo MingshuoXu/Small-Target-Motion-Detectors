@@ -214,13 +214,6 @@ class ImgstreamReader:
             # If the end of the image stream is reached, set hasFrame to false
             self.hasFrame = False
 
-        # Update the waitbar if necessary
-        # if self.isShowWaitbar:
-        #     self.call_waitbar()
-        # elif not self.hasDeleteWaitbar:
-        #     self.hWaitbar.destroy()
-        #     self.hasDeleteWaitbar = True
-
         return np.double(garyImg), cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
     
 
@@ -240,14 +233,11 @@ class VidstreamReader:
         frameIdx - Index of the current frame in the video.
         hWaitbar - Handle to the waitbar.
         endFrame - Ending frame number.
-        isShowWaitbar - Flag to indicate if waitbar is shown.
-        hasDeleteWaitbar - Flag to indicate if waitbar has been deleted.
+
 
     Methods:
         __init__ - Constructor method.
         get_next_frame - Retrieves the next frame from the video.
-        create_waitbar_handle - Creates a waitbar to show progress.
-        call_waitbar - Updates the waitbar with current progress.
         __del__ - Destructor method.
 
     Example:
@@ -289,7 +279,7 @@ class VidstreamReader:
 
         self.hVid = cv2.VideoCapture(vidName)
 
-        self.currIdx = 1
+        self.currIdx = 0
         self.hasFrame = self.hVid.isOpened()
         self.startFrame = startFrame
 
@@ -312,34 +302,23 @@ class VidstreamReader:
         """
 
         if self.hasFrame:
-            if self.currIdx == 1:
+            if self.currIdx == 0:
                 self.hVid.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
-                ret, colorImg = self.hVid.read()
-                if not ret:
-                    raise Exception('Could not get the frame')
                 self.frameIdx = self.startFrame
-            else:
-                ret, colorImg = self.hVid.read()
-                if not ret:
-                    raise Exception('Could not get the frame')
+            ret, colorImg = self.hVid.read()
+            if not ret:
+                raise Exception('Could not get the frame.')
                     
             grayImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
         else:
-            raise Exception('Could not get the frame')
+            raise Exception('Having reached the last frame.')
 
         if self.frameIdx < self.endFrame-1:
             self.hasFrame = True
-            self.currIdx += 1
-            self.frameIdx += 1
         else:
             self.hasFrame = False
-
-        # if self.isShowWaitbar:
-        #     self.call_waitbar()
-        # elif not self.hasDeleteWaitbar:
-        #     # Delete the waitbar if it has not been deleted
-        #     del self.hWaitbar
-        #     self.hasDeleteWaitbar = True
+        self.currIdx  += 1
+        self.frameIdx += 1
 
         return grayImg, cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
 
@@ -782,46 +761,6 @@ class ModelAndInputSelectorGUI:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
         else:
             messagebox.showinfo("Message title", "Please select input")
-
-
-def create_waitbar_handle(self):
-    '''
-    create_waitbar_handle - Creates a waitbar for displaying progress.
-        This method creates a waitbar with an initial progress of 0% and a
-        specific message, typically used to indicate the initialization phase
-        of the ImgstreamReader.
-    
-        Parameters:
-            - self: Instance of the ImgstreamReader class.
-    '''
-
-    # Create a waitbar with specific properties
-    pass
-    # self.hWaitbar = waitbar(
-    #     0, 'Initiating, please wait...', name='ImgstreamReader', position=[450, 450, 270, 50])
-
-
-def call_waitbar(self):
-    '''
-    call_waitbar - Updates the waitbar with current frame index.
-        This method updates the progress of the waitbar based on the current
-        frame index relative to the total number of frames and displays a
-        message indicating the current frame index.
-    
-        Parameters:
-            - self: Instance of the ImgstreamReader class.
-    '''
-
-    # Calculate the progress as a floating-point number
-    floatBar = self.frameIdx / self.endFrame
-    
-    # Generate a message indicating the current frame index
-    waitbarStr = 'FrameIndex: {}'.format(self.frameIdx)
-    
-    # Update the waitbar with the current progress and message
-
-    pass
-    # self.hWaitbar = waitbar(floatBar, self.hWaitbar, waitbarStr)
 
 
 def check_same_ext_name(startImgName, endImgName):
