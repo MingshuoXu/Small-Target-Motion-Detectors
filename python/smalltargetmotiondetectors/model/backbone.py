@@ -74,7 +74,7 @@ class BaseModel(ABC):
         print(f'The parameter list of {self.__class__.__name__} includes: \n')
         paraList = eval(f'self._{self.__class__.__name__}__parameterList')
         for name, value in paraList.items():
-            print(name, '\t = ', eval(value))
+            print(name, '\t:', value, '\t = ', eval(value))
 
     def set_parameter(self, **kwargs):
         for key, value in kwargs.items():
