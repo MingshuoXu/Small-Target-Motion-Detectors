@@ -62,7 +62,7 @@ class Lamina(BaseCore):
         Initializes the Lamina object and creates GammaBankPassFilter
         and LaminaLateralInhibition objects
         """
-        self.hGammaBankPassFilter = GammaBandPassFilter()
+        self.hGammaBandPassFilter = GammaBandPassFilter()
         self.hLaminaLateralInhibition = LaminaLateralInhibition()
 
     def init_config(self):
@@ -70,7 +70,7 @@ class Lamina(BaseCore):
         Initialization method
         Initializes the GammaBankPassFilter and LaminaLateralInhibition objects
         """
-        self.hGammaBankPassFilter.init_config()
+        self.hGammaBandPassFilter.init_config()
         self.hLaminaLateralInhibition.init_config()
 
     def process(self, laminaIpt):
@@ -84,7 +84,7 @@ class Lamina(BaseCore):
         Returns:
         - laminaOpt: Processed output matrix
         """
-        signalWithBPF = self.hGammaBankPassFilter.process(laminaIpt)
+        signalWithBPF = self.hGammaBandPassFilter.process(laminaIpt)
         laminaOpt = self.hLaminaLateralInhibition.process(signalWithBPF)
         self.Opt = laminaOpt
         return laminaOpt
@@ -105,6 +105,7 @@ class Medulla(BaseCore):
         self.hTm1 = Tm1()  # Initialize Tm1 object
         self.hTm2 = Tm2()  # Initialize Tm2 object
         self.hTm3 = Tm3()  # Initialize Tm3 object
+        self.hMi1 = Mi1()  # Initialize Tm3 object
 
     def init_config(self):
         """
@@ -114,6 +115,7 @@ class Medulla(BaseCore):
         self.hTm1.init_config()
         self.hTm2.init_config()
         self.hTm3.init_config()
+        self.hMi1.init_config()
 
     def process(self, MedullaIpt):
         """

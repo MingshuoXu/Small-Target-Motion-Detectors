@@ -21,6 +21,9 @@ class FeedbackSTMD(ESTMDBackbone):
         # Customize Lobula component
         self.hLobula = feedbackstmd_core.Lobula()
 
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+        
         # Customize Lamina's GammaBankPassFilter properties
         self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = 4
         self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau = 8
@@ -30,15 +33,6 @@ class FeedbackSTMD(ESTMDBackbone):
         # Customize Medulla's Tm1 component properties
         self.hMedulla.hTm1.hGammaDelay.order = 9
         self.hMedulla.hTm1.hGammaDelay.tau = 45
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -76,23 +70,18 @@ class FSTMD(ESTMDBackbone):
         """
         # Call superclass constructor
         super().__init__()
-        self.maxIterationNum = 10
-        self.iterationThreshold = 1e-3
-
+        
         # Initialize feedback pathway component
         self.hFeedbackPathway = fstmd_core.FeedbackPathway()
 
-        # Customize Medulla's Tm1 component properties
-        self.hMedulla.hTm1.hGammaDelay.order = 5
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
         
-        # init parameters
-        self.set_parameter(**kwargs)
+        self.maxIterationNum = 10
+        self.iterationThreshold = 1e-3
+
+        # Customize Medulla's Tm1 component properties
+        self.hMedulla.hTm1.hGammaDelay.order = 5
 
     def init_config(self):
         """
@@ -163,14 +152,9 @@ class STFeedbackSTMD(ESTMDBackbone):
         self.hMedulla = stfeedbackstmd_core.Medulla()
         self.hLobula = stfeedbackstmd_core.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
         
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """

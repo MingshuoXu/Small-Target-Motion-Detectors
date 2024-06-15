@@ -23,14 +23,8 @@ class FeedbackSTMDv2(Backbonev2):
         # Customize Lobula component
         self.hLobula = feedbackstmdv2_core.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -66,24 +60,19 @@ class FSTMDv2(Backbonev2):
         Constructor method
         """
         super().__init__()
-        self.maxIteraNum = 10
-        self.iterationThres = 1e-3
-
+        
         # Initialize components
         self.hLamina = fstmdv2_core.Lamina()
         self.hFeedbackPathway = fstmd_core.FeedbackPathway()
 
-        # Initialize feedback pathway component
-        self.hFeedbackPathway.hGammaDelay.tau = 1
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
         
-        # init parameters
-        self.set_parameter(**kwargs)
+        self.maxIteraNum = 10
+        self.iterationThres = 1e-3
+
+        # Initialize feedback pathway component
+        self.hFeedbackPathway.hGammaDelay.tau = 1
 
     def init_config(self):
         """
@@ -152,14 +141,8 @@ class STMDPlusv2(Backbonev2):
         self.hContrastPathway = stmdplus_core.ContrastPathway()
         self.hMushroomBody = stmdplusv2_core.MushroomBody()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -205,21 +188,15 @@ class ApgSTMDv2(STMDPlusv2):
         self.hAttentionPathway = apgstmd_core.AttentionModule()
         self.hPredictionPathway = apgstmdv2_core.PredictionModule()
 
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+
         # Set properties of Lobula's SubInhibition module
         self.hLobula.hSubInhi.B = 3.5
         self.hLobula.hSubInhi.Sigma1 = 1.25
         self.hLobula.hSubInhi.Sigma2 = 2.5
         self.hLobula.hSubInhi.e = 1.2
         self.predictionMap = None
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """

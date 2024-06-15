@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import warnings
 
 from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core, backbonev2_core
 from ..util.compute_module import compute_response, compute_direction
@@ -27,17 +28,12 @@ class BaseModel(ABC):
         # Model output structure
         self.modelOpt = {'response': [], 'direction': []}
 
-    @abstractmethod
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {
             'sigma1': 'self.hRetina.hGaussianBlur.sigma',
             'sigma2': 'self.lobulaOpt.hGaussianBlur.sigma',
-        } # just a sample
+        }
         
-        # init parameters
-        self.set_parameter(**kwargs)
-
     @abstractmethod
     def init_config(self, *args, **kwargs):
         """
@@ -74,15 +70,26 @@ class BaseModel(ABC):
         print(f'The parameter list of {self.__class__.__name__} includes: \n')
         paraList = eval(f'self._{self.__class__.__name__}__parameterList')
         for name, value in paraList.items():
-            print(name, '\t:', value, '\t = ', eval(value))
+            if isinstance(value, tuple):
+                for court, item in enumerate(value):
+                    if court == 0:
+                        print(name, '\t:', item, '\t = ', eval(item))
+                    else:
+                        print(' '*len(name), '\t ', item, '\t = ', eval(item))
+            else:
+                print(name, '\t:', value, '\t = ', eval(value))
 
     def set_parameter(self, **kwargs):
         for key, value in kwargs.items():
             paraList = eval(f'self._{self.__class__.__name__}__parameterList')
             if key in paraList.keys():
-                exec(paraList[key] + ' = value') 
+                if isinstance(paraList[key], tuple):
+                    for mapKey in paraList[key]:
+                        exec(mapKey + ' = value') 
+                else:
+                    exec(paraList[key] + ' = value') 
             else:
-                raise AttributeError(f"Private variable '{key}' does not exist.")
+                warnings.warn(f"Private variable '{key}' does not exist.", UserWarning)
 
 
 class ESTMD(BaseModel):
@@ -95,15 +102,26 @@ class ESTMD(BaseModel):
         self.hMedulla = estmd_core.Medulla()
         self.hLobula = estmd_core.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
-        
+        self.__parameterList = {
+            'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+            'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
+            'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
+            'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
+            'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+            'lambda1'   : 'self.hLamina.hLaminaLateralInhibition.lambda1',
+            'lambda2'   : 'self.hLamina.hLaminaLateralInhibition.lambda2',
+            'sigma2'    : 'self.hLamina.hLaminaLateralInhibition.sigma2',
+            'sigma3'    : 'self.hLamina.hLaminaLateralInhibition.sigma3',
+            'A'         : ('self.hMedulla.hTm2.hSubInhi.A', 'self.hMedulla.hTm3.hSubInhi.A'),
+            'B'         : ('self.hMedulla.hTm2.hSubInhi.B', 'self.hMedulla.hTm3.hSubInhi.B'),
+            'e'         : ('self.hMedulla.hTm2.hSubInhi.e', 'self.hMedulla.hTm3.hSubInhi.e'),
+            'rho'       : ('self.hMedulla.hTm2.hSubInhi.rho', 'self.hMedulla.hTm3.hSubInhi.rho'),
+            'sigma4'    : ('self.hMedulla.hTm2.hSubInhi.Sigma1', 'self.hMedulla.hTm3.hSubInhi.Sigma1'),
+            'sigma5'    : ('self.hMedulla.hTm2.hSubInhi.Sigma2', 'self.hMedulla.hTm3.hSubInhi.Sigma2'),
+            'order3'    : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
+            'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
+        } 
 
     def init_config(self):
         # Initialize ESTMD components
@@ -142,15 +160,23 @@ class ESTMDBackbone(BaseModel):
         self.hMedulla = estmd_backbone.Medulla()
         self.hLobula = estmd_backbone.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
+        self.__parameterList = {
+            'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+            'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
+            'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
+            'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
+            'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+            'A'         : 'self.hLobula.hSubInhi.A',
+            'B'         : 'self.hLobula.hSubInhi.B',
+            'e'         : 'self.hLobula.hSubInhi.e',
+            'rho'       : 'self.hLobula.hSubInhi.rho',
+            'sigma4'    : 'self.hLobula.hSubInhi.Sigma1',
+            'sigma5'    : 'self.hLobula.hSubInhi.Sigma2',
+            'order3'    : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
+            'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
+        } 
         
-        # init parameters
-        self.set_parameter(**kwargs)
-
     def init_config(self):
         """
         INIT Method
@@ -195,14 +221,8 @@ class FracSTMD(ESTMDBackbone):
         self.hMedulla.hTm1.hGammaDelay.order = 100
         self.hLobula.hSubInhi.e = 1.8
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
 
 class DSTMD(BaseModel):
@@ -224,14 +244,8 @@ class DSTMD(BaseModel):
         self.hMedulla = dstmd_core.Medulla()
         self.hLobula = dstmd_core.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -279,14 +293,8 @@ class DSTMDBackbone(BaseModel):
         self.hMedulla = dstmd_core.Medulla()
         self.hLobula = dstmd_core.Lobula()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -333,16 +341,11 @@ class Backbonev2(BaseModel):
         self.hMedulla = backbonev2_core.Medulla()
         self.hLobula = backbonev2_core.Lobula()
 
-        self.hLamina.alpha = 0.3
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
         
-        # init parameters
-        self.set_parameter(**kwargs)
+        self.hLamina.alpha = 0.3
+
     def init_config(self):
         """
         Initialize configurations for the components

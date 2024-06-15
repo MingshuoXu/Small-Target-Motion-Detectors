@@ -17,14 +17,8 @@ class STMDPlus(DSTMDBackbone):
         self.hContrastPathway = stmdplus_core.ContrastPathway()
         self.hMushroomBody = stmdplus_core.MushroomBody()
 
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
         # Bind model parameters and their corresponding parameter pointers.
         self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
@@ -79,6 +73,9 @@ class ApgSTMD(STMDPlus):
         self.hAttentionPathway = apgstmd_core.AttentionModule()
         self.hPredictionPathway = apgstmd_core.PredictionModule()
 
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {} 
+
         # Set properties of Lobula's LateralInhibition module
         self.hLobula.hLateralInhi.B = 3.5
         self.hLobula.hLateralInhi.Sigma1 = 1.25
@@ -86,15 +83,6 @@ class ApgSTMD(STMDPlus):
         self.hLobula.hLateralInhi.e = 1.2
 
         self.predictionMap = None
-
-        self._map_and_init_parameter()
-
-    def _map_and_init_parameter(self, **kwargs):
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-        
-        # init parameters
-        self.set_parameter(**kwargs)
 
     def init_config(self):
         """
