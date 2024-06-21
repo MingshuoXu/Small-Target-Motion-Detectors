@@ -9,13 +9,14 @@ from .math_operator import SurroundInhibition
 class MECumulativeCell(BaseCore):
     # CumulativeCell cell in Medulla layer
 
-    V_REST = 0;  # passive/rest potentials;
-    V_EXCI = 1;  # excitatory saturation potentials;
+    
 
     def __init__(self):
         super().__init__()
 
-        self.coeffDecay = 0.5 # coefficient of decay
+        self.gLeak = 0.5 # coefficient of decay
+        self.vRest = 0;  # passive/rest potentials;
+        self.vExci = 1;  # excitatory saturation potentials;
         self.postMP = None
 
     def init_config(self):
@@ -26,13 +27,13 @@ class MECumulativeCell(BaseCore):
             self.postMP = np.zeros_like(samePolarity)
 
         # Decay
-        decayTerm = self.coeffDecay * (self.V_REST - self.postMP)
+        decayTerm = self.gLeak * (self.vRest - self.postMP)
         # Inhibition
         # inhiGain = np.exp(oppoPolarity)
         # To reduce the computational load, a first-order Taylor expansion was used.
         inhiGain = 1 + oppoPolarity + oppoPolarity**2
         # Excitation
-        exciTerm = samePolarity * (self.V_EXCI - self.postMP)
+        exciTerm = samePolarity * (self.vExci - self.postMP)
         
         # Euler method for solving ordinary differential equation
         self.postMP = self.postMP + inhiGain * decayTerm + exciTerm

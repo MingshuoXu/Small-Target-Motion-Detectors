@@ -4,7 +4,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
     %   system. It applies gamma bank pass filtering to the input.
 
     properties
-        hGammaBankPassFilter;  % GammaBankPassFilter component
+        hGammaBandPassFilter;  % GammaBankPassFilter component
     end
 
     methods
@@ -16,7 +16,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             import smalltargetmotiondetectors.core.math_operator.*;
 
             % Initialize the GammaBankPassFilter component
-            self.hGammaBankPassFilter = GammaBandPassFilter();
+            self.hGammaBandPassFilter = GammaBandPassFilter();
         end
     end
 
@@ -25,7 +25,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Initialization method
             % This method initializes the Lamina layer component
             
-            self.hGammaBankPassFilter.init_config();
+            self.hGammaBandPassFilter.init_config();
         end
 
         function laminaOpt = process(self, laminaIpt)
@@ -33,7 +33,7 @@ classdef Lamina < smalltargetmotiondetectors.core.BaseCore
             % Applies gamma bank pass filtering to the input
             
             % Process the input using GammaBankPassFilter
-            laminaOpt = self.hGammaBankPassFilter.process(laminaIpt);
+            laminaOpt = self.hGammaBandPassFilter.process(laminaIpt);
             
             % Store the output in Opt property
             self.Opt = laminaOpt;

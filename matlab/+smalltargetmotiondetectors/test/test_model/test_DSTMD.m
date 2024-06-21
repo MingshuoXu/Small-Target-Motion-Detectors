@@ -21,16 +21,17 @@ model = instancing_model('DSTMD');
 
 % hSteam = ImgstreamReader();
 
-% Demo images
+% %%%%% Demo images
 % hSteam = ImgstreamReader( ...
 %     [filePath(1:indexPath(end)-8),'/demodata/imgstream/DemoFig*.jpg'], ...
 %     10, 100 );
 
-% Demo video (RIST)
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290.mp4']);
+% %%%%% Demo video (RIST)
 hSteam = VidstreamReader( ...
-    [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo1.mp4']);
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290_orignal_240Hz.mp4']);
+% %%%%% Demo video (simulate)
+% hSteam = VidstreamReader( ...
+%     [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo0_orignal_1000Hz.mp4']);
 
 % RIST
 % hSteam = VidstreamReader( ...

@@ -161,7 +161,7 @@ classdef ImgstreamReader < handle
         function get_filelist_from_imgsteamformat(self)
             % Retrieve the list of files matching the image stream format
             self.fileList = dir(self.imgsteamFormat);
-            self.fileList = fullfile({self.fileList.folder}, {self.fileList.name});
+%             self.fileList = fullfile({self.fileList.folder}, {self.fileList.name});
             
             % Check if any files match the specified format
             if isempty(self.fileList)
@@ -175,13 +175,26 @@ classdef ImgstreamReader < handle
                 end
                 
                 % Generate the start and end frame names
-                [~, name, ext] = fileparts(self.imgsteamFormat);
-                if length(name) == length(self.fileList(1))
-                    self.startImgFullName = fullfile(fileparts(self.fileList(1)), [name num2str(self.startFrame, ['%0' num2str(length(self.fileList(1))) 'd']) ext]);
-                    self.endImgFullName = fullfile(fileparts(self.fileList(1)), [name num2str(self.endFrame, ['%0' num2str(length(self.fileList(1))) 'd']) ext]);
+                [folderName, name, ext] = fileparts(self.imgsteamFormat);
+                name = name(1:end-1);
+                
+                % Extract the names of the first and last files in the list
+                [~, nameFirst, ~] = fileparts(self.fileList(1).name);
+                [~, nameEnd, ~] = fileparts(self.fileList(end).name);
+            
+                if length(nameFirst) == length(nameEnd)
+                    strNum = num2str(length(nameFirst)-length(name));
+                    self.startImgFullName = fullfile(folderName, ...
+                        [name, num2str(self.startFrame, ['%0', strNum, 'd']),...
+                        ext] );
+                    self.endImgFullName = fullfile(folderName, ...
+                        [name, num2str(self.endFrame, ['%0', strNum, 'd']),...
+                        ext] );
                 else
-                    self.startImgFullName = fullfile(fileparts(self.fileList(1)), [name num2str(self.startFrame) ext]);
-                    self.endImgFullName = fullfile(fileparts(self.fileList(1)), [name num2str(self.endFrame) ext]);
+                    self.startImgFullName = fullfile(folderName, ...
+                        name, num2str(self.startFrame), ext);
+                    self.endImgFullName = fullfile(folderName, ...
+                        name, num2str(self.endFrame), ext);
                 end
             end
         end

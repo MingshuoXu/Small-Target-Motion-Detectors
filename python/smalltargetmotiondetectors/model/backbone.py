@@ -69,6 +69,9 @@ class BaseModel(ABC):
     def print_parameter(self):
         print(f'The parameter list of {self.__class__.__name__} includes: \n')
         paraList = eval(f'self._{self.__class__.__name__}__parameterList')
+        if not paraList:
+            print('\tNULL')
+            return
         for name, value in paraList.items():
             if isinstance(value, tuple):
                 for court, item in enumerate(value):
@@ -174,8 +177,8 @@ class ESTMDBackbone(BaseModel):
             'sigma4'    : 'self.hLobula.hSubInhi.Sigma1',
             'sigma5'    : 'self.hLobula.hSubInhi.Sigma2',
             'order3'    : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
-            'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
-        } 
+            'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau'),
+        }
         
     def init_config(self):
         """
@@ -342,7 +345,20 @@ class Backbonev2(BaseModel):
         self.hLobula = backbonev2_core.Lobula()
 
         # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
+        self.__parameterList = {
+            'sigma1': 'self.hRetina.hGaussianBlur.sigma',
+            'alpha' : 'self.hLamina.alpha',
+            'delta' : 'self.hLamina.delta',
+            'gLeak' : ('self.hMedulla.hMi4.gLeak', 'self.hMedulla.hTm9.gLeak'),
+            'vRest' : ('self.hMedulla.hMi4.vRest', 'self.hMedulla.hTm9.vRest'),
+            'vEx'   : ('self.hMedulla.hMi4.vExci', 'self.hMedulla.hTm9.vExci'),
+            'A'     : 'self.hLobula.hSubInhi.A', 
+            'B'     : 'self.hLobula.hSubInhi.B', 
+            'e'     : 'self.hLobula.hSubInhi.e', 
+            'rho'   : 'self.hLobula.hSubInhi.rho', 
+            'sigma4': 'self.hLobula.hSubInhi.Sigma1', 
+            'sigma5': 'self.hLobula.hSubInhi.Sigma2', 
+        } 
         
         self.hLamina.alpha = 0.3
 

@@ -145,7 +145,7 @@ class ImgstreamReader:
         
         # Extract the basename and extension from the specified format
         basename, ext1 = os.path.splitext(self.imgsteamFormat)
-        basename = basename[:-1] # Remove the trailing backslash if any
+        basename = basename[:-1] # Remove the trailing *
         
         # Check if any files match the specified format
         if not self.fileList:
@@ -158,11 +158,11 @@ class ImgstreamReader:
                 self.endFrame = min(self.endFrame, len(self.fileList))
             
             # Extract the names of the first and last files in the list
-            name1 = os.path.splitext(self.fileList[0])[0]
-            name0 = os.path.splitext(self.fileList[-1])[0]
+            nameFirst = os.path.splitext(self.fileList[0])[0]
+            nameEnd = os.path.splitext(self.fileList[-1])[0]
             
             # Determine if the file names have the same length
-            if len(name1) == len(name0):
+            if len(nameFirst) == len(nameEnd):
                 # Extract the numeric part from the end file name
                 num1 = self.fileList[-1].replace(basename, '').replace(ext1, '')
                 numDigits1 = len(num1)

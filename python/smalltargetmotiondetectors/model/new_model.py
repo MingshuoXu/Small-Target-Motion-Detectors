@@ -24,7 +24,7 @@ class HaarSTMD(ESTMDBackbone):
             }
         
         # init parameter
-        self.hRetina.hGaussianBlur.sigma = 10
+        self.hRetina.hGaussianBlur.sigma = 1
         self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = 10
         self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau = 3
         self.hLamina.hGammaBandPassFilter.hGammaDelay2.order = 10
