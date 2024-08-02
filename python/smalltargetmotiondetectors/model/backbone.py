@@ -83,8 +83,30 @@ class BaseModel(ABC):
                 print(name, '\t:', value, '\t = ', eval(value))
 
     def set_parameter(self, **kwargs):
+        """
+        Sets parameters for the class instance based on provided keyword arguments.
+        
+        This method updates instance attributes using keyword arguments passed to it. 
+        The attributes to be updated are determined by a private attribute that 
+        maps parameter names to their respective instance attribute names or tuples of attribute names.
+
+        Parameters:
+        - **kwargs: Keyword arguments where each key-value pair represents a parameter name and its new value.
+        
+        Behavior:
+        - The method iterates over each key-value pair in `kwargs`.
+        - It retrieves the dictionary of parameter mappings for the current class instance by accessing a private attribute.
+        - If the parameter name (`key`) exists in the dictionary:
+            - If the corresponding value is a tuple, it assigns the new value to each attribute in the tuple using `setattr`.
+            - If the corresponding value is not a tuple, it assigns the new value to the single attribute specified using `setattr`.
+        - If the parameter name does not exist in the dictionary, a warning is issued.
+        
+        Raises:
+        - None directly, but issues a warning if the parameter does not exist.
+        """
+        paraList = getattr(self, f'_{self.__class__.__name__}__parameterList', {})
+        
         for key, value in kwargs.items():
-            paraList = eval(f'self._{self.__class__.__name__}__parameterList')
             if key in paraList.keys():
                 if isinstance(paraList[key], tuple):
                     for mapKey in paraList[key]:
@@ -94,7 +116,7 @@ class BaseModel(ABC):
             else:
                 warnings.warn(f"Private variable '{key}' does not exist.", UserWarning)
 
-
+    
 class ESTMD(BaseModel):
     def __init__(self):
         # Call the superclass constructor
@@ -122,7 +144,7 @@ class ESTMD(BaseModel):
             'rho'       : ('self.hMedulla.hTm2.hSubInhi.rho', 'self.hMedulla.hTm3.hSubInhi.rho'),
             'sigma4'    : ('self.hMedulla.hTm2.hSubInhi.Sigma1', 'self.hMedulla.hTm3.hSubInhi.Sigma1'),
             'sigma5'    : ('self.hMedulla.hTm2.hSubInhi.Sigma2', 'self.hMedulla.hTm3.hSubInhi.Sigma2'),
-            'order3'    : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
+            'n3'        : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
             'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
         } 
 
@@ -248,7 +270,31 @@ class DSTMD(BaseModel):
         self.hLobula = dstmd_core.Lobula()
 
         # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
+        # Bind model parameters and their corresponding parameter pointers.
+        self.__parameterList = {
+            'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+            'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
+            'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
+            'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
+            'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+            'lambda1'   : 'self.hLamina.hLaminaLateralInhibition.lambda1',
+            'lambda2'   : 'self.hLamina.hLaminaLateralInhibition.lambda2',
+            'sigma2'    : 'self.hLamina.hLaminaLateralInhibition.sigma2',
+            'sigma3'    : 'self.hLamina.hLaminaLateralInhibition.sigma3',
+            'n4'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',
+            'tau4'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
+            'n5'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
+            'tau5'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
+            'n6'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
+            'tau6'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+            'alpha1'    : 'self.hLobula.alpha1', 
+            'A'         : 'self.hLobula.hLateralInhi.A',
+            'B'         : 'self.hLobula.hLateralInhi.B', 
+            'e'         : 'self.hLobula.hLateralInhi.e', 
+            'rho'       : 'self.hLobula.hLateralInhi.rho', 
+            'sigma4'    : 'self.hLobula.hLateralInhi.Sigma1', 
+            'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
+        } 
 
     def init_config(self):
         """
@@ -356,8 +402,8 @@ class Backbonev2(BaseModel):
             'B'     : 'self.hLobula.hSubInhi.B', 
             'e'     : 'self.hLobula.hSubInhi.e', 
             'rho'   : 'self.hLobula.hSubInhi.rho', 
-            'sigma4': 'self.hLobula.hSubInhi.Sigma1', 
-            'sigma5': 'self.hLobula.hSubInhi.Sigma2', 
+            'sigma2': 'self.hLobula.hSubInhi.Sigma1', 
+            'sigma3': 'self.hLobula.hSubInhi.Sigma2', 
         } 
         
         self.hLamina.alpha = 0.3

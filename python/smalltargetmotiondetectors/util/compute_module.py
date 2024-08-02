@@ -158,6 +158,30 @@ def slice_matrix_holding_size(iptMatrix, shiftX, shiftY):
     return Opt
 
 
+def matrix_to_sparse_list(matrix):
+    """
+    Convert a matrix to a list of non-zero elements in the format [row, col, value].
+    
+    Parameters:
+    - matrix (numpy.ndarray): The input matrix to be converted.
+
+    Returns:
+    - list: A list of non-zero elements in the format [row, col, value].
+    """
+
+    import numpy as np
+
+    # Ensure the input is a NumPy array
+    matrix = np.array(matrix)
+    
+    # Get the indices and values of non-zero elements
+    rows, cols = np.nonzero(matrix)
+    values = matrix[rows, cols]
+    
+    # Combine rows, cols, and values into a list of tuples
+    sparseList = [[r, c, v] for r, c, v in zip(rows, cols, values)]
+    
+    return sparseList
 
 
 

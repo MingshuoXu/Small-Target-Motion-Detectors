@@ -1,4 +1,4 @@
 import os
 
-os.system('python ./python/smalltargetmotiondetectors/demo/demo_gui.py')
+os.system('python ./python/smalltargetmotiondetectors/demo/inference_gui.py')
 

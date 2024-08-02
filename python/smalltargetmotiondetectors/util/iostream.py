@@ -456,55 +456,14 @@ class Visualization:
         
         modelOpt = result['response']
         motionDirection = result['direction']
+
         if modelOpt is not None and np.any(modelOpt):
-            maxOutput = np.max(modelOpt)
-
-            if maxOutput > 0:
-                if self.shouldNMS:
-                    nmsOutput = self.hNMS.nms(modelOpt)
-                idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
-                ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
-
-                if motionDirection is not None:
-                    if len(motionDirection):
-                        nanStatus = ~np.isnan(motionDirection[idX, idY])
-                        quiverX = idX[nanStatus]
-                        quiverY = idY[nanStatus]
-                        cosD = np.cos(motionDirection[quiverX, quiverY])
-                        sinD = np.sin(motionDirection[quiverX, quiverY])
-                        lenArrow = 8
-
-                        '''
-                        In the figure of imshow, the positive direction of
-                        the x axis is downward, that is 'axis IJ'.
-                        
-                        %---------------------------------------%
-                        %   --------> x         y               %
-                        %   |                   ^               %
-                        %   |                   |               %
-                        %   V                   |               %
-                        %   y                   --------> x     %
-                        %                                       %
-                        %   IJ # angles='xy'    image           %
-                        %---------------------------------------%
-                        ax.quiver(quiverY, quiverX, 
-                                lenArrow * cosD, -lenArrow * sinD, 
-                                angles='xy', 
-                                scale_units='xy', 
-                                scale=0.5, 
-                                color='red',
-                                width=0.003)
-                        the above code is same with Matlab, which also works inpython, 
-                            but in Python, we can use the below code:
-                        '''
-
-                        # angles='uv', which has the same orientation with plane coordinates
-                        ax.quiver(quiverY, quiverX,
-                                lenArrow * cosD, lenArrow * sinD, 
-                                scale_units='xy', 
-                                scale=0.5, 
-                                color='red',
-                                width=0.003)
+            if isinstance(modelOpt, np.ndarray):
+                self.show_matrix_output(ax, modelOpt, motionDirection)
+            elif isinstance(modelOpt, list) and all(isinstance(i, list) and len(i) == 3 for i in modelOpt):
+                self.show_dots_output(ax, modelOpt, motionDirection)
+            elif isinstance(modelOpt, list) and all(isinstance(i, list) and len(i) == 5 for i in modelOpt):
+                self.show_bboxs_output(ax, modelOpt, motionDirection)
 
         plt.draw()
         plt.pause(0.001)
@@ -518,6 +477,122 @@ class Visualization:
                 return
 
         self.timeTic = time.time()
+
+    def show_matrix_output(self, ax, modelOpt, motionDirection):
+        maxOutput = np.max(modelOpt)
+        if maxOutput > 0:
+            if self.shouldNMS:
+                nmsOutput = self.hNMS.nms(modelOpt)
+            else:
+                nmsOutput = modelOpt
+            idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
+            ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
+
+            if motionDirection is not None:
+                if len(motionDirection):
+                    nanStatus = ~np.isnan(motionDirection[idX, idY])
+                    quiverX = idX[nanStatus]
+                    quiverY = idY[nanStatus]
+                    cosD = np.cos(motionDirection[quiverX, quiverY])
+                    sinD = np.sin(motionDirection[quiverX, quiverY])
+                    lenArrow = 8
+
+                    '''
+                    In the figure of imshow, the positive direction of
+                    the x axis is downward, that is 'axis IJ'.
+                    
+                    %---------------------------------------%
+                    %   --------> x         y               %
+                    %   |                   ^               %
+                    %   |                   |               %
+                    %   V                   |               %
+                    %   y                   --------> x     %
+                    %                                       %
+                    %   IJ # angles='xy'    image           %
+                    %---------------------------------------%
+                    ax.quiver(quiverY, quiverX, 
+                            lenArrow * cosD, -lenArrow * sinD, 
+                            angles='xy', 
+                            scale_units='xy', 
+                            scale=0.5, 
+                            color='red',
+                            width=0.003)
+                    the above code is same with Matlab, which also works inpython, 
+                        but in Python, we can use the below code:
+                    '''
+
+                    # angles='uv', which has the same orientation with plane coordinates
+                    ax.quiver(quiverY, quiverX,
+                            lenArrow * cosD, lenArrow * sinD, 
+                            scale_units='xy', 
+                            scale=0.5, 
+                            color='red',
+                            width=0.003)
+                        
+    def show_dots_output(self, ax, response, direction):
+        responseArray = np.array(response)
+
+        maxOutput = np.max(responseArray[:,-1])
+        filtered_rows = response[response[:, 2] > self.showThreshold * maxOutput]
+
+        # 获取x和y列
+        idX = filtered_rows[:, 0]
+        idY = filtered_rows[:, 1]
+
+        ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
+
+        if direction is not None and len(direction) > 0:
+            directionArray = np.array(direction)
+
+            mask = (np.isin(directionArray[:, 0], idX) &
+                    np.isin(directionArray[:, 1], idY) &
+                    (directionArray[:, 2] != None))
+            directionArray = directionArray[mask]  
+                
+            quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+            
+            cosD = np.cos(dirTheta)
+            sinD = np.sin(dirTheta)
+            lenArrow = 8
+
+            ax.quiver(quiverY, quiverX,
+                    lenArrow * cosD, lenArrow * sinD,
+                    scale_units='xy',
+                    scale=0.5,
+                    color='red',
+                    width=0.003)
+
+    def show_bboxs_output(self, ax, bboxes, direction):
+        bboxesArray = np.array(bboxes)
+
+        maxOutput = np.max(bboxesArray[:,-1])
+
+        for bbox in bboxes:
+            idX, idY, w, h, cc = bbox
+            if cc > self.showThreshold * maxOutput:
+                rect = plt.Rectangle((idX, idY), w, h, linewidth=0.5, edgecolor='r', facecolor='none')
+                ax.add_patch(rect)
+
+        if direction is not None and len(direction) > 0:
+            directionArray = np.array(direction)
+
+            mask = (np.isin(directionArray[:, 0], bboxesArray[:, 0]) &
+                    np.isin(directionArray[:, 1], bboxesArray[:, 1]) &
+                    (directionArray[:, 2] != None))
+            directionArray = directionArray[mask]               
+
+            quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+            
+            cosD = np.cos(dirTheta)
+            sinD = np.sin(dirTheta)
+            lenArrow = 8
+
+            ax.quiver(quiverY, quiverX,
+                    lenArrow * cosD, lenArrow * sinD,
+                    scale_units='xy',
+                    scale=0.5,
+                    color='red',
+                    width=0.003)
 
     def save_video(self):
         if self.saveState == 0:
