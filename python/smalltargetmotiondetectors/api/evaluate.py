@@ -47,10 +47,10 @@ def inference_task(modelName,
         response = result['response']
         response = objNMS.nms(result['response'])
         responseListType = matrix_to_sparse_list(response)
-        results.append(matrix_to_sparse_list(responseListType))
+        results.append(responseListType)
 
         direction  = result['direction']
-        if direction is not None:
+        if direction is not None and len(direction):
             directionListType = [[r, c, direction[r,c]] for r, c, _ in responseListType]
             directions.append(directionListType)
 

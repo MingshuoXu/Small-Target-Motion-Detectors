@@ -440,9 +440,11 @@ class Visualization:
             colorImg (numpy.ndarray): Color image.
             result (dict): Dictionary containing model output and motion direction.
         """
+        # Calculate and display elapsed time
         elapsedTime = time.time() - self.timeTic
         self.uiHandle['timeTextBox'].config(text=f'Elapsed Time: {elapsedTime:.4f} s/frame')
 
+        # Return if the close button is pressed
         if self.uiHandle['closeButton'].bool:
             return
 
@@ -450,6 +452,7 @@ class Visualization:
         plt.clf()
         ax = plt.gca()
 
+        # Display the color image if provided
         if colorImg is not None:
             plt.imshow(colorImg)
             plt.axis('off')
@@ -457,20 +460,37 @@ class Visualization:
         modelOpt = result['response']
         motionDirection = result['direction']
 
+        # Check if modelOpt is not None and has any elements
         if modelOpt is not None and np.any(modelOpt):
+            # Call the appropriate method based on the type of modelOpt
             if isinstance(modelOpt, np.ndarray):
                 self.show_matrix_output(ax, modelOpt, motionDirection)
             elif isinstance(modelOpt, list) and all(isinstance(i, list) and len(i) == 3 for i in modelOpt):
                 self.show_dots_output(ax, modelOpt, motionDirection)
             elif isinstance(modelOpt, list) and all(isinstance(i, list) and len(i) == 5 for i in modelOpt):
                 self.show_bboxs_output(ax, modelOpt, motionDirection)
+            ''' In the figure of imshow, the positive direction of
+                the x axis is downward, that is 'axis IJ'.
+                
+                %---------------------------------------
+                %   --------> J         y               
+                %   |                   ^               
+                %   |                   |               
+                %   V                   |               
+                %   I                   --------> x     
+                %                                       
+                %   Matrix              polar coordinate system           
+                %---------------------------------------
+            '''
 
         plt.draw()
         plt.pause(0.001)
 
+        # Save as video if the flag is set
         if self.isSaveAsVideo:
             self.save_video()
 
+        # Pause if the pause button is pressed, and wait until it is released or the close button is pressed
         while self.uiHandle['pauseButton'].bool:
             plt.pause(0.1)
             if self.uiHandle['closeButton'].bool:
@@ -479,6 +499,14 @@ class Visualization:
         self.timeTic = time.time()
 
     def show_matrix_output(self, ax, modelOpt, motionDirection):
+        """
+        Display matrix output with optional motion direction.
+        
+        Args:
+            ax (matplotlib.axes.Axes): The axes to plot on.
+            modelOpt (numpy.ndarray): Model output matrix.
+            motionDirection (numpy.ndarray): Motion direction matrix.
+        """
         maxOutput = np.max(modelOpt)
         if maxOutput > 0:
             if self.shouldNMS:
@@ -488,54 +516,37 @@ class Visualization:
             idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
             ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
 
-            if motionDirection is not None:
-                if len(motionDirection):
-                    nanStatus = ~np.isnan(motionDirection[idX, idY])
-                    quiverX = idX[nanStatus]
-                    quiverY = idY[nanStatus]
-                    cosD = np.cos(motionDirection[quiverX, quiverY])
-                    sinD = np.sin(motionDirection[quiverX, quiverY])
-                    lenArrow = 8
+            if motionDirection is not None and motionDirection.size > 0:
+                nanStatus = ~np.isnan(motionDirection[idX, idY])
+                quiverX = idX[nanStatus]
+                quiverY = idY[nanStatus]
+                cosD = np.cos(motionDirection[quiverX, quiverY])
+                sinD = np.sin(motionDirection[quiverX, quiverY])
+                lenArrow = 8
 
-                    '''
-                    In the figure of imshow, the positive direction of
-                    the x axis is downward, that is 'axis IJ'.
-                    
-                    %---------------------------------------%
-                    %   --------> x         y               %
-                    %   |                   ^               %
-                    %   |                   |               %
-                    %   V                   |               %
-                    %   y                   --------> x     %
-                    %                                       %
-                    %   IJ # angles='xy'    image           %
-                    %---------------------------------------%
-                    ax.quiver(quiverY, quiverX, 
-                            lenArrow * cosD, -lenArrow * sinD, 
-                            angles='xy', 
-                            scale_units='xy', 
-                            scale=0.5, 
-                            color='red',
-                            width=0.003)
-                    the above code is same with Matlab, which also works inpython, 
-                        but in Python, we can use the below code:
-                    '''
+                # angles='uv', which has the same orientation with plane coordinates
+                ax.quiver(quiverY, quiverX,
+                          lenArrow * cosD, lenArrow * sinD, 
+                          scale_units='xy', 
+                          scale=0.5, 
+                          color='red',
+                          width=0.003)
 
-                    # angles='uv', which has the same orientation with plane coordinates
-                    ax.quiver(quiverY, quiverX,
-                            lenArrow * cosD, lenArrow * sinD, 
-                            scale_units='xy', 
-                            scale=0.5, 
-                            color='red',
-                            width=0.003)
-                        
     def show_dots_output(self, ax, response, direction):
+        """
+        Display dots output with optional motion direction.
+        
+        Args:
+            ax (matplotlib.axes.Axes): The axes to plot on.
+            response (list): List of [x, y, cc] entries.
+            direction (list): List of [x, y, dir] entries.
+        """
         responseArray = np.array(response)
 
-        maxOutput = np.max(responseArray[:,-1])
-        filtered_rows = response[response[:, 2] > self.showThreshold * maxOutput]
+        maxOutput = np.max(responseArray[:, -1])
+        filtered_rows = responseArray[responseArray[:, 2] > self.showThreshold * maxOutput]
 
-        # 获取x和y列
+        # Get x and y columns
         idX = filtered_rows[:, 0]
         idY = filtered_rows[:, 1]
 
@@ -544,28 +555,37 @@ class Visualization:
         if direction is not None and len(direction) > 0:
             directionArray = np.array(direction)
 
+            # Filter out rows where the first column is in idX, the second column is in idY, and the third column is not None
             mask = (np.isin(directionArray[:, 0], idX) &
                     np.isin(directionArray[:, 1], idY) &
-                    (directionArray[:, 2] != None))
+                    ~np.isnan(directionArray[:, 2]))
             directionArray = directionArray[mask]  
                 
-            quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
-            
-            cosD = np.cos(dirTheta)
-            sinD = np.sin(dirTheta)
-            lenArrow = 8
+            if len(directionArray) > 0:
+                quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+                
+                cosD = np.cos(dirTheta)
+                sinD = np.sin(dirTheta)
+                lenArrow = 8
 
-            ax.quiver(quiverY, quiverX,
-                    lenArrow * cosD, lenArrow * sinD,
-                    scale_units='xy',
-                    scale=0.5,
-                    color='red',
-                    width=0.003)
+                ax.quiver(quiverY, quiverX,
+                          lenArrow * cosD, lenArrow * sinD,
+                          scale_units='xy',
+                          scale=0.5,
+                          color='red',
+                          width=0.003)
 
     def show_bboxs_output(self, ax, bboxes, direction):
+        """
+        Display bounding boxes with optional motion direction.
+        
+        Args:
+            ax (matplotlib.axes.Axes): The axes to plot on.
+            bboxes (list): List of [x, y, w, h, cc] entries.
+            direction (list): List of [x, y, dir] entries.
+        """
         bboxesArray = np.array(bboxes)
-
-        maxOutput = np.max(bboxesArray[:,-1])
+        maxOutput = np.max(bboxesArray[:, -1])
 
         for bbox in bboxes:
             idX, idY, w, h, cc = bbox
@@ -576,23 +596,25 @@ class Visualization:
         if direction is not None and len(direction) > 0:
             directionArray = np.array(direction)
 
+            # Filter out rows where the first column is in bboxesArray[:, 0], the second column is in bboxesArray[:, 1], and the third column is not None
             mask = (np.isin(directionArray[:, 0], bboxesArray[:, 0]) &
                     np.isin(directionArray[:, 1], bboxesArray[:, 1]) &
-                    (directionArray[:, 2] != None))
+                    ~np.isnan(directionArray[:, 2]))
             directionArray = directionArray[mask]               
 
-            quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
-            
-            cosD = np.cos(dirTheta)
-            sinD = np.sin(dirTheta)
-            lenArrow = 8
+            if len(directionArray) > 0:
+                quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+                
+                cosD = np.cos(dirTheta)
+                sinD = np.sin(dirTheta)
+                lenArrow = 8
 
-            ax.quiver(quiverY, quiverX,
-                    lenArrow * cosD, lenArrow * sinD,
-                    scale_units='xy',
-                    scale=0.5,
-                    color='red',
-                    width=0.003)
+                ax.quiver(quiverY, quiverX,
+                          lenArrow * cosD, lenArrow * sinD,
+                          scale_units='xy',
+                          scale=0.5,
+                          color='red',
+                          width=0.003)
 
     def save_video(self):
         if self.saveState == 0:

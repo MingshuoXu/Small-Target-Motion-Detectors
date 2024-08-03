@@ -394,7 +394,19 @@ def get_ROC_curve_data( modelOpt: list,
             RPIList0 = [RPIList[i] for i in filteredIdx]
             listMark0 = [listMark[i] for i in filteredIdx]
 
-            # Adjust threshold for lower bound
+            # Add intermediate thresholds to reduce FPPI interval
+            i = 0
+            while i < len(thresholdList0) - 1:
+                if abs(FPPIList0[i + 1] - FPPIList0[i]) > intevalFPPI:
+                    mean = (thresholdList0[i] + thresholdList0[i + 1]) / 2
+                    thresholdList0.insert(i + 1, mean)
+                    FPPIList0.insert(i + 1, None)
+                    RPIList0.insert(i + 1, None)
+                    listMark0.insert(i + 1, True)
+                else:
+                    i += 1
+
+                # Adjust threshold for lower bound
             if abs(FPPIList[filteredIdx[0]] - lowerFPPI) > errorFPPI:
                 if filteredIdx[0] > 0:
                     addLowerThres = (thresholdList[filteredIdx[0]-1] + thresholdList[filteredIdx[0]]) / 2
@@ -415,18 +427,6 @@ def get_ROC_curve_data( modelOpt: list,
                 FPPIList0 = FPPIList0 + [None]
                 RPIList0 = RPIList0 + [None]
                 listMark0 = listMark0 + [True]
-
-            # Add intermediate thresholds to reduce FPPI interval
-            i = 0
-            while i < len(thresholdList0) - 1:
-                if abs(FPPIList0[i + 1] - FPPIList0[i]) > intevalFPPI:
-                    mean = (thresholdList0[i] + thresholdList0[i + 1]) / 2
-                    thresholdList0.insert(i + 1, mean)
-                    FPPIList0.insert(i + 1, None)
-                    RPIList0.insert(i + 1, None)
-                    listMark0.insert(i + 1, True)
-                else:
-                    i += 1
 
             thresholdList = thresholdList0
             FPPIList = FPPIList0

@@ -178,6 +178,11 @@ def matrix_to_sparse_list(matrix):
     rows, cols = np.nonzero(matrix)
     values = matrix[rows, cols]
     
+    # Convert numpy types to Python types
+    rows = rows.astype(int).tolist()
+    cols = cols.astype(int).tolist()
+    values = values.astype(float).tolist()
+    
     # Combine rows, cols, and values into a list of tuples
     sparseList = [[r, c, v] for r, c, v in zip(rows, cols, values)]
     

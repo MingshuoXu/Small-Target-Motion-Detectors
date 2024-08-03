@@ -26,9 +26,9 @@ def instancing_model(modelName, modelPara=None):
     """
     
     # Instantiate the model
-    modelName =  globals().get(modelName)
-    if modelName:
-        objModel = modelName()
+    modelN =  globals().get(modelName)
+    if modelN:
+        objModel = modelN()
     else:
         print(f"Class {modelName} not found.")
 
