@@ -1,5 +1,6 @@
 # demo_vidstream
 import matplotlib.pyplot as plt
+import numpy as np
 
 from . import (instancing_model, inference)
 from ..model import *
@@ -45,9 +46,13 @@ def inference_task(modelName,
 
         # postprocessing
         response = result['response']
+        if np.max(response) == 0:
+            results.append([])
+            continue
         response = objNMS.nms(result['response'])
+        response /= np.max(response)
         responseListType = matrix_to_sparse_list(response)
-        results.append(responseListType)
+        results.append(responseListType)          
 
         direction  = result['direction']
         if direction is not None and len(direction):

@@ -320,13 +320,13 @@ def get_RFI_by_fixFPPI(modelOpt: list,
     return RFI
 
 
-def get_ROC_curve_data( modelOpt: list, 
+def get_ROC_curve_data(modelOpt: list, 
                         groundTruth: list,
                         rangeOfFPPI: list = [0, 1],
                         gTError: int = 1,
-                        ROIThreshold = 0.5,
-                        startFrame=0, 
-                        endFrame=None):
+                        ROIThreshold: float = 0.5,
+                        startFrame: int = 0, 
+                        endFrame: int = None):
     """
     Calculates the RFI (Recall Per Image) based on a list of FPPI (False Positives Per Image) for a given model output.
 
@@ -349,23 +349,22 @@ def get_ROC_curve_data( modelOpt: list,
         endFrame = len(modelOpt) - 1
 
     lowerFPPI, upperFPPI = rangeOfFPPI
-    intevalFPPI = (upperFPPI - lowerFPPI) / 20
+    intervalFPPI = (upperFPPI - lowerFPPI) / 20
     errorFPPI = (upperFPPI - lowerFPPI) / 100
 
-    thresholdList = [i * 0.1 for i in range(11)]
-    FPPIList = [None for _ in range(11)]
-    RPIList = [None for _ in range(11)]
-    listMark = [True for _ in range(11)]
+    thresholdList = [1, 0.5, 0]
+    FPPIList = [None] * len(thresholdList)
+    RPIList = [None] * len(thresholdList)
+    listMark = [True] * len(thresholdList)
+    shouldFoundLower = shouldFoundUpper = True
 
-    while True:
-        idx = next((index for index, value in enumerate(listMark) if value), None)
-        if idx is None:
-            break
+    while any(listMark):
+        idx = next((i for i, marked in enumerate(listMark) if marked), None)
 
         thresholdValue = thresholdList[idx]
 
         # Filter data based on the threshold value
-        threInput = [[data for data in frame if data[-1] >= thresholdValue] 
+        threInput = [[data for data in frame if data[-1] > thresholdValue] 
                      for frame in modelOpt]
 
         # Evaluate the model by video
@@ -375,64 +374,69 @@ def get_ROC_curve_data( modelOpt: list,
                                                            gTError=gTError,
                                                            ROIThreshold=ROIThreshold)
 
-        # Calculate RFI and FPPI
-        numberAT = sum(listFN[startFrame:endFrame+1]) + sum(listTP[startFrame:endFrame+1])
         # Calculate Recall Per Image (RFI) and False Positive Per Image (FPPI)
-        RFI = sum(listTP[startFrame:endFrame+1]) / numberAT if numberAT > 0 else 0
+        numberAT = sum(listFN[startFrame:endFrame + 1]) + sum(listTP[startFrame:endFrame + 1])
+        RFI = sum(listTP[startFrame:endFrame + 1]) / numberAT if numberAT > 0 else 0
         FPPI = sum(listFP[startFrame:endFrame + 1]) / (endFrame - startFrame + 1) \
-            if len(listFP[startFrame:endFrame+1]) > 0 else 0
-
+            if len(listFP[startFrame:endFrame + 1]) > 0 else 0
 
         RPIList[idx] = RFI
         FPPIList[idx] = FPPI
         listMark[idx] = False
 
-        if all(not element for element in listMark):
-            filteredIdx = [i for i, x in enumerate(FPPIList) if lowerFPPI <= x <= upperFPPI]
-            thresholdList0 = [thresholdList[i] for i in filteredIdx]
-            FPPIList0 = [FPPIList[i] for i in filteredIdx]
-            RPIList0 = [RPIList[i] for i in filteredIdx]
-            listMark0 = [listMark[i] for i in filteredIdx]
+        if not any(listMark):
+            if shouldFoundLower:
+                # Find all indices where FPPI value is greater than or equal to the lower
+                eligibleIndices1 = [i for i, fp in enumerate(FPPIList) if fp >= lowerFPPI]
+                # Find the index among eligible indices that is closest to the lower
+                lowerIdx = min(eligibleIndices1)
+                if FPPIList[lowerIdx] - lowerFPPI < errorFPPI:
+                    shouldFoundLower = False
+                    del FPPIList[:lowerIdx]
+                    del RPIList[:lowerIdx]
+                    del thresholdList[:lowerIdx]
+                    del listMark[:lowerIdx]
+                else:
+                    mean = (thresholdList[lowerIdx-1] + thresholdList[lowerIdx]) / 2
+                    thresholdList.insert(lowerIdx-1, mean)
+                    RPIList.insert(lowerIdx, None)
+                    FPPIList.insert(lowerIdx, None)
+                    listMark.insert(lowerIdx, True)
+                    continue
+
+            if shouldFoundUpper:
+                # Find all indices where FPPI value is less than or equal to the upper
+                eligibleIndices2 = [i for i, fp in enumerate(FPPIList) if fp <= upperFPPI]
+                # Find the index among eligible indices that is closest to the upper
+                upperIdx = max(eligibleIndices2)
+                if upperFPPI - FPPIList[upperIdx] < errorFPPI:
+                    shouldFoundUpper = False
+                    del FPPIList[upperIdx+1:]
+                    del RPIList[upperIdx+1:]
+                    del thresholdList[upperIdx+1:]
+                    del listMark[upperIdx+1:]
+                else:
+                    mean = (thresholdList[upperIdx] + thresholdList[upperIdx+1]) / 2
+                    thresholdList.insert(upperIdx+1, mean)
+                    RPIList.insert(upperIdx+1, None)
+                    FPPIList.insert(upperIdx+1, None)
+                    listMark.insert(upperIdx+1, True)
+                    continue    
 
             # Add intermediate thresholds to reduce FPPI interval
             i = 0
-            while i < len(thresholdList0) - 1:
-                if abs(FPPIList0[i + 1] - FPPIList0[i]) > intevalFPPI:
-                    mean = (thresholdList0[i] + thresholdList0[i + 1]) / 2
-                    thresholdList0.insert(i + 1, mean)
-                    FPPIList0.insert(i + 1, None)
-                    RPIList0.insert(i + 1, None)
-                    listMark0.insert(i + 1, True)
+            while i < len(thresholdList) - 1:
+                if abs(FPPIList[i + 1] - FPPIList[i]) > intervalFPPI \
+                    and thresholdList[i] - thresholdList[i + 1] > 1e-4:
+                    mean = (thresholdList[i] + thresholdList[i + 1]) / 2
+                    thresholdList.insert(i + 1, mean)
+                    FPPIList.insert(i + 1, None)
+                    RPIList.insert(i + 1, None)
+                    listMark.insert(i + 1, True)
+                    break
                 else:
                     i += 1
-
-                # Adjust threshold for lower bound
-            if abs(FPPIList[filteredIdx[0]] - lowerFPPI) > errorFPPI:
-                if filteredIdx[0] > 0:
-                    addLowerThres = (thresholdList[filteredIdx[0]-1] + thresholdList[filteredIdx[0]]) / 2
-                else:
-                    addLowerThres = thresholdList[filteredIdx[0]] / 2
-                thresholdList0 = [addLowerThres] + thresholdList0
-                FPPIList0 = [None] + FPPIList0
-                RPIList0 = [None] + RPIList0
-                listMark0 = [True] + listMark0
-
-            # Adjust threshold for upper bound
-            if abs(FPPIList[filteredIdx[-1]] - upperFPPI) > errorFPPI:
-                if filteredIdx[-1] < len(thresholdList) - 1:
-                    addupperThres = (thresholdList[filteredIdx[-1] + 1] + thresholdList[filteredIdx[-1]]) / 2
-                else:
-                    addupperThres = (thresholdList[filteredIdx[0]] + 1) / 2
-                thresholdList0 = thresholdList0 + [addupperThres]
-                FPPIList0 = FPPIList0 + [None]
-                RPIList0 = RPIList0 + [None]
-                listMark0 = listMark0 + [True]
-
-            thresholdList = thresholdList0
-            FPPIList = FPPIList0
-            RPIList = RPIList0
-            listMark = listMark0
-
+        
     return RPIList, FPPIList, thresholdList
 
 

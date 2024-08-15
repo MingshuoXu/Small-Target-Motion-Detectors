@@ -247,7 +247,19 @@ class FracSTMD(ESTMDBackbone):
         self.hLobula.hSubInhi.e = 1.8
 
         # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
+        self.__parameterList = {
+            'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+            'alpha'     : 'self.hLamina.alpha',
+            'delta'     : 'self.hLamina.delta',
+            'order'    : 'self.hMedulla.hTm1.hGammaDelay.order', 
+            'tau'      : 'self.hMedulla.hTm1.hGammaDelay.tau', 
+            'A'         : 'self.hLobula.hSubInhi.A',
+            'B'         : 'self.hLobula.hSubInhi.B',
+            'e'         : 'self.hLobula.hSubInhi.e',
+            'rho'       : 'self.hLobula.hSubInhi.rho',
+            'sigma4'    : 'self.hLobula.hSubInhi.Sigma1',
+            'sigma5'    : 'self.hLobula.hSubInhi.Sigma2',
+        }
 
 
 class DSTMD(BaseModel):

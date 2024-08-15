@@ -516,21 +516,22 @@ class Visualization:
             idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
             ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
 
-            if motionDirection is not None and motionDirection.size > 0:
-                nanStatus = ~np.isnan(motionDirection[idX, idY])
-                quiverX = idX[nanStatus]
-                quiverY = idY[nanStatus]
-                cosD = np.cos(motionDirection[quiverX, quiverY])
-                sinD = np.sin(motionDirection[quiverX, quiverY])
-                lenArrow = 8
+            if motionDirection is not None:
+                if len(motionDirection) > 0:
+                    nanStatus = ~np.isnan(motionDirection[idX, idY])
+                    quiverX = idX[nanStatus]
+                    quiverY = idY[nanStatus]
+                    cosD = np.cos(motionDirection[quiverX, quiverY])
+                    sinD = np.sin(motionDirection[quiverX, quiverY])
+                    lenArrow = 8
 
-                # angles='uv', which has the same orientation with plane coordinates
-                ax.quiver(quiverY, quiverX,
-                          lenArrow * cosD, lenArrow * sinD, 
-                          scale_units='xy', 
-                          scale=0.5, 
-                          color='red',
-                          width=0.003)
+                    # angles='uv', which has the same orientation with plane coordinates
+                    ax.quiver(quiverY, quiverX,
+                            lenArrow * cosD, lenArrow * sinD, 
+                            scale_units='xy', 
+                            scale=0.5, 
+                            color='red',
+                            width=0.003)
 
     def show_dots_output(self, ax, response, direction):
         """

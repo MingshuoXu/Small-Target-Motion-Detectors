@@ -27,7 +27,7 @@ hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 ''' Initialize the model '''
 # set the parameter list
-objModel.set_parameter(gLeak = 0.3)
+# objModel.set_parameter(gLeak = 0.3)
 # print the parameter list
 objModel.print_parameter()
 # init

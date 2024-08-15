@@ -19,13 +19,14 @@ objModel = instancing_model('ESTMD')
 # Demo video (RIST)
 hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_orignal_1000Hz.mp4'))
 # hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join('D:/STMD_Dataset/RIST/GX010071-1', 'GX010071-1.mp4'))
 
 ''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 ''' Initialize the model '''
 # set the parameter list
-objModel.set_parameter()
+# objModel.set_parameter(n3 = 5, tau3 = 9)
 # print the parameter list
 objModel.print_parameter()
 # init
