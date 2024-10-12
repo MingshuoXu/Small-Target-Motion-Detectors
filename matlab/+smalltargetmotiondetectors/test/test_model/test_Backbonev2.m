@@ -31,11 +31,11 @@ model = instancing_model('Backbonev2');
 %     10, 100 );
 
 % %%%%% Demo video (RIST)
-% hSteam = VidstreamReader( ...
-%     [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290_orignal_240Hz.mp4']);
-% %%%%% Demo video (simulate)
 hSteam = VidstreamReader( ...
-    [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo0_compressed2_250Hz.mp4']);
+    [filePath(1:indexPath(end)-8),'/demodata/RIST_GX010290_orignal_240Hz.mp4']);
+% %%%%% Demo video (simulate)
+% hSteam = VidstreamReader( ...
+%     [filePath(1:indexPath(end)-8),'/demodata/simulatedVideo0_compressed2_250Hz.mp4']);
 
 % RIST
 % hSteam = VidstreamReader( ...
@@ -49,6 +49,7 @@ hSteam = VidstreamReader( ...
 %     '-Amp-0-Theta-0-TemFre-2-SamFre-1000/', ...
 %     'GeneratingDataSet*.tif'], ...
 %     100, 1000 );
+
 
 %% visualization and model init
 

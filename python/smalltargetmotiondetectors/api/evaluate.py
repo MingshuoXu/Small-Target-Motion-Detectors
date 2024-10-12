@@ -72,7 +72,7 @@ def evaluate_task(modelOpt, groundTruth, gTError = 1, startFrame = 0, endFrame =
                                                           endFrame = endFrame)
     # print ROC curve
     fig, ax = plt.subplots()
-    ax.plot(RPIList, FPPIList)
+    ax.plot(FPPIList, RPIList)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 

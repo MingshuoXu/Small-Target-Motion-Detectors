@@ -30,6 +30,7 @@ classdef MECumulativeCell < smalltargetmotiondetectors.core.BaseCore
 
             % Decay
             decayTerm = self.coeffDecay * (self.V_REST - self.postMP);
+            
             % Inhibition
             %   inhiGain = exp(oppoPolarity);
             % To reduce the computational load, a secone-order Taylor 
@@ -41,7 +42,7 @@ classdef MECumulativeCell < smalltargetmotiondetectors.core.BaseCore
             
             % Euler method for solving ordinary differential equation
             self.postMP = self.postMP + inhiGain .* decayTerm + exciTerm;
-            
+
             % Output
             varargout = {self.postMP};
         end

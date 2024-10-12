@@ -8,7 +8,7 @@ classdef ImgstreamReader < handle
         isShowWaitbar
         hasDeleteWaitbar
         imgsteamFormat
-        startFrame
+        startFrame=1;
         endFrame
         startImgFullName
         endImgFullName

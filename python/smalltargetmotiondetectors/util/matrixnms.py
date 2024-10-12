@@ -137,6 +137,7 @@ class MatrixNMS:
     def set_optimalmethod(cls, mapKey, mapValue):
         cls.__dictOptimalMethod[mapKey] = mapValue
 
+
 def conv2_nms(inputMatrix, maxRegionSize):
     """
     Performs non-maximum suppression using conv2 method
