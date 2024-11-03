@@ -24,17 +24,17 @@ hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 ''' Initialize the model '''
 # set the parameter list
-objModel.set_parameter( sigma1  = 1,
-                        n1      = 10,
-                        tau1    = 3,
-                        n2      = 10,
-                        tau2    = 9,
-                        sigma2  = 1.5,
-                        sigma3  = 3,
-                        TAU     = 1,
-                        )
+objModel.set_para( sigma1  = 1,
+                    n1      = 10,
+                    tau1    = 3,
+                    n2      = 10,
+                    tau2    = 9,
+                    sigma2  = 1.5,
+                    sigma3  = 3,
+                    TAU     = 1,
+                    )
 # print the parameter list
-objModel.print_parameter()
+objModel.print_para()
 # init
 objModel.init_config()
 

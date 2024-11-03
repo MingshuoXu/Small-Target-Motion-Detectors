@@ -7,7 +7,7 @@ from .math_operator import SurroundInhibition, GammaDelay
 
 
 class Lobula(BaseCore):
-    """Lobula layer of the motion detection system."""
+    """ Lobula layer of the motion detection system."""
     
     def __init__(self):
         """Constructor method."""
@@ -16,12 +16,11 @@ class Lobula(BaseCore):
         self.hSubInhi = SurroundInhibition()  # SurroundInhibition component
         self.alpha = 1  # Parameter alpha
         self.paraGaussKernel = {'eta': 1.5, 'size': 3}  # Parameters for Gaussian kernel
-        self.gammaKernel = None  # Gamma kernel
         self.gaussKernel = None  # Gaussian kernel
         self.hGammaDelay = GammaDelay(10, 25)
 
     def init_config(self):
-        """Initialization method."""
+        """ Initialization method."""
         # Initializes the Lobula layer component
         self.hSubInhi.init_config()
         self.hGammaDelay.init_config()
@@ -31,7 +30,7 @@ class Lobula(BaseCore):
         )
 
     def process(self, onSignal, offSignal):
-        """Processing method."""
+        """ Processing method."""
         # Performs temporal convolution, correlation, and surround inhibition
 
         # Formula (9)

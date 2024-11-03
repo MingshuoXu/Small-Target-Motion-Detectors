@@ -5,14 +5,14 @@ from .backbone import ESTMDBackbone
 
 
 class HaarSTMD(ESTMDBackbone):
-    def __init__(self):
-        super().__init__()
+    ''' HaarSTMD: Advancing small target motion detection in dim light
+    
+    Ref: 
+        [1] Chen H, Sun X, Hu C, et al. Unveiling the power of Haar frequency domain: Advancing small target motion detection in dim light[J]. Applied Soft Computing, 2024, 167: 112281.
+    '''
 
-        self.hMedulla = haarstmd_core.Medulla()
-        self.hLobula = haarstmd_core.Lobula()
-
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = {
             'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
             'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
             'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
@@ -23,6 +23,12 @@ class HaarSTMD(ESTMDBackbone):
             'TAU'       : 'self.hLobula.tau',
             }
         
+    def __init__(self):
+        super().__init__()
+
+        self.hMedulla = haarstmd_core.Medulla()
+        self.hLobula = haarstmd_core.Lobula()
+
         # init parameter
         self.hRetina.hGaussianBlur.sigma = 1
         self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = 10
@@ -43,10 +49,7 @@ class HaarSTMD(ESTMDBackbone):
         self.hLobula.init_config()
 
     def model_structure(self, iptMatrix):
-        ''' MODEL_STRUCTURE:
-            Defines the structure of the HaarSTMD model. Processes the input matrix 
-            through the HaarSTMD model components (retina, lamina, medulla, and lobula)
-            and generates the model's response.
+        ''' MODEL_STRUCTURE: Defines the structure of the HaarSTMD model. 
 
         Input:
             iptMatrix - Input matrix for processing

@@ -26,9 +26,9 @@ hVisual = get_visualize_handle(objModel.__class__.__name__)
 
 ''' Initialize the model '''
 # set the parameter list
-# objModel.set_parameter(n3 = 5, tau3 = 9)
+# objModel.set_para(n3 = 5, tau3 = 9)
 # print the parameter list
-objModel.print_parameter()
+objModel.print_para()
 # init
 objModel.init_config()
 

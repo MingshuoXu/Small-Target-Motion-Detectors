@@ -6,12 +6,12 @@ from ..core import (feedbackstmdv2_core, fstmd_core, fstmdv2_core,
 from ..util.compute_module import compute_response
 
 class FeedbackSTMDv2(Backbonev2):
-    """
-    FeedbackSTMD - Feedback Small Target Motion Detector
-    This class implements a Feedback Extended Small Target Motion Detector
-    by inheriting from the Backbonev2 class.
+    """ FeedbackSTMDv2 : A Feedback Extended FeedbackSTMD by inheriting from the Backbonev2.
     """
 
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = {} 
+    
     def __init__(self):
         """
         FeedbackSTMD Constructor method
@@ -23,19 +23,12 @@ class FeedbackSTMDv2(Backbonev2):
         # Customize Lobula component
         self.hLobula = feedbackstmdv2_core.Lobula()
 
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-
     def init_config(self):
-        """
-        INIT Initializes the FeedbackSTMD components.
-        """
+        """ INIT Initializes the FeedbackSTMD components. """
         super().init_config()
 
     def model_structure(self, iptMatrix):
-        """ MODEL_STRUCTURE Method
-        Defines the structure of the FeedbackSTMDv2 model.
-        """
+        """ MODEL_STRUCTURE Method: Defines the structure of the FeedbackSTMDv2 model. """
         # Process input matrix through model components
         self.retinaOpt = self.hRetina.process(iptMatrix)
         self.laminaOpt = self.hLamina.process(self.retinaOpt)
@@ -51,22 +44,19 @@ class FeedbackSTMDv2(Backbonev2):
 
 
 class FSTMDv2(Backbonev2):
-    """
-    FSTMD - Feedback Small Target Motion Detector
+    """ FSTMDv2: A Feedback Extended FSTMD by inheriting from the Backbonev2.
     """
 
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = {} 
+
     def __init__(self):
-        """
-        Constructor method
-        """
+        """ Constructor method """
         super().__init__()
         
         # Initialize components
         self.hLamina = fstmdv2_core.Lamina()
         self.hFeedbackPathway = fstmd_core.FeedbackPathway()
-
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
         
         self.maxIteraNum = 10
         self.iterationThres = 1e-3
@@ -75,9 +65,7 @@ class FSTMDv2(Backbonev2):
         self.hFeedbackPathway.hGammaDelay.tau = 1
 
     def init_config(self):
-        """
-        Initializes the FSTMD components.
-        """
+        """ Initializes the FSTMD components. """
         super().init_config()
         # Initialize feedback pathway
         self.hFeedbackPathway.init_config()
@@ -119,35 +107,28 @@ class FSTMDv2(Backbonev2):
         self.modelOpt['direction'] = direction
 
     def set_loop_state(self, state):
-        """
-        Disable circshift for certain components.
-        """
+        """ Disable circshift for certain components. """
         self.hLamina.isInLoop = state
         self.hFeedbackPathway.hGammaDelay.isInLoop = state
 
 
 class STMDPlusv2(Backbonev2):
-    """
-    STMDPlusv2 - 
+    """ STMDPlusv2: A Feedback Extended STMDPlus by inheriting from the Backbonev2.
     """
 
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = {} 
+
     def __init__(self):
-        """
-        Constructor method
-        """
+        """ Constructor method """
         super().__init__()
 
         # Initialize contrast pathway and mushroom body components
         self.hContrastPathway = stmdplus_core.ContrastPathway()
         self.hMushroomBody = stmdplusv2_core.MushroomBody()
 
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
-
     def init_config(self):
-        """
-        Initializes the STMDPlus components.
-        """
+        """ Initializes the STMDPlus components. """
         super().init_config()
 
         # Initialize contrast pathway and mushroom body
@@ -155,9 +136,7 @@ class STMDPlusv2(Backbonev2):
         self.hMushroomBody.init_config()
 
     def model_structure(self, iptMatrix):
-        """
-        Defines the structure of the STMDPlusv2 model.
-        """
+        """ Defines the structure of the STMDPlusv2 model. """
         super().model_structure(iptMatrix)
 
         # C. Contrast Pathway
@@ -174,22 +153,19 @@ class STMDPlusv2(Backbonev2):
 
 
 class ApgSTMDv2(STMDPlusv2):
-    """
-    ApgSTMDv2 - Attention-Prediction-based Small Target Motion Detector
+    """ ApgSTMDv2: A Feedback Extended ApgSTMD by inheriting from the Backbonev2.
     """
 
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = {} 
+
     def __init__(self):
-        """
-        Constructor method
-        """
+        """ Constructor method """
         super().__init__()
 
         # Initialize attention pathway and prediction pathway components
         self.hAttentionPathway = apgstmd_core.AttentionModule()
         self.hPredictionPathway = apgstmdv2_core.PredictionModule()
-
-        # Bind model parameters and their corresponding parameter pointers.
-        self.__parameterList = {} 
 
         # Set properties of Lobula's SubInhibition module
         self.hLobula.hSubInhi.B = 3.5
@@ -199,9 +175,7 @@ class ApgSTMDv2(STMDPlusv2):
         self.predictionMap = None
 
     def init_config(self):
-        """
-        Initializes the ApgSTMDv2 components.
-        """
+        """ Initializes the ApgSTMDv2 components. """
         super().init_config()
 
         # Initialize attention pathway and prediction pathway components
@@ -209,9 +183,7 @@ class ApgSTMDv2(STMDPlusv2):
         self.hPredictionPathway.init_config()
 
     def model_structure(self, iptMatrix):
-        """
-        Defines the structure of the ApgSTMDv2 model.
-        """
+        """ Defines the structure of the ApgSTMDv2 model. """
 
         # Preprocessing Module
         self.retinaOpt = self.hRetina.process(iptMatrix)

@@ -291,28 +291,27 @@ class Tm2(BaseCore):
 
 
 class Tm3(BaseCore):
-    """
-    Tm3 
-    """
+    """ Tm3  """
     
     def __init__(self):
-        """
-        Constructor method
+        """ Constructor method
+
         Initializes the Tm3 object
         """
         self.hSubInhi = SurroundInhibition()  # Initialize SurroundInhibition object
 
     def init_config(self):
-        """
-        Initialization method
+        """ Initialization method
+
         Initializes the SurroundInhibition object
         """
         self.hSubInhi.init_config()
 
     def process(self, iptMatrix):
-        """
-        Processing method
-        Applies Surround Inhibition to the On-signal matrix iptMatrix
+        """ Processing method
+        
+        Description:
+            Applies Surround Inhibition to the On-signal matrix iptMatrix
         
         Parameters:
         - iptMatrix: Input matrix
@@ -327,8 +326,8 @@ class Tm3(BaseCore):
 
 
 class LaminaLateralInhibition(BaseCore):
-    """
-    LAMINALATERALINHIBITION Lateral inhibition in the Lamina layer
+    """ LAMINALATERALINHIBITION Lateral inhibition in the Lamina layer
+    
     This class implements the lateral inhibition mechanism in the Lamina layer
     of the ESTMD.
 
