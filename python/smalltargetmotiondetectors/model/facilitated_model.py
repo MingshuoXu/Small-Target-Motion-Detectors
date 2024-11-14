@@ -20,9 +20,9 @@ class STMDPlus(DSTMDBackbone):
             - n2, tau2: Order and time constant of the second gamma bandpass filter.
         
         Medulla:
-            - n4, tau4: Order and time constant of gamma delay in the Mi1 pathway. (Eq. 11)
-            - n5, tau5: Order and time constant of gamma delay in the Tm1 pathway. (Eq. 11)
-            - n6, tau6: Order and time constant for another gamma delay variant in the Tm1 pathway. (Eq. 11)
+            - n3, tau3: Order and time constant of gamma delay in the Mi1 pathway. (Eq. 11)
+            - n4, tau4: Order and time constant of gamma delay in the Tm1 pathway. (Eq. 11)
+            - n5, tau5: Order and time constant for another gamma delay variant in the Tm1 pathway. (Eq. 11)
         
         Lobula:
             - alpha1: Parameter modulating signal strength for the lobula, contributing to directional selectivity. (Eq. 10)
@@ -45,12 +45,12 @@ class STMDPlus(DSTMDBackbone):
         'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
         'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
         # medulla
-        'n4'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (11)
-        'tau4'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n6'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau6'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n3'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (11)
+        'tau3'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
+        'n4'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
+        'tau4'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
+        'n5'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
+        'tau5'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
         # lobula
         'alpha1'    : 'self.hLobula.alpha1',  # Eq. (10)
         'A'         : 'self.hLobula.hLateralInhi.A',  # Eq. (13)
@@ -124,9 +124,9 @@ class ApgSTMD(STMDPlus):
             - n2, tau2: Order and time constant of the second gamma bandpass filter. (Eq. 6)
         
         Medulla:
-            - n4, tau4: Order and time constant in the Mi1 pathway. (Eq. 14)
-            - n5, tau5: Order and time constant in the Tm1 pathway. (Eq. 14)
-            - n6, tau6: Additional delay component in Tm1. (Eq. 14)
+            - n3, tau3: Order and time constant in the Mi1 pathway. (Eq. 14)
+            - n4, tau4: Order and time constant in the Tm1 pathway. (Eq. 14)
+            - n5, tau5: Additional delay component in Tm1. (Eq. 14)
         
         Lobula:
             - gamma: Signal modulation parameter in the lobula, aiding in selective attention towards targets by enhancing certain spatial patterns. (Eq. 13)
@@ -152,12 +152,12 @@ class ApgSTMD(STMDPlus):
         'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
         'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
         # medulla
-        'n4'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (14)
-        'tau4'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n6'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau6'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n3'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (14)
+        'tau3'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
+        'n4'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
+        'tau4'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
+        'n5'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
+        'tau5'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
         # lobula
         'gamma'    : 'self.hLobula.alpha1',  # Eq. (13)
         'A'         : 'self.hLobula.hLateralInhi.A',  # Eq. (15)

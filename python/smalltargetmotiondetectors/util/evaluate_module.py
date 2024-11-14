@@ -142,7 +142,7 @@ def match_dot_in_bbox(dot1, bbox2, gTError, _):
     Determines if a point is within a bounding box with a specified error range.
 
     Parameters:
-    - dot1 (tuple or list): The point to check, containing coordinates (x, y).
+    - dot1 (tuple or list): The point to check, containing coordinates (x, y), that is (column, row).
     - bbox2 (tuple or list): The bounding box, specified as (x, y, width, height).
     - gTError (int or float): The maximum allowable error distance.
     - _ : Placeholder for an unused parameter.
@@ -158,10 +158,10 @@ def match_dot_in_bbox(dot1, bbox2, gTError, _):
     """
     
     # Check if the point's x coordinate is within the bounding box's x range, including the error margin
-    x_within_bbox = dot1[0] >= bbox2[0] - gTError and dot1[0] <= bbox2[0] + bbox2[2] + gTError
+    x_within_bbox = (dot1[0] >= bbox2[0] - gTError) and (dot1[0] <= bbox2[0] + bbox2[2] + gTError)
     
     # Check if the point's y coordinate is within the bounding box's y range, including the error margin
-    y_within_bbox = dot1[1] >= bbox2[1] - gTError and dot1[1] <= bbox2[1] + bbox2[3] + gTError
+    y_within_bbox = (dot1[1] >= bbox2[1] - gTError) and (dot1[1] <= bbox2[1] + bbox2[3] + gTError)
     
     # Return True if both x and y coordinates are within the extended bounding box, otherwise False
     return x_within_bbox and y_within_bbox
@@ -321,12 +321,12 @@ def get_RFI_by_fixFPPI(modelOpt: list,
 
 
 def get_ROC_curve_data(modelOpt: list, 
-                        groundTruth: list,
-                        rangeOfFPPI: list = [0, 1],
-                        gTError: int = 1,
-                        ROIThreshold: float = 0.5,
-                        startFrame: int = 0, 
-                        endFrame: int = None):
+                       groundTruth: list,
+                       rangeOfFPPI: list = [0, 1],
+                       gTError: int = 1,
+                       ROIThreshold: float = 0.5,
+                       startFrame: int = 0, 
+                       endFrame: int = None):
     """
     Calculates the RFI (Recall Per Image) based on a list of FPPI (False Positives Per Image) for a given model output.
 
@@ -364,8 +364,7 @@ def get_ROC_curve_data(modelOpt: list,
         thresholdValue = thresholdList[idx]
 
         # Filter data based on the threshold value
-        threInput = [[data for data in frame if data[-1] > thresholdValue] 
-                     for frame in modelOpt]
+        threInput = [[data for data in frame if data[-1] > thresholdValue] for frame in modelOpt]
 
         # Evaluate the model by video
         listTP, listFN, listFP = evaluation_model_by_video(threInput, 
@@ -374,11 +373,14 @@ def get_ROC_curve_data(modelOpt: list,
                                                            gTError=gTError,
                                                            ROIThreshold=ROIThreshold)
 
+        # total TP, FN and FP
+        totalTP = sum(listTP[startFrame:endFrame + 1])
+        totalFN = sum(listFN[startFrame:endFrame + 1])
+        totalFP = sum(listFP[startFrame:endFrame + 1])
+
         # Calculate Recall Per Image (RFI) and False Positive Per Image (FPPI)
-        numberAT = sum(listFN[startFrame:endFrame + 1]) + sum(listTP[startFrame:endFrame + 1])
-        RFI = sum(listTP[startFrame:endFrame + 1]) / numberAT if numberAT > 0 else 0
-        FPPI = sum(listFP[startFrame:endFrame + 1]) / (endFrame - startFrame + 1) \
-            if len(listFP[startFrame:endFrame + 1]) > 0 else 0
+        RFI = totalTP / (totalTP + totalFN) if (totalTP + totalFN) > 0 else 0
+        FPPI = totalFP / (endFrame - startFrame + 1) if (endFrame - startFrame + 1) > 0 else 0
 
         RPIList[idx] = RFI
         FPPIList[idx] = FPPI
@@ -390,12 +392,14 @@ def get_ROC_curve_data(modelOpt: list,
                 eligibleIndices1 = [i for i, fp in enumerate(FPPIList) if fp >= lowerFPPI]
                 # Find the index among eligible indices that is closest to the lower
                 lowerIdx = min(eligibleIndices1)
-                if FPPIList[lowerIdx] - lowerFPPI < errorFPPI:
+                if FPPIList[lowerIdx] - lowerFPPI <= errorFPPI:
                     shouldFoundLower = False
                     del FPPIList[:lowerIdx]
                     del RPIList[:lowerIdx]
                     del thresholdList[:lowerIdx]
                     del listMark[:lowerIdx]
+                elif lowerIdx == 0:
+                    shouldFoundLower = False
                 else:
                     mean = (thresholdList[lowerIdx-1] + thresholdList[lowerIdx]) / 2
                     thresholdList.insert(lowerIdx-1, mean)
@@ -409,12 +413,14 @@ def get_ROC_curve_data(modelOpt: list,
                 eligibleIndices2 = [i for i, fp in enumerate(FPPIList) if fp <= upperFPPI]
                 # Find the index among eligible indices that is closest to the upper
                 upperIdx = max(eligibleIndices2)
-                if upperFPPI - FPPIList[upperIdx] < errorFPPI:
+                if upperFPPI - FPPIList[upperIdx] <= errorFPPI:
                     shouldFoundUpper = False
                     del FPPIList[upperIdx+1:]
                     del RPIList[upperIdx+1:]
                     del thresholdList[upperIdx+1:]
                     del listMark[upperIdx+1:]
+                elif upperIdx == len(FPPIList)-1:
+                    shouldFoundUpper = False
                 else:
                     mean = (thresholdList[upperIdx] + thresholdList[upperIdx+1]) / 2
                     thresholdList.insert(upperIdx+1, mean)
@@ -525,9 +531,14 @@ def compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, 1]):
             filtered_FPPI.append(sorted_FPPI[i])
 
     # Compute AUC using the trapezoidal rule
-    AUC = 0.0
+    weighted_sum = 0.0
+    total_weight = 0.0
     for i in range(1, len(filtered_RPI)):
-        AUC += (filtered_FPPI[i] - filtered_FPPI[i - 1]) * (filtered_RPI[i] + filtered_RPI[i - 1]) / 2.0
+        deltaFPPI = (filtered_FPPI[i] - filtered_FPPI[i - 1])
+        weighted_sum += (filtered_RPI[i] + filtered_RPI[i - 1]) * deltaFPPI / 2.0
+        total_weight += deltaFPPI
+
+    AUC = weighted_sum / total_weight if total_weight !=0 else 0
 
     return AUC
 

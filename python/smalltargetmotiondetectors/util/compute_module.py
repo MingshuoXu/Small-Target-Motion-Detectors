@@ -184,7 +184,7 @@ def matrix_to_sparse_list(matrix):
     values = values.astype(float).tolist()
     
     # Combine rows, cols, and values into a list of tuples
-    sparseList = [[r, c, v] for r, c, v in zip(rows, cols, values)]
+    sparseList = [[x, y, v] for y, x, v in zip(rows, cols, values)]
     
     return sparseList
 

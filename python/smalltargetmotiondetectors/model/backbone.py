@@ -542,6 +542,10 @@ class Backbonev2(BaseModel):
         self.hLobula = backbonev2_core.Lobula()
 
         self.hLamina.alpha = 0.3
+        self.hLobula.hSubInhi.B = 3
+        self.hLobula.hSubInhi.e = 3
+        self.hLobula.hSubInhi.Sigma1 = 5
+        self.hLobula.hSubInhi.Sigma2 = 10
 
     def init_config(self):
         """ Initialize configurations for the components """

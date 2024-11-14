@@ -470,17 +470,18 @@ class Visualization:
             elif isinstance(modelOpt, list) and all(isinstance(i, list) and len(i) == 5 for i in modelOpt):
                 self.show_bboxs_output(ax, modelOpt, motionDirection)
             ''' In the figure of imshow, the positive direction of
-                the x axis is downward, that is 'axis IJ'.
+                the y axis is downward.
                 
-                %---------------------------------------
-                %   --------> J         y               
-                %   |                   ^               
-                %   |                   |               
-                %   V                   |               
-                %   I                   --------> x     
+                %--------------------------------------------------------%
+                %   --------> J         --------> x       y        
+                %   |                   |                 ^
+                %   |                   |                 |
+                %   V                   v                 |
+                %   I                   y                 |--------> x
                 %                                       
-                %   Matrix              polar coordinate system           
-                %---------------------------------------
+                %   Matrix              Figure           Plane-coordinate 
+                %                                           system
+                %---------------------------------------------------------%
             '''
 
         plt.draw()
@@ -548,8 +549,8 @@ class Visualization:
         filtered_rows = responseArray[responseArray[:, 2] > self.showThreshold * maxOutput]
 
         # Get x and y columns
-        idX = filtered_rows[:, 0]
-        idY = filtered_rows[:, 1]
+        idY = filtered_rows[:, 0]
+        idX = filtered_rows[:, 1]
 
         ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
 
@@ -557,13 +558,13 @@ class Visualization:
             directionArray = np.array(direction)
 
             # Filter out rows where the first column is in idX, the second column is in idY, and the third column is not None
-            mask = (np.isin(directionArray[:, 0], idX) &
-                    np.isin(directionArray[:, 1], idY) &
+            mask = (np.isin(directionArray[:, 0], idY) &
+                    np.isin(directionArray[:, 1], idX) &
                     ~np.isnan(directionArray[:, 2]))
             directionArray = directionArray[mask]  
                 
             if len(directionArray) > 0:
-                quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+                quiverY, quiverX, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
                 
                 cosD = np.cos(dirTheta)
                 sinD = np.sin(dirTheta)
@@ -591,7 +592,7 @@ class Visualization:
         for bbox in bboxes:
             idX, idY, w, h, cc = bbox
             if cc > self.showThreshold * maxOutput:
-                rect = plt.Rectangle((idX, idY), w, h, linewidth=0.5, edgecolor='r', facecolor='none')
+                rect = plt.Rectangle((idX, idY), w, h, linewidth=1, edgecolor='r', facecolor='none')
                 ax.add_patch(rect)
 
         if direction is not None and len(direction) > 0:
@@ -604,18 +605,18 @@ class Visualization:
             directionArray = directionArray[mask]               
 
             if len(directionArray) > 0:
-                quiverX, quiverY, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
+                quiverY, quiverX, dirTheta = directionArray[:, 0], directionArray[:, 1], directionArray[:, 2]
                 
                 cosD = np.cos(dirTheta)
                 sinD = np.sin(dirTheta)
-                lenArrow = 8
+                lenArrow = 6
 
                 ax.quiver(quiverY, quiverX,
                           lenArrow * cosD, lenArrow * sinD,
                           scale_units='xy',
                           scale=0.5,
                           color='red',
-                          width=0.003)
+                          width=0.002)
 
     def save_video(self):
         if self.saveState == 0:

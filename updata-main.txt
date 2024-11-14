@@ -1,4 +1,14 @@
 ------------------------------------------
+updata -version 2.0.7 (Nov 14, 2024)
+1(Python). Bind model parameters and their corresponding parameter pointers.
+2(Matlab) Matlab temporarily stopped maintenance, then consider directly calling python or C/C++ APIs.
+ 
+------------------------------------------
+updata -version 2.0.6 (Aug 15, 2024)
+1(Python). Introducing the evaluate_module
+
+
+------------------------------------------
 updata -version 2.0.5 (May 12, 2024)
 1(Python). Modify the class 'CircularList' to be based on the list data structure and annotate it with the @dataclass decorator.
 

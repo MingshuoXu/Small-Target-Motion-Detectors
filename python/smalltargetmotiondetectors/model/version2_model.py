@@ -10,7 +10,15 @@ class FeedbackSTMDv2(Backbonev2):
     """
 
     # Bind model parameters and their corresponding parameter pointers.
-    __paraMappingList = {} 
+    __paraMappingList = {
+        # retina
+        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', 
+        # lamina
+        # medulla
+        # lobula
+        'n'        : 'self.hLobula.hGammaDelay.order',
+        'tau'      : 'self.hLobula.hGammaDelay.tau', 
+        }
     
     def __init__(self):
         """
@@ -48,7 +56,15 @@ class FSTMDv2(Backbonev2):
     """
 
     # Bind model parameters and their corresponding parameter pointers.
-    __paraMappingList = {} 
+    __paraMappingList = {
+        # retina
+        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', 
+        # lamina
+        # medulla
+        # lobula
+        'n'        : 'self.hFeedbackPathway.hGammaDelay.order', # Eq. (4)
+        'tau'      : 'self.hFeedbackPathway.hGammaDelay.tau', 
+        }
 
     def __init__(self):
         """ Constructor method """
@@ -62,6 +78,7 @@ class FSTMDv2(Backbonev2):
         self.iterationThres = 1e-3
 
         # Initialize feedback pathway component
+        self.hFeedbackPathway.hGammaDelay.order = 20
         self.hFeedbackPathway.hGammaDelay.tau = 1
 
     def init_config(self):
