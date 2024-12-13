@@ -1,25 +1,24 @@
 import os
 import sys
 
-# Get the full path of this file
-filePath = os.path.realpath(__file__)
-# Find the index of '/+smalltargetmotiondetectors/'
-indexPath = filePath.rfind('smalltargetmotiondetectors')
 # Add the path to the package containing the models
-import_path = filePath[:indexPath]
-sys.path.append(import_path)
+filePath = os.path.realpath(__file__)
+pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filePath))))
+gitCodePath = os.path.dirname(pyPackagePath)
+sys.path.append(pyPackagePath)
+from smalltargetmotiondetectors.api import get_visualize_handle, inference # type: ignore
+from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamReader # type: ignore
+from smalltargetmotiondetectors.model.version2_model import FeedbackSTMDv2 # type: ignore
 
-from smalltargetmotiondetectors.api import *
-from smalltargetmotiondetectors.util.iostream import *
-from smalltargetmotiondetectors.model.version2_model import FeedbackSTMDv2
 
 ''' Model instantiation '''
 objModel = FeedbackSTMDv2()
 
 ''' Input '''
 # Demo video (RIST)
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_compressed2_250Hz.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+hSteam = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'simulatedVideo0_compressed2_250Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join('D:/', 'STMD_Dataset', 'Real-World-Scence-Material', 'From_Dr_YiZheng', 'fly_bird_and_fish.mp4'))
 
 ''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)

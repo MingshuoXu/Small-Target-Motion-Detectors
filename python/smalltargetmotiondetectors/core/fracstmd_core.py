@@ -28,7 +28,12 @@ class Lamina(BaseCore):
         # Initializes the fractional differential kernel        
         self.fracKernel = create_fracdiff_kernel(self.alpha, self.delta)
         self.paraCur = self.fracKernel[0]
-        self.paraPre = math.exp(-self.alpha / (1 - self.alpha))
+        if self.alpha == 1:
+            self.paraPre = 0
+        elif 0 < self.alpha < 1:
+            self.paraPre = math.exp(-self.alpha / (1 - self.alpha))
+        else:
+            raise ValueError("Invalid alpha value.")
         self.cellRetinaOutput = CircularList(self.delta)
     
     def process(self, LaminaIpt):

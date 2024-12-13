@@ -44,7 +44,7 @@ class Lobula(BaseCore):
         # Formula (10)
         correlationE = filter2D(onSignal * offSignal, -1, self.gaussKernel)
 
-        # Only record correlationD + correlationE
+        # Only record (correlationD + correlationE) for next delay in Formula (9)
         self.hGammaDelay.listInput.cover(correlationD + correlationE)
 
         # Formula (14)

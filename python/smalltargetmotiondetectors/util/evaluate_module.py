@@ -11,12 +11,12 @@ def evaluation_model_by_video(modelOpt: list,
     Parameters:
     - modelOpt (list of lists): Detection results for each frame in the video. 
       Each item should be in the format:
-        - Center indices: [ [[i1, j1, confidence1]], ... ] with shape(totalFrame, numOfTarget, 3)
-        - Bounding boxes: [ [[i1, j1, h1, w1, confidence1]], ... ] with shape(totalFrame, numOfTarget, 5)
+        - Center indices: [ [[i1, j1, confidence1], ], ... ] with shape(totalFrame, numOfTarget, 3)
+        - Bounding boxes: [ [[i1, j1, h1, w1, confidence1], ], ... ] with shape(totalFrame, numOfTarget, 5)
     - groundTruth (list of lists): Ground truth data for each frame. 
       Each item should be in the format:
-        - Center indices: [ [[i1, j1]], ... ] with shape(totalFrame, numOfTarget, 2)
-        - Bounding boxes: [ [[i1, j1, h1, w1]], ... ] with shape(totalFrame, numOfTarget, 4)
+        - Center indices: [ [[i1, j1], [i2, j2]], ... ] with shape(totalFrame, numOfTarget, 2)
+        - Bounding boxes: [ [[i1, j1, h1, w1], ], ... ] with shape(totalFrame, numOfTarget, 4)
     - confidenceThreshold (float): Minimum confidence score to consider a prediction.
     - gTError (int or float): Maximum allowable error distance for matching ground truth data.
     - ROIThreshold (float): Threshold for the region of interest.
@@ -37,15 +37,19 @@ def evaluation_model_by_video(modelOpt: list,
     for idx in range(totalLen):
         # Check if current frame data is available
         if modelOpt[idx] and groundTruth[idx]:
+            if isinstance(modelOpt[idx][0], int):
+                modelOpt[idx] = [modelOpt[idx], ]
             # Compute metrics for the current frame
             TP, FN, FP = compute_metrics_by_frame(modelOpt[idx], 
                                                   groundTruth[idx], 
                                                   confidenceThreshold, 
                                                   gTError,
                                                   ROIThreshold)
+        elif groundTruth[idx]:
+            TP, FN, FP = 0, len(groundTruth[idx]), 0
         else:
             # If data for the frame is not available, set metrics to zero
-            TP, FN, FP = 0, 0, 0
+            TP, FN, FP = 1, 0, 0
 
         # Store the metrics for the current frame
         listTP[idx] = TP
@@ -446,7 +450,87 @@ def get_ROC_curve_data(modelOpt: list,
     return RPIList, FPPIList, thresholdList
 
 
-def get_meanRecall_data(modelOpt: list, 
+def get_P_R_curve_data(modelOpt: list, 
+                       groundTruth: list,
+                       intervalOfRecall: float = 0.05,
+                       gTError: int = 1,
+                       ROIThreshold: float = 0.5,
+                       startFrame: int = 0, 
+                       endFrame: int = None):
+    """
+    Calculates the data of Precision-Recall (P-R) Curves for a given model output.
+
+    Parameters:
+    - modelOpt: Model output data.
+    - groundTruth: Ground truth data.
+    - intervalOfRecall: interval of Recall
+    - gTError: Distance error scope for ground truth.
+    - ROIThreshold: ROI threshold.
+    - startFrame: Starting frame of the dataset.
+    - endFrame: Ending frame of the dataset (optional).
+
+    Returns:
+    - rList: List of Recall.
+    - pList: List of Precision.
+    - thresholdList: List of thresholds.
+    """
+
+    if endFrame is None:
+        endFrame = len(modelOpt) - 1
+
+    thresholdList = [1, 0.5, 0]
+    rList = [None] * len(thresholdList)
+    pList = [None] * len(thresholdList)
+    listMark = [True] * len(thresholdList)
+
+    while any(listMark):
+        idx = next((i for i, marked in enumerate(listMark) if marked), None)
+
+        thresholdValue = thresholdList[idx]
+
+        # Filter data based on the threshold value
+        threInput = [[data for data in frame if data[-1] > thresholdValue] for frame in modelOpt]
+
+        # Evaluate the model by video
+        listTP, listFN, listFP = evaluation_model_by_video(threInput, 
+                                                           groundTruth, 
+                                                           confidenceThreshold=thresholdValue, 
+                                                           gTError=gTError,
+                                                           ROIThreshold=ROIThreshold)
+
+        # total TP, FN and FP
+        totalTP = sum(listTP[startFrame:endFrame + 1])
+        totalFN = sum(listFN[startFrame:endFrame + 1])
+        totalFP = sum(listFP[startFrame:endFrame + 1])
+
+        # Calculate Recall Per Image (RFI) and False Positive Per Image (FPPI)
+        recall = totalTP / (totalTP + totalFN) if (totalTP + totalFN) > 0 else 0
+        precision = totalTP / (totalTP + totalFP) if (totalTP + totalFP) > 0 else 1
+
+        rList[idx] = recall
+        pList[idx] = precision
+        listMark[idx] = False
+
+        if not any(listMark):
+
+            # Add intermediate thresholds to reduce FPPI interval
+            i = 0
+            while i < len(thresholdList) - 1:
+                if abs(rList[i + 1] - rList[i]) > intervalOfRecall \
+                    and thresholdList[i] - thresholdList[i + 1] > 1e-4:
+                    mean = (thresholdList[i] + thresholdList[i + 1]) / 2
+                    thresholdList.insert(i + 1, mean)
+                    rList.insert(i + 1, None)
+                    pList.insert(i + 1, None)
+                    listMark.insert(i + 1, True)
+                    break
+                else:
+                    i += 1
+        
+    return rList, pList, thresholdList
+
+
+def get_thres_recall_data(modelOpt: list, 
                         groundTruth: list,
                         rangeOfThreshold: list = [0.5, 1],
                         thresholdInteval: float = 0.01,
@@ -503,7 +587,7 @@ def get_meanRecall_data(modelOpt: list,
     return RPIList, thresholdList
 
 
-def compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, 1]):
+def compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, 1]) -> float:
     """
     Computes the Area Under the Curve (AUC) for the given RPI (Recall Per Image) and FPPI (False Positives Per Image) lists.
 
@@ -538,14 +622,14 @@ def compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, 1]):
         weighted_sum += (filtered_RPI[i] + filtered_RPI[i - 1]) * deltaFPPI / 2.0
         total_weight += deltaFPPI
 
-    AUC = weighted_sum / total_weight if total_weight !=0 else 0
+    AUC = weighted_sum / total_weight if total_weight !=0 else 0.0
 
     return AUC
 
 
-def compute_meanRecall(RPIList, thresholdList, rangeOfThreshold=[0.5, 1]):
+def compute_AR(RPIList, thresholdList, rangeOfThreshold=[0.5, 1]) -> float:
     """
-    Computes the mean recall based on the given RPI (Recall Per Image) and threshold lists.
+    Computes the Average Recall (AR) based on the given RPI (Recall Per Image) and threshold lists.
 
     Parameters:
     - RPIList: List of Recall Per Image values.
@@ -578,10 +662,36 @@ def compute_meanRecall(RPIList, thresholdList, rangeOfThreshold=[0.5, 1]):
         weighted_sum += (filtered_RPI[i] + filtered_RPI[i - 1]) / 2.0 * delta_threshold
         total_weight += delta_threshold
 
-    meanRecall = weighted_sum / total_weight if total_weight != 0 else 0.0
+    AR = weighted_sum / total_weight if total_weight != 0 else 0.0
 
-    return meanRecall
+    return AR
 
 
+def compute_AP(rList: list, pList: list) -> float:
+    """
+    Computes the Average Precision (AP) based on the given Recall and Precision lists.
 
+    Parameters:
+    - rList: List of Recall values (recall at different thresholds).
+    - pList: List of Precision values (precision at different thresholds).
+
+    Returns:
+    - AP: Average Precision (the area under the PR curve)
+    """
+    # Ensure Recall and Precision lists have the same length
+    assert len(rList) == len(pList), "Recall and Precision lists must have the same length."
+
+    # Initialize the AP variable
+    AP = 0.0
+
+    # Calculate the area under the PR curve using the trapezoidal rule
+    for i in range(1, len(rList)):
+        # Calculate the difference in recall between two consecutive points
+        delta_r = rList[i] - rList[i-1]
+        # Calculate the average precision between two consecutive points
+        avg_p = (pList[i] + pList[i-1]) / 2.0
+        # Add the area of the trapezoid to the total AP
+        AP += delta_r * avg_p
+    
+    return AP
 

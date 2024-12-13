@@ -7,7 +7,8 @@ from . import (instancing_model, inference)
 from ..model import *
 from ..util.iostream import (ImgstreamReader, VidstreamReader)
 from ..util.evaluate_module import (get_ROC_curve_data, compute_AUC, 
-                                    get_meanRecall_data, compute_meanRecall)
+                                    get_thres_recall_data, compute_AR,
+                                    get_P_R_curve_data, compute_AP, )
 from ..util.matrixnms import MatrixNMS
 from ..util.compute_module import matrix_to_sparse_list
 
@@ -76,38 +77,84 @@ def inference_task(modelName,
     return results, directions, totalRunningTime
 
 
-def evaluate_task(modelOpt, groundTruth, aucPara = 1, gTError = 1, startFrame = 0, endFrame = None):
+def evaluate_task(modelOpt, groundTruth, aucPara = 40, gTError = 1, startFrame = 0, endFrame = None, plotFigures=True):
+    
 
+    ''' ROC curve Part'''
     # get ROC data
-    RPIList, FPPIList, thresholdList = get_ROC_curve_data(modelOpt, 
-                                                          groundTruth, 
-                                                          rangeOfFPPI = [0, aucPara], 
-                                                          gTError = gTError,
-                                                          startFrame = startFrame,
-                                                          endFrame = endFrame)
+    RPIList, FPPIList, _ = get_ROC_curve_data(modelOpt, 
+                                              groundTruth, 
+                                              rangeOfFPPI = [0, aucPara], 
+                                              gTError = gTError,
+                                              startFrame = startFrame,
+                                              endFrame = endFrame)
     
     # calculate AUC
-    AUC = compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, aucPara])
+    rocOfAUC = compute_AUC(RPIList, FPPIList, rangeOfFPPI=[0, aucPara])
 
-    # print ROC curve
-    fig, ax = plt.subplots()
-    ax.plot(FPPIList, RPIList)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    # plot ROC curve
+    if plotFigures:
+        rocFig, ax1 = plt.subplots()
+        ax1.plot(FPPIList, RPIList)
+        ax1.set_xlim(0, aucPara)
+        ax1.set_ylim(0, 1)
 
-    ax.set_xlabel('Recall (RPI)')
-    ax.set_ylabel('False Positive Rate (FPPI)')
-    ax.set_title('ROC Curve')
+        ax1.set_xlabel('False Positive Rate (FPPI)')
+        ax1.set_ylabel('Recall (RPI)')
+        ax1.set_title('ROC Curve')
 
+    ''' mR Part'''
     # get meanRecall data
-    RPIList1, thresholdList1 = get_meanRecall_data(modelOpt, 
-                                                   groundTruth,
-                                                   gTError = gTError,
-                                                   startFrame = startFrame, 
-                                                   endFrame = endFrame)
+    RPIList1, thresholdList1 = get_thres_recall_data(modelOpt, 
+                                                     groundTruth,
+                                                     gTError = gTError,
+                                                     startFrame = startFrame, 
+                                                     endFrame = endFrame)
     
     # calculate mean Recall
-    mR = compute_meanRecall(RPIList1, thresholdList1, rangeOfThreshold=[0.5, 1])
+    AR = compute_AR(RPIList1, thresholdList1, rangeOfThreshold=[0.5, 1])
+    
+    # plot mR curve
+    if plotFigures:
+        mRFig, ax2 = plt.subplots()
+        ax2.plot(thresholdList1, RPIList1)
+        ax2.set_xlim(0.5, 1)
+        ax2.set_ylim(0, 1)
 
-    return fig, AUC, mR, RPIList, FPPIList, thresholdList
+        ax2.set_xlabel('Threshold')
+        ax2.set_ylabel('Recall')
+        ax2.set_title('Threshold-Recall Curve')
+
+    ''' P-R curve Part'''
+    # get meanRecall data
+    rList2, pList2, _ = get_P_R_curve_data(modelOpt, 
+                                                  groundTruth,
+                                                  intervalOfRecall = 0.02,
+                                                  gTError = gTError,
+                                                  startFrame = startFrame, 
+                                                  endFrame = endFrame)
+    
+    # calculate mean Recall
+    AP = compute_AP(rList2, pList2)
+
+    # plot mR curve
+    if plotFigures:
+        PRFig, ax3 = plt.subplots()
+        ax3.plot(rList2, pList2)
+        ax3.set_xlim(0, 1)
+        ax3.set_ylim(0, 1)
+
+        ax3.set_xlabel('Recall')
+        ax3.set_ylabel('Precision')
+        ax3.set_title('P-R Curve')
+    
+    if plotFigures:
+        figHandle = {'ROC': rocFig,
+                    'mR':  mRFig,
+                    'PR':  PRFig,
+                    }
+
+        return rocOfAUC, AR, AP, figHandle
+    else:
+        return rocOfAUC, AR, AP
 

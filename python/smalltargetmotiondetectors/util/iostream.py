@@ -203,7 +203,7 @@ class ImgstreamReader:
             raise Exception('Could not read the image.')
 
         # Convert the color image to grayscale
-        garyImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
+        grayImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
 
         # Update internal state to point to the next frame
         if self.currIdx < len(self.fileList)-1:
@@ -214,7 +214,7 @@ class ImgstreamReader:
             # If the end of the image stream is reached, set hasFrame to false
             self.hasFrame = False
 
-        return np.double(garyImg), cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
+        return np.double(grayImg), cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
     
 
 class VidstreamReader:
@@ -384,21 +384,24 @@ class Visualization:
     def __del__(self):
         if self.isSaveAsVideo:
             self.hVideo.release()
+            print(f"Visual output video is saved as '{os.path.join(self.savePath, self.videoPath)}'.")
 
         try:
             plt.close(self.hFig)
         except:
             pass
 
-    def create_fig_handle(self):
+    def create_fig_handle(self, width = 8, height = 5, dpi = 100):
         """
         Creates a figure handle.
         """
-        self.hFig = plt.figure(f'Show result for {self.inputClassName}')
+        self.hFig = plt.figure(f'Show result for {self.inputClassName}',
+                               figsize=(width, height),
+                               dpi=dpi)
         manager = self.hFig.canvas.manager
         manager.window.geometry("+{}+{}".format(
-            int((manager.window.winfo_screenwidth() - manager.window.winfo_reqwidth()) / 3), 
-            int((manager.window.winfo_screenheight() - manager.window.winfo_reqheight()) / 3) 
+            int((manager.window.winfo_screenwidth() - manager.window.winfo_reqwidth()) / 8), 
+            int((manager.window.winfo_screenheight() - manager.window.winfo_reqheight()) / 8) 
             ) )
         plt.axis('off')
         
@@ -489,7 +492,7 @@ class Visualization:
 
         # Save as video if the flag is set
         if self.isSaveAsVideo:
-            self.save_video()
+            self.save_video(ax)
 
         # Pause if the pause button is pressed, and wait until it is released or the close button is pressed
         while self.uiHandle['pauseButton'].bool:
@@ -618,8 +621,8 @@ class Visualization:
                           color='red',
                           width=0.002)
 
-    def save_video(self):
-        if self.saveState == 0:
+    def save_video(self, ax):
+        if not self.saveState:
             if not self.savePath:
                 self.savePath = os.getcwd()
             elif not os.path.isdir(self.savePath):
@@ -629,16 +632,26 @@ class Visualization:
 
             if not self.videoPath:
                 self.videoPath = 'visualization_video.avi'
-            
-            fileName = os.path.join(self.savePath, self.videoPath)
+
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            self.hVideo = cv2.VideoWriter(fileName, fourcc, 10, (640, 480))
+            self.hFig.canvas.draw()  # 更新画布
+            _width, _height = self.hFig.canvas.get_width_height()
+            self.hVideo = cv2.VideoWriter(os.path.join(self.savePath, self.videoPath),
+                                          fourcc, 30, (_width, _height))
             
-            print(f"Visual output video is saved as '{fileName}'.")
             self.saveState = True
         
-        _, currFrame = self.hFig.canvas.retrieve()
-        self.hVideo.write(currFrame)
+        # 提取图像帧
+        self.hFig.canvas.draw()  # 更新画布
+        _width, _height = self.hFig.canvas.get_width_height()
+        image = np.frombuffer(self.hFig.canvas.tostring_rgb(), dtype=np.uint8)
+        image = image.reshape((_height, _width, 3))
+
+        # 将 RGB 转换为 BGR (OpenCV 使用 BGR 颜色格式)
+        imageBGR = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        # 写入视频文件
+        self.hVideo.write(imageBGR)
 
     def _closeCallback(self, event=None):
         """

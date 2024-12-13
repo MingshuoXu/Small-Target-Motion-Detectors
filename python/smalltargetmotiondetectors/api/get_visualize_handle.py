@@ -1,6 +1,10 @@
 from ..util.iostream import Visualization
 
-def get_visualize_handle(className=None, showThreshold=None):
+def get_visualize_handle(className=None, 
+                         showThreshold=None, 
+                         width = 8, 
+                         height = 5, 
+                         dpi = 100):
     """
     Returns a handle to a visualization object based on the given class name.
 
@@ -19,7 +23,7 @@ def get_visualize_handle(className=None, showThreshold=None):
     else:
         objVisualization = Visualization()
     
-    objVisualization.create_fig_handle()
+    objVisualization.create_fig_handle(width=width, height =height, dpi=dpi)
 
     return objVisualization
 
