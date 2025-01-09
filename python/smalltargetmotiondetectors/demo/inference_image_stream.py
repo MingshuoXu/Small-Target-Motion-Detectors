@@ -10,15 +10,16 @@ indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath])
 
-from smalltargetmotiondetectors.api import *
-from smalltargetmotiondetectors.util.iostream import *
-from smalltargetmotiondetectors.model import *
+from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference # type: ignore
+from smalltargetmotiondetectors.util.iostream import ImgstreamReader # type: ignore
+from smalltargetmotiondetectors.model import * # type: ignore
 
 ''' Instantiate the model '''
 objModel = instancing_model('Backbonev2')
 
 ''' Create an image stream reader '''
-objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'))
+# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'))
+objIptStream = ImgstreamReader(os.path.join('D:', 'STMD_Dataset', 'LaTOT', 'aircraft4', 'img', '*.jpg'))
 
 ''' Alternatively, uncomment the following options for different inputs: '''
 # objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10,)

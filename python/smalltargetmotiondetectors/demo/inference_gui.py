@@ -9,23 +9,26 @@ indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
 # Add the path to the package containing the models
 sys.path.append(filePath[:indexPath])
 
-from smalltargetmotiondetectors.util.iostream import ModelAndInputSelectorGUI, ImgstreamReader, VidstreamReader
-from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference
-from smalltargetmotiondetectors.model import *
+from smalltargetmotiondetectors.util.iostream import ModelAndInputSelectorGUI, ImgstreamReader, VidstreamReader # type: ignore
+from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference # type: ignore
+from smalltargetmotiondetectors.model import * # type: ignore
 
 ''' open gui to get modelName and type of inputstream '''
 root = tk.Tk()
 obj = ModelAndInputSelectorGUI(root)
-modelName, opt1, opt2 = obj.create_gui()
+modelName, opt1, opt2, isStepping = obj.create_gui()
 
 objModel = instancing_model(modelName)
-if opt2:
+if opt2 is not None:
     objIptStream = ImgstreamReader(startImgName=opt1, endImgName=opt2)
 else:
     objIptStream = VidstreamReader(vidName=opt1)
 
 ''' Get visualization handle '''
 objVisualize = get_visualize_handle(objModel.__class__.__name__)
+if isStepping:
+    objVisualize.uiHandle['pauseButton'].bool = True
+    objVisualize._pauseCallback()
 
 ''' Initialize the model '''
 objModel.init_config()

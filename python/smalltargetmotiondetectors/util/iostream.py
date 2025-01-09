@@ -66,13 +66,12 @@ class ImgstreamReader:
         else:
             raise Exception('')
         
-        
         self.get_idx()
 
     def get_idx(self):
         # Find start and end frame indices
         shouldFoundStart = True
-        for idx in range(len(self.fileList)):
+        for idx in range(len(self.fileList)+2):
             if shouldFoundStart:
                 if os.path.basename(self.fileList[idx]) == os.path.basename(self.startImgName):
                     startIdx = idx
@@ -112,17 +111,18 @@ class ImgstreamReader:
         
         '''       
         # Find the index of the dot in the start image name
-        dotIndex = self.startImgName.rfind('.')
-        startFolder, _ = os.path.split(self.startImgName)
-        endFolder, _ = os.path.split(self.endImgName)
+        startFolder, startBaseN = os.path.split(self.startImgName)
+        _, extNameSta = os.path.splitext(startBaseN) 
+        endFolder, endBaseN = os.path.split(self.endImgName)
+        _, extNameEnd = os.path.splitext(endBaseN) 
 
-        if not check_same_ext_name(self.startImgName, self.endImgName):
+        if extNameSta != extNameEnd:
             raise Exception('Start image has a different extension than end image.')
         if os.path.basename(startFolder) != os.path.basename(endFolder):
             raise Exception('The image stream must be in the same folder!')
         
         # Update fileList property with files matching the selected extension
-        self.fileList = glob.glob(os.path.join(startFolder, '*' + self.startImgName[dotIndex:]))
+        self.fileList = glob.glob(os.path.join(startFolder, '*' + extNameSta))
 
     def get_filelist_from_imgsteamformat(self):
         '''
@@ -144,8 +144,12 @@ class ImgstreamReader:
         self.fileList = glob.glob(self.imgsteamFormat)
         
         # Extract the basename and extension from the specified format
-        basename, ext1 = os.path.splitext(self.imgsteamFormat)
-        basename = basename[:-1] # Remove the trailing *
+        _dirName, _baseName = os.path.split(self.imgsteamFormat)
+        basename, ext1 = os.path.splitext(_baseName)
+        if len(basename) > 1 and basename[-1] == '*':
+            basename = basename[:-1] # Remove the trailing *
+        else:
+            basename = ''
         
         # Check if any files match the specified format
         if not self.fileList:
@@ -160,20 +164,24 @@ class ImgstreamReader:
             # Extract the names of the first and last files in the list
             nameFirst = os.path.splitext(self.fileList[0])[0]
             nameEnd = os.path.splitext(self.fileList[-1])[0]
+            # Extract the numeric part from the end file name
             
             # Determine if the file names have the same length
             if len(nameFirst) == len(nameEnd):
-                # Extract the numeric part from the end file name
-                num1 = self.fileList[-1].replace(basename, '').replace(ext1, '')
-                numDigits1 = len(num1)
+                _, _name1 = os.path.split(nameFirst)
+                numDigits1 = len(_name1.replace(basename, ''))
                 
                 # Generate the start and end frame names with zero-padding
-                self.startImgName = "{}{:0{}}{}".format(basename, self.startFrame, numDigits1, ext1)
-                self.endImgName = "{}{:0{}}{}".format(basename, self.endFrame, numDigits1, ext1) 
+                self.startImgName = os.path.join(_dirName,
+                                                 "{}{:0{}}{}".format(basename, self.startFrame, numDigits1, ext1) )
+                self.endImgName = os.path.join(_dirName,
+                                               "{}{:0{}}{}".format(basename, self.endFrame, numDigits1, ext1) )
             else:
                 # Generate the start and end frame names without zero-padding
-                self.startImgName = "{}{}{}".format(basename, self.startFrame, numDigits1, ext1) 
-                self.endImgName = "{}{}{}".format(basename, self.endFrame, numDigits1, ext1) 
+                self.startImgName = os.path.join(_dirName,
+                                                 "{}{}{}".format(basename, self.startFrame, ext1) )   
+                self.endImgName = os.path.join(_dirName,
+                                               "{}{}{}".format(basename, self.endFrame, ext1) )           
     
     def get_next_frame(self):
         '''
@@ -200,7 +208,12 @@ class ImgstreamReader:
         except:
             # If an error occurs while reading the image, set hasFrame to false
             self.hasFrame = False
-            raise Exception('Could not read the image.')
+            raise Exception('Could not read the image!')
+
+        # Check if the image was successfully read
+        if colorImg is None:
+            self.hasFrame = False
+            raise Exception('Image is none!')
 
         # Convert the color image to grayscale
         grayImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2GRAY).astype(float) / 255
@@ -499,6 +512,10 @@ class Visualization:
             plt.pause(0.1)
             if self.uiHandle['closeButton'].bool:
                 return
+            if 'steppingButton' in self.uiHandle: 
+                if self.uiHandle['steppingButton'].bool:
+                    self.uiHandle['steppingButton'].bool = False
+                    break
 
         self.timeTic = time.time()
 
@@ -669,10 +686,26 @@ class Visualization:
         if self.uiHandle['pauseButton']['text'] == 'Pause':
             self.uiHandle['pauseButton']['text'] = 'Resume'
             self.uiHandle['pauseButton'].bool = True
+            # create stepping button
+            self.uiHandle['steppingButton'] = tk.Button(master=self.hFig.canvas.get_tk_widget(), 
+                                                 text='Stepping', 
+                                                 command=self._steppingCallback)
+            self.uiHandle['steppingButton'].place(relx=0.5, rely=0.85, width=80, height=30)
+            self.uiHandle['steppingButton'].bool = False
         else:
             self.uiHandle['pauseButton']['text'] = 'Pause'
-            self.uiHandle['pauseButton'].bool = False   
-    
+            self.uiHandle['pauseButton'].bool = False 
+            # destroy stepping button
+            if 'steppingButton' in self.uiHandle:
+                self.uiHandle['steppingButton'].destroy()
+                del self.uiHandle['steppingButton']
+
+    def _steppingCallback(self, event=None):
+        """
+        Callback function for stepping button.
+        """
+        self.uiHandle['steppingButton'].bool = True
+
 
 class ModelSelectorGUI:
     def __init__(self, root):
@@ -768,7 +801,7 @@ class InputSelectorGUI:
         
     def _clicked_start_img(self):
         startImgFullPath = filedialog.askopenfilenames(
-            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
+            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else self.imgSelectFolder)
         self.startFolder, self.startImgName = os.path.split(startImgFullPath[0])
         if self.endFolder is not None:
             if os.path.basename(self.startFolder) == os.path.basename(self.endFolder):
@@ -788,7 +821,7 @@ class InputSelectorGUI:
 
     def _clicked_end_img(self):
         endImgFullPath = filedialog.askopenfilenames(
-            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else IMG_DEFAULT_FOLDER)
+            initialdir=IMG_DEFAULT_FOLDER if self.imgSelectFolder is None else self.imgSelectFolder)
         self.endFolder , self.endImgName = os.path.split(endImgFullPath[0])
 
         if self.startFolder is not None:
@@ -828,6 +861,9 @@ class ModelAndInputSelectorGUI:
         
         self.btnRun = ttk.Button(self.root, text="Run", command=self._run)
         self.btnRun.place(x = 20, y=300)
+        self.btnStepping = ttk.Button(self.root, text="Stepping", command=self._stepping)
+        self.btnStepping.place(x = 20, y=270)
+        self.isStepping = False
 
     def create_gui(self):
         self.objModelSelector.create_gui(ALL_MODEL)
@@ -836,13 +872,11 @@ class ModelAndInputSelectorGUI:
         self.root.mainloop()
 
         if self.objInputSelector.selectedOption.get() == 1:  
-            return self.modelName, self.vidName, False
+            return self.modelName, self.vidName, False, self.isStepping
         elif self.objInputSelector.selectedOption.get() == 2:
-            return self.modelName, self.startImgName, self.endImgName
-
+            return self.modelName, self.startImgName, self.endImgName, self.isStepping
 
     def _run(self):
-
         self.modelName = self.objModelSelector.modelCombobox.get()
         if self.modelName not in ALL_MODEL:
             messagebox.showinfo("Message title", "Please select a STMD-based model!")
@@ -873,6 +907,10 @@ class ModelAndInputSelectorGUI:
                 messagebox.showinfo("Message title", "The image stream must be in the same folder!")
         else:
             messagebox.showinfo("Message title", "Please select input")
+    
+    def _stepping(self):
+        self.isStepping = True
+        self._run()
 
 
 def check_same_ext_name(startImgName, endImgName):

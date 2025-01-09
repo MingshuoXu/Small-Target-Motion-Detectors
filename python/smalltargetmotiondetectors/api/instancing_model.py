@@ -1,17 +1,11 @@
 import os
 import sys
 
-# Get the full path of this file
-filePath = os.path.realpath(__file__)
-# Find the index of '/+smalltargetmotiondetectors/'
-# in the file path
-indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.sep)
-# Add the path to the package containing the models
-sys.path.append(filePath[:indexPath])
+packagePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(packagePath)
+from smalltargetmotiondetectors.model import * #type: ignore
+# from smalltargetmotiondetectors.util.datarecord import ModelNameMapping #type: ignore
 
-# from smalltargetmotiondetectors import model
-from smalltargetmotiondetectors.model import *
-from smalltargetmotiondetectors.util.iostream import *
 
 def instancing_model(modelName, modelPara=None):
     """

@@ -51,6 +51,25 @@ class CircularList(list):
         self.cover(iptMatrix)
 
 
+class ModelNameMapping:
+    """
+    ModelNameMapping represents a mapping between model names and their corresponding class name.
+    """
+    modelName: list = []    # Model name
+    classNameHandle: str = ''  # Visualization handle
+
+    def __init__(self, modelName: list, classNameHandle: str) -> None:
+        """
+        Constructor to initialize the model name and visualization handle.
+
+        Parameters:
+        - model_name: Model name
+        - visualize_handle: Visualization handle
+        """
+        self.modelName = modelName
+        self.classNameHandle = classNameHandle
+
+
 if __name__ == "__main__":
     A = CircularList(3)
     B = CircularList(9)
