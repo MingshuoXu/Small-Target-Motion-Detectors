@@ -1,10 +1,6 @@
 import os
 import sys
-
-packagePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-sys.path.append(packagePath)
-from smalltargetmotiondetectors.model import * #type: ignore
-# from smalltargetmotiondetectors.util.datarecord import ModelNameMapping #type: ignore
+from ..model import * # Import all models
 
 
 def instancing_model(modelName, modelPara=None):
@@ -34,8 +30,5 @@ def instancing_model(modelName, modelPara=None):
     return objModel
 
 
-if __name__ == "__main__":
-    objModel = instancing_model('ESTMD')
-    print(objModel)
 
 

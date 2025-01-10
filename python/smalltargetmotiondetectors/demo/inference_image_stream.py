@@ -2,13 +2,10 @@
 import os
 import sys
 
-# Get the full path of this file
 filePath = os.path.realpath(__file__)
-# Find the index of '/+smalltargetmotiondetectors/'
-# in the file path
-indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.sep)
-# Add the path to the package containing the models
-sys.path.append(filePath[:indexPath])
+pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
+gitCodePath = os.path.dirname(pyPackagePath)
+sys.path.append(pyPackagePath)
 
 from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference # type: ignore
 from smalltargetmotiondetectors.util.iostream import ImgstreamReader # type: ignore
@@ -18,12 +15,11 @@ from smalltargetmotiondetectors.model import * # type: ignore
 objModel = instancing_model('Backbonev2')
 
 ''' Create an image stream reader '''
-# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'))
-objIptStream = ImgstreamReader(os.path.join('D:', 'STMD_Dataset', 'LaTOT', 'aircraft4', 'img', '*.jpg'))
+objIptStream = ImgstreamReader(os.path.join(gitCodePath, 'demodata', 'imgstream', 'DemoFig*.jpg'))
 
 ''' Alternatively, uncomment the following options for different inputs: '''
-# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10,)
-# objIptStream = ImgstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'imgstream', 'DemoFig*.jpg'), 10, 100 )
+# objIptStream = ImgstreamReader((os.path.join(gitCodePath, 'demodata', 'imgstream', 'DemoFig*.jpg'), 10,))
+# objIptStream = ImgstreamReader((os.path.join(itCodePath, 'demodata', 'imgstream', 'DemoFig*.jpg'), 10, 100 ))
 
 ''' Get visualization handle and initiate model '''
 # Get visualization handle

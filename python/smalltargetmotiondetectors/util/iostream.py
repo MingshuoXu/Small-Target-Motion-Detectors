@@ -15,10 +15,10 @@ from .matrixnms import MatrixNMS
 from .. import model
 
 # Get the full path of this file
-filePath = os.path.abspath(__file__)
-# Find the index of '/smalltargetmotiondetectors/' in the file path
-indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
-VID_DEFAULT_FOLDER = os.path.join(filePath[:indexPath-7], 'demodata')
+# Add the path to the package containing the models
+filePath = os.path.realpath(__file__)
+gitCodePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filePath))))
+VID_DEFAULT_FOLDER = os.path.join(gitCodePath, 'demodata')
 IMG_DEFAULT_FOLDER = os.path.join(VID_DEFAULT_FOLDER, 'imgstream')
 
 ALL_MODEL = model.__all__
@@ -53,8 +53,6 @@ class ImgstreamReader:
         self.imgsteamFormat = imgsteamFormat
         self.startFrame = startFrame
         self.endFrame = endFrame       # Index of the last frame
-        # Create waitbar handle
-        # self.create_waitbar_handle()
 
         # Initialize file list based on input arguments
         if startImgName and endImgName is not None:
@@ -398,7 +396,6 @@ class Visualization:
         if self.isSaveAsVideo:
             self.hVideo.release()
             print(f"Visual output video is saved as '{os.path.join(self.savePath, self.videoPath)}'.")
-
         try:
             plt.close(self.hFig)
         except:
@@ -854,7 +851,7 @@ class ModelAndInputSelectorGUI:
 
         self.root.geometry('{}x{}+{}+{}'.format(windowWidth, windowHeight, startWidth, startHeight))
         self.root.title("Small target motion detector - Runner")
-        self.root.iconbitmap( os.path.join(filePath[:indexPath-7], 'stmd.ico'))
+        self.root.iconbitmap(os.path.join(gitCodePath, 'stmd.ico'))
         
         self.objModelSelector = ModelSelectorGUI(root)
         self.objInputSelector = InputSelectorGUI(root)
@@ -872,7 +869,7 @@ class ModelAndInputSelectorGUI:
         self.root.mainloop()
 
         if self.objInputSelector.selectedOption.get() == 1:  
-            return self.modelName, self.vidName, False, self.isStepping
+            return self.modelName, self.vidName, None, self.isStepping
         elif self.objInputSelector.selectedOption.get() == 2:
             return self.modelName, self.startImgName, self.endImgName, self.isStepping
 

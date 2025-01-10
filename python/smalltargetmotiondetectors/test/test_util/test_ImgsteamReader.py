@@ -2,17 +2,15 @@ import os
 import sys
 import cv2
 
-# Get the full path of this file
-filePath = os.path.abspath(__file__)
-# Find the index of '/smalltargetmotiondetectors/' in the file path
-indexPath = filePath.find(os.path.join(os.sep, 'smalltargetmotiondetectors'))
-# Add the path to the package containing the models
-sys.path.append(filePath[:indexPath+len('/smalltargetmotiondetectors/')])
+filePath = os.path.realpath(__file__)
+pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filePath))))
+sys.path.append(pyPackagePath)
 
-from util.iostream import ImgstreamReader
+from smalltargetmotiondetectors.util.iostream import ImgstreamReader
 
 # Create test object
-test_obj = ImgstreamReader()
+gitCodePath = os.path.dirname(pyPackagePath)
+test_obj = ImgstreamReader(os.path.join(gitCodePath, 'demodata', 'imgstream', 'DemoFig*.jpg'))
 print('import success')
 cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
 while test_obj.hasFrame:

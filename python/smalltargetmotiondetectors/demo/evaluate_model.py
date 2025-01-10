@@ -5,13 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 
-# Get the full path of this file
 filePath = os.path.realpath(__file__)
-# Find the index of '/+smalltargetmotiondetectors/'
-# in the file path
-indexPath = filePath.rfind(os.path.sep + 'smalltargetmotiondetectors' + os.path.sep)
-# Add the path to the package containing the models
-sys.path.append(filePath[:indexPath])
+pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
+gitCodePath = os.path.dirname(pyPackagePath)
+sys.path.append(pyPackagePath)
 
 from smalltargetmotiondetectors.api import *
 
