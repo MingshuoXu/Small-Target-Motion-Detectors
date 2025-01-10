@@ -18,6 +18,8 @@ from smalltargetmotiondetectors.util.iostream import (ModelAndInputSelectorGUI, 
 from smalltargetmotiondetectors.api import instancing_model, get_visualize_handle, inference  # type: ignore
 
 
+''' ref: https://zhuanlan.zhihu.com/p/675873139 '''
+
 def read_frames(iptQ, opt1, opt2, exit_event):
     """Initialize input stream based on user options."""
     if opt2 is not None:
