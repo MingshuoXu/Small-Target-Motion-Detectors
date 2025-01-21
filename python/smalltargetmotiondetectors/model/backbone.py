@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import warnings
 
-from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core, backbonev2_core
+from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core
 from ..util.compute_module import compute_response, compute_direction
 
 class BaseModel(ABC):

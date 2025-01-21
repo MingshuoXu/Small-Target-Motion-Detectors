@@ -1,4 +1,4 @@
-classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
+classdef FSTMDv2 < smalltargetmotiondetectors.model.STMDNet
     % FSTMD - Feedback Small Target Motion Detector
     %   This class implements a Feedback Small Target Motion Detector by
     %   inheriting from the ESTMDBackbone class.
@@ -30,7 +30,7 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             %   Initializes the FSTMD object and sets up its components.
             
             % Call superclass constructor
-            self = self@smalltargetmotiondetectors.model.Backbonev2();
+            self = self@smalltargetmotiondetectors.model.STMDNet();
 
             % Import necessary packages
             import smalltargetmotiondetectors.core.fstmd_core.*;
@@ -59,7 +59,7 @@ classdef FSTMDv2 < smalltargetmotiondetectors.model.Backbonev2
             %   as well as the feedback pathway.
             
             % Call superclass init method
-            init_config@smalltargetmotiondetectors.model.Backbonev2(self);
+            init_config@smalltargetmotiondetectors.model.STMDNet(self);
             % Initialize feedback pathway
             self.hFeedbackPathway.init_config();
         end

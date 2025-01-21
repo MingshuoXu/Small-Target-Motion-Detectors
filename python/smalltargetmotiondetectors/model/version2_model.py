@@ -1,57 +1,12 @@
 import numpy as np
 
-from .backbone import Backbonev2
-from ..core import (feedbackstmdv2_core, fstmd_core, fstmdv2_core,
+from .stmdnet import STMDNet
+from ..core import (fstmd_core, fstmdv2_core,
                      stmdplus_core, stmdplusv2_core, apgstmd_core, apgstmdv2_core)
 from ..util.compute_module import compute_response
 
-class FeedbackSTMDv2(Backbonev2):
-    """ FeedbackSTMDv2 : A Feedback Extended FeedbackSTMD by inheriting from the Backbonev2.
-    """
 
-    # Bind model parameters and their corresponding parameter pointers.
-    __paraMappingList = {
-        # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', 
-        # lamina
-        # medulla
-        # lobula
-        'n'        : 'self.hLobula.hGammaDelay.order',
-        'tau'      : 'self.hLobula.hGammaDelay.tau', 
-        }
-    
-    def __init__(self):
-        """
-        FeedbackSTMD Constructor method
-        Initializes an instance of the FeedbackSTMD class.
-        """
-        # Call superclass constructor
-        super().__init__()
-
-        # Customize Lobula component
-        self.hLobula = feedbackstmdv2_core.Lobula()
-
-    def init_config(self):
-        """ INIT Initializes the FeedbackSTMD components. """
-        super().init_config()
-
-    def model_structure(self, iptMatrix):
-        """ MODEL_STRUCTURE Method: Defines the structure of the FeedbackSTMDv2 model. """
-        # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-
-        # Process through Lobula and get response and direction
-        self.lobulaOpt, self.modelOpt['direction'] = self.hLobula.process(
-            self.medullaOpt[0], self.medullaOpt[1], self.laminaOpt)
-
-        # Set model response
-        self.modelOpt['response'] = self.lobulaOpt
-
-
-class FSTMDv2(Backbonev2):
+class FSTMDv2(STMDNet):
     """ FSTMDv2: A Feedback Extended FSTMD by inheriting from the Backbonev2.
     """
 
@@ -129,7 +84,7 @@ class FSTMDv2(Backbonev2):
         self.hFeedbackPathway.hGammaDelay.isInLoop = state
 
 
-class STMDPlusv2(Backbonev2):
+class STMDPlusv2(STMDNet):
     """ STMDPlusv2: A Feedback Extended STMDPlus by inheriting from the Backbonev2.
     """
 

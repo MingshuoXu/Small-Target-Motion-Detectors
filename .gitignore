@@ -13,3 +13,12 @@ temp_*
 "`
 **/stmdnet*.*
 "`
+
+"`
+**/+stmdnet_core
+**/+stmdnetf_core
+"`
+
+"`
+**/test_STMDNet*.*
+"`

@@ -1,4 +1,4 @@
-classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
+classdef STMDPlusv2 < smalltargetmotiondetectors.model.STMDNet
     % STMDPlus - 
     %   This class implements an extended version of the Directional-
     %   Small Target Motion Detector (DSTMD) by inheriting from the 
@@ -33,7 +33,7 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
             %   Initializes the STMDPlus object and sets up its components.
             
             % Call superclass constructor
-            self = self@smalltargetmotiondetectors.model.Backbonev2();
+            self = self@smalltargetmotiondetectors.model.STMDNet();
 
             % Import necessary packages
             import smalltargetmotiondetectors.core.stmdplus_core.*;
@@ -58,7 +58,7 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
             %   as well as the contrast pathway and mushroom body.
             
             % Call superclass init method
-            init_config@smalltargetmotiondetectors.model.Backbonev2(self);
+            init_config@smalltargetmotiondetectors.model.STMDNet(self);
 
             % Initialize contrast pathway and mushroom body
             self.hContrastPathway.init_config();
@@ -80,7 +80,7 @@ classdef STMDPlusv2 < smalltargetmotiondetectors.model.Backbonev2
             %   components (retina, lamina, medulla, lobula, contrast pathway,
             %   and mushroom body) and generates the model's response.
                         
-            model_structure@smalltargetmotiondetectors.model.Backbonev2(...
+            model_structure@smalltargetmotiondetectors.model.STMDNet(...
                 self, iptMatrix);
 
             %% C. Contrast Pathway
