@@ -67,6 +67,9 @@ while hSteam.hasFrame && hVisual.hasFigHandle
     
     % Perform inference using the model
     result = inference(model, grayImg);
+
+    % save result
+    % ...
     
     % Visualize the result
     hVisual.show_result(colorImg, result);

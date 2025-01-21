@@ -41,6 +41,19 @@ Clone or download the repository and follow the setup instructions for your pref
 ### Examples: 
 Running start_by_matlab.m via Matlab or running start_by_python.py via Python.
 
+### Citation
+
+If you find this project useful for your research, please consider citing by this.
+```
+@misc{STMDgit,
+	author       = {Xu, Mingshuo},
+	title        = {Small-Target-Motion-Detectors, Version 2},
+	year         = {2024},
+	url          = {https://github.com/MingshuoXu/Small-Target-Motion-Detectors},
+	note         = {Accessed: 2024-09-26}
+}
+```
+
 ## Support and Feedback
 If you encounter any issues or have any suggestions while using the STMD package, feel free to reach out to me. 
 

@@ -10,3 +10,6 @@ temp_*
 **/__pycache__
 "`
 
+"`
+**/stmdnet*.*
+"`

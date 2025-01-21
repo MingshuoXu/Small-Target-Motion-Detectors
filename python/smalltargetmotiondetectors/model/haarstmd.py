@@ -1,8 +1,5 @@
-import math
-
 from ..core import haarstmd_core
 from .backbone import ESTMDBackbone
-
 
 class HaarSTMD(ESTMDBackbone):
     ''' HaarSTMD: Advancing small target motion detection in dim light

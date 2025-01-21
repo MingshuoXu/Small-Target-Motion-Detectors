@@ -504,67 +504,7 @@ class DSTMDBackbone(BaseModel):
         self.modelOpt['direction'] = compute_direction(self.lobulaOpt)
 
 
-class Backbonev2(BaseModel):
-    """ Backbonev2: The next-generation backbone 
-    
-    Ref:
-        *
-    """
 
-    # Bind model parameters and their corresponding parameter pointers.
-    __paraMappingList = { 
-        # retina
-        'sigma1': 'self.hRetina.hGaussianBlur.sigma',
-        # lamina
-        'alpha' : 'self.hLamina.alpha',
-        'delta' : 'self.hLamina.delta',
-        # medulla
-        'gLeak' : ('self.hMedulla.hMi4.gLeak', 'self.hMedulla.hTm9.gLeak'),
-        'vRest' : ('self.hMedulla.hMi4.vRest', 'self.hMedulla.hTm9.vRest'),
-        'vEx'   : ('self.hMedulla.hMi4.vExci', 'self.hMedulla.hTm9.vExci'),
-        # lobula
-        'A'     : 'self.hLobula.hSubInhi.A', 
-        'B'     : 'self.hLobula.hSubInhi.B', 
-        'e'     : 'self.hLobula.hSubInhi.e', 
-        'rho'   : 'self.hLobula.hSubInhi.rho', 
-        'sigma2': 'self.hLobula.hSubInhi.Sigma1', 
-        'sigma3': 'self.hLobula.hSubInhi.Sigma2', 
-        } 
-    
-    def __init__(self): 
-        """ Constructor function """
-        super().__init__()
-
-        # Initialize components
-        self.hRetina = estmd_core.Retina()
-        self.hLamina = fracstmd_core.Lamina()
-        self.hMedulla = backbonev2_core.Medulla()
-        self.hLobula = backbonev2_core.Lobula()
-
-        self.hLamina.alpha = 0.3
-        self.hLobula.hSubInhi.B = 3
-        self.hLobula.hSubInhi.e = 3
-        self.hLobula.hSubInhi.Sigma1 = 5
-        self.hLobula.hSubInhi.Sigma2 = 10
-
-    def init_config(self):
-        """ Initialize configurations for the components """
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-        self.hLobula.init_config()
-
-    def model_structure(self, modelIpt):
-        """ Define the structure of the model """
-        self.retinaOpt = self.hRetina.process(modelIpt)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt, self.modelOpt['direction'], _ \
-            = self.hLobula.process(self.medullaOpt[0], 
-                                   self.medullaOpt[1], 
-                                   self.laminaOpt )
-        self.modelOpt['response'] = self.lobulaOpt
 
 
 

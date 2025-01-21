@@ -27,9 +27,10 @@ def read_frames(iptQ, opt1, opt2, exit_event):
     else:
         objIptStream = VidstreamReader(vidName=opt1)
     """Read frames and put them into the input queue."""
-    while objIptStream.hasFrame and not exit_event.is_set():
-        grayImg, colorImg = objIptStream.get_next_frame()
-        iptQ.put((grayImg, colorImg))
+    while not exit_event.is_set():
+        if not iptQ.full() and objIptStream.hasFrame:
+            grayImg, colorImg = objIptStream.get_next_frame()
+            iptQ.put((grayImg, colorImg))
     iptQ.put(None)  # End signal
     exit_event.set()
 
@@ -39,14 +40,15 @@ def run_inference(iptQ, resQ, modelName, exit_event):
     objModel = instancing_model(modelName)
     objModel.init_config()
     while not exit_event.is_set():
-        data = iptQ.get()
-        if data is None:
-            resQ.put(None)  # End signal
-            exit_event.set()
-            break
-        grayImg, colorImg = data
-        result = inference(objModel, grayImg)
-        resQ.put((colorImg, result))
+        if not iptQ.empty() and not resQ.full():
+            data = iptQ.get()
+            if data is None:
+                resQ.put(None)  # End signal
+                exit_event.set()
+                break
+            grayImg, colorImg = data
+            result = inference(objModel, grayImg)
+            resQ.put((colorImg, result))
 
 
 def visualize_results(resQ, modelName, isStepping, exit_event):
@@ -93,6 +95,14 @@ if __name__ == "__main__":
     process2.start()
     process3.start()
 
+    # Start GUI
     process1.join()
     process2.join()
     process3.join()
+
+
+
+    # bug existing
+    # cannot close the window and exit the program
+    # need to pull request to fix the bug
+
