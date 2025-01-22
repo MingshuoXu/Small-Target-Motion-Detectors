@@ -11,14 +11,13 @@ temp_*
 "`
 
 "`
-**/stmdnet*.*
+**/stmdnet*.py
+**/stmdnet*.m
+**/STMDNet*.m
 "`
 
 "`
-**/+stmdnet_core
-**/+stmdnetf_core
+**/+stmdnet_core/*.m
+**/+stmdnetf_core/*.m
 "`
 
-"`
-**/test_STMDNet*.*
-"`
