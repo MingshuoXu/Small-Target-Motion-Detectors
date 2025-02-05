@@ -26,11 +26,9 @@ ALL_MODEL = model.__all__
 
 
 # configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
-)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[logging.StreamHandler()] )
 logger = logging.getLogger(__name__)
 
 
@@ -458,7 +456,7 @@ class Visualization:
         self.timeTic = time.time()
         logger.info("Visualization started.")
 
-    def show_result(self, colorImg=None, result={'response': None, 'direction': None}):
+    def show_result(self, colorImg=None, result={'response': None, 'direction': None}, runTime=None):
         """
         Display the result.
         
@@ -467,7 +465,8 @@ class Visualization:
             result (dict): Dictionary containing model output and motion direction.
         """
         # Calculate and display elapsed time
-        elapsedTime = time.time() - self.timeTic
+        
+        elapsedTime = time.time() - self.timeTic if runTime is None else runTime
         self.uiHandle['timeTextBox'].config(text=f'Elapsed Time: {elapsedTime:.4f} s/frame')
 
         # Return if the close button is pressed

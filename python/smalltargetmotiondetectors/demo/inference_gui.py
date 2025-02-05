@@ -4,8 +4,10 @@ import queue
 import signal
 import logging
 from typing import Optional, Tuple
+
 from multiprocessing import Process, Queue, Event
 import tkinter as tk
+import time
 
 # configure logging
 logging.basicConfig(level=logging.INFO,
@@ -31,7 +33,6 @@ class StmdGui:
         from smalltargetmotiondetectors.api import ( # type: ignore
             instancing_model,
             get_visualize_handle,
-            inference
         ) 
         
         self.ModelAndInputSelectorGUI = ModelAndInputSelectorGUI
@@ -39,7 +40,6 @@ class StmdGui:
         self.VidstreamReader = VidstreamReader
         self.instancing_model = instancing_model
         self.get_visualize_handle = get_visualize_handle
-        self.inference = inference
 
     def _get_user_input(self) -> tuple:
         """ get user input """
@@ -93,9 +93,10 @@ class StmdGui:
             while not exit_event.is_set():
                 if (data := self._safe_get(ipt_queue, exit_event)) is None:
                     break
-                    
-                result = self.inference(model, data[0])
-                self._safe_put(res_queue, (data[1], result), exit_event)
+                timeTick = time.time()
+                result = model.process(data[0])
+                timeToc = time.time() - timeTick
+                self._safe_put(res_queue, (data[1], result, timeToc), exit_event)
                 
             self._safe_put(res_queue, None, exit_event)  # terminate signal
             logger.info("Inference process exited cleanly")
