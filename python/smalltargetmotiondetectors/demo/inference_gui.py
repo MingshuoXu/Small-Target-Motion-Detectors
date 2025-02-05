@@ -71,7 +71,7 @@ class StmdGui:
     def _read_frames(self, ipt_queue: Queue, opt1: str, opt2: Optional[str], exit_event):
         """ frame reader process """
         try:
-            reader = self.ImgstreamReader(opt1, opt2) if opt2 else self.VidstreamReader(opt1)
+            reader = self.ImgstreamReader(startImgName=opt1, endImgName=opt2) if opt2 else self.VidstreamReader(vidName=opt1)
             
             while not exit_event.is_set() and reader.hasFrame:
                 frame_data = reader.get_next_frame()
@@ -185,14 +185,12 @@ class StmdGui:
         finally:
             # clean up resources
             exit_event.set()
-            logger.info("Cleaning up resources...")
             
             # wait for processes to finish
             for p in processes:
                 if p.is_alive():
-                    p.join(timeout=2)
+                    p.join(timeout=0.01)
                 if p.exitcode is None:
-                    logger.warning(f"Terminating process {p.name}")
                     p.terminate()
                     
             # clear queues

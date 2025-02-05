@@ -4,6 +4,7 @@ import time
 
 import cv2
 import glob
+import logging
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -14,14 +15,23 @@ from tkinter import ttk, filedialog, messagebox
 from .matrixnms import MatrixNMS
 from .. import model
 
+
 # Get the full path of this file
-# Add the path to the package containing the models
 filePath = os.path.realpath(__file__)
 gitCodePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filePath))))
 VID_DEFAULT_FOLDER = os.path.join(gitCodePath, 'demodata')
 IMG_DEFAULT_FOLDER = os.path.join(VID_DEFAULT_FOLDER, 'imgstream')
-
+# Add the path to the package containing the models
 ALL_MODEL = model.__all__
+
+
+# configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 
 class ImgstreamReader:
@@ -418,6 +428,8 @@ class Visualization:
         if not self.isTestPatter:
             self.hFig.canvas.toolbar.pack_forget()
             self.hFig.canvas.manager.toolbar.pack_forget()
+        else:
+            logger.info("Test pattern is used for visualization.")
 
         if self.shouldNMS:
             self.hNMS = MatrixNMS(self.paraNMS['maxRegionSize'], 
@@ -444,6 +456,7 @@ class Visualization:
 
         self.hasFigHandle = True
         self.timeTic = time.time()
+        logger.info("Visualization started.")
 
     def show_result(self, colorImg=None, result={'response': None, 'direction': None}):
         """
@@ -674,7 +687,7 @@ class Visualization:
         plt.close(self.hFig)
         self.hasFigHandle = False
         self.uiHandle['pauseButton'].bool = False
-        print('\n \t --- Manual termination --- \t \n')
+        logger.info("---Manual termination of visualization.---")
 
     def _pauseCallback(self, event=None):
         """
