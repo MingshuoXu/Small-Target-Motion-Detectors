@@ -1,10 +1,13 @@
-# Small-Target-Motion-Detectors (STMD version 2.0)
+# Small-Target-Motion-Detectors (STMD version 2.0) 
 
 ## Overview:
 STMD is a comprehensive package designed for detecting small target motion in various environments. 
+
 It provides a range of functionalities and tools to facilitate the detection and tracking of small targets in both images and videos. 
+
 The package is structured to accommodate different programming languages, including MATLAB, C++, and Python, with plans for future support for Webots.
-C++ and Python code will continue to synchronize.
+
+C++ code will continue to synchronize. Update log can be found in [update-main.md](./update-main.md)
 
 ## Features:
 1. Offers advanced algorithms and models for small target motion detection.
@@ -21,17 +24,17 @@ C++ and Python code will continue to synchronize.
 
 ## Package Structure:
 
-api: Contains API functions and classes for interacting with the package.
+- api: Contains API functions and classes for interacting with the package.
 
-core: Includes core algorithms and utilities for motion detection and analysis.
+- core: Includes core algorithms and utilities for motion detection and analysis.
 
-model: Contains models and neural networks used in small target motion detection.
+- model: Contains models and neural networks used in small target motion detection.
 
-util: Provides additional tools and utilities for data processing and visualization.
+- util: Provides additional tools and utilities for data processing and visualization.
 
-demo: Includes demonstration scripts showcasing the usage of the package.
+- demo: Includes demonstration scripts showcasing the usage of the package.
 
-test: Contains unit tests to verify the correctness of algorithms.
+- test: Contains unit tests to verify the correctness of algorithms.
 
 ## How to Use:
 
@@ -39,9 +42,9 @@ test: Contains unit tests to verify the correctness of algorithms.
 Clone or download the repository and follow the setup instructions for your preferred programming language.
 
 ### Examples: 
-Running start_by_matlab.m via Matlab or running start_by_python.py via Python.
+Running [`start_by_matlab.m`](./start_by_matlab.m) via Matlab or running [`start_by_python.py`](./start_by_python.py) via Python.
 
-### Citation
+## Citation
 
 If you find this project useful for your research, please consider citing by this.
 ```
@@ -64,9 +67,12 @@ I will respond promptly and strive to address your concerns.
 
 ## 概述: 
 STMD 是一个综合性的包，旨在检测各种环境中的小目标运动。
+
 它提供了一系列功能和工具，以便在图像和视频中轻松检测和跟踪小目标。
+
 该包结构设计支持不同的编程语言，包括 MATLAB、C++ 和 Python，并计划未来支持 Webots。
-C++ 和 Python代码将会持续同步。
+
+C++ 代码将会持续同步。
 
 ## 特点: 
 1. 提供先进的算法和模型，用于小目标运动检测。
@@ -82,17 +88,17 @@ C++ 和 Python代码将会持续同步。
 6. 提供单元测试，以确保算法的正确性和可靠性。
 
 ## 包结构: 
-api: 包含与该包交互的 API 函数和类。
+- api: 包含与该包交互的 API 函数和类。
 
-core: 包含用于运动检测和分析的核心算法和实用程序。
+- core: 包含用于运动检测和分析的核心算法和实用程序。
 
-model: 包含用于小目标运动检测的模型和神经网络。
+- model: 包含用于小目标运动检测的模型和神经网络。
 
-util: 提供额外的数据处理和可视化工具和实用程序。
+- util: 提供额外的数据处理和可视化工具和实用程序。
 
-demo: 包含演示脚本，展示该包的使用方法。
+- demo: 包含演示脚本，展示该包的使用方法。
 
-test: 包含单元测试，验证算法的正确性。
+- test: 包含单元测试，验证算法的正确性。
 
 ## 如何使用: 
 
@@ -100,7 +106,7 @@ test: 包含单元测试，验证算法的正确性。
 克隆或下载存储库，并按照所选编程语言的设置说明进行设置。
 
 ### 示例: 
-在 Matlab 中运行 start_by_matlab.m 或者在 Python 中运行 start_by_python.py。
+在 Matlab 中运行 [`start_by_matlab.m`](./start_by_matlab.m) 或者在 Python 中运行 [`start_by_python.py`](./start_by_python.py)。
 
 ### 参数调整: 
 根据不同的输入源和应用场景调整参数。
