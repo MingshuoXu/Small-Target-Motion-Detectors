@@ -10,7 +10,7 @@ pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
 gitCodePath = os.path.dirname(pyPackagePath)
 sys.path.append(pyPackagePath)
 
-from smalltargetmotiondetectors.api import *
+from smalltargetmotiondetectors.api import inference_task, evaluate_task # type: ignore
 
 
 def inference_and_evaluate_task(modelName, 
