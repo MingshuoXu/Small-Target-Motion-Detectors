@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import warnings
+import logging
 
 from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core
 from ..util.compute_module import compute_response, compute_direction
@@ -51,8 +52,7 @@ class BaseModel(ABC):
         pass
 
     def process(self, modelIpt):
-        """
-        Processes the input and returns the model output.
+        """ Processes the input and returns the model output.
 
         Parameters:
             modelIpt: Input for model processing.
@@ -66,20 +66,31 @@ class BaseModel(ABC):
         return self.modelOpt
     
     def print_para(self):
-        print(f'The parameter list of {self.__class__.__name__} includes: \n')
+        logger = logging.getLogger(__name__)
+
         paraList = eval(f'self._{self.__class__.__name__}__paraMappingList')
+
         if not paraList:
-            print('\tNULL')
+            logger.info(f'The parameters of <{self.__class__.__name__}> is empty.')
             return
+        
+        msg = f'The parameters of <{self.__class__.__name__}> are:\n'
         for name, value in paraList.items():
+            msg += f'  {name:6}'
             if isinstance(value, tuple):
-                for court, item in enumerate(value):
-                    if court == 0:
-                        print(name, '\t:', item, '\t = ', eval(item))
+                for i, item in enumerate(value):
+                    if i == 0:
+                        msg += ' -->'
+                    elif i == len(value) - 1:
+                        msg += f'{' '*len(name):6} \\--->'
                     else:
-                        print(' '*len(name), '\t ', item, '\t = ', eval(item))
+                        msg += f'{' '*len(name):6} |--->'
+                    msg += f' {item} = {eval(item)}\n'
             else:
-                print(name, '\t:', value, '\t = ', eval(value))
+                msg += f' --> {value} = {eval(value)}\n'
+                
+        logger.info(msg)
+        
 
     def set_para(self, **kwargs):
         """

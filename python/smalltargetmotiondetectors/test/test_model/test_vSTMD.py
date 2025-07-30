@@ -15,7 +15,8 @@ from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamR
 from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list # type: ignore
 
 ''' Model instantiation '''
-objModel = instancing_model('STMDNetF')
+objModel = instancing_model('vSTMD')  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
+
 
 ''' Input '''
 # Demo video (RIST)
@@ -35,7 +36,7 @@ objModel.print_para()
 # init
 objModel.init_config()
 
-
+totalTime = 0
 '''Run inference'''
 while hSteam.hasFrame and hVisual.hasFigHandle:
 
@@ -43,8 +44,11 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     grayImg, colorImg = hSteam.get_next_frame()
     
     # Perform inference using the model
+    timeTic = time.time()
     result = inference(objModel, grayImg)
     # result['response'] = matrix_to_sparse_list(result['response'])
+    totalTime += time.time() - timeTic
+    timeTic = time.time()
 
     # # direction
     # direction  = result['direction']
@@ -55,7 +59,7 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     # result['direction'] = directionListType
     
     # Visualize the result
-    hVisual.show_result(colorImg, result)
+    # hVisual.show_result(colorImg, result)
 
-
+print(f"Total time: {totalTime:.4f} seconds")
 

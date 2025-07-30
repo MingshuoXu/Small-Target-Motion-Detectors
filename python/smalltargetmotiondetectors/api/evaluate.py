@@ -128,11 +128,11 @@ def evaluate_task(modelOpt, groundTruth, aucPara = 40, gTError = 1, startFrame =
     ''' P-R curve Part'''
     # get meanRecall data
     rList2, pList2, _ = get_P_R_curve_data(modelOpt, 
-                                                  groundTruth,
-                                                  intervalOfRecall = 0.02,
-                                                  gTError = gTError,
-                                                  startFrame = startFrame, 
-                                                  endFrame = endFrame)
+                                        groundTruth,
+                                        intervalOfRecall = 0.02,
+                                        gTError = gTError,
+                                        startFrame = startFrame, 
+                                        endFrame = endFrame)
     
     # calculate mean Recall
     AP = compute_AP(rList2, pList2)

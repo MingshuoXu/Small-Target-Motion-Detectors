@@ -371,6 +371,19 @@ class Visualization:
         
     Methods:
         __init__: Constructor method.
+
+    Example:
+        # Create an instance of the Visualization class
+        vis = Visualization(className='ExampleClass', showThreshold=0.8)
+        
+        # Create a figure handle
+        vis.create_fig_handle()
+        
+        # Show the result using the show_result method
+        vis.show_result(colorImg, result, runTime)
+        
+        # Clean up resources
+        del vis
     """
 
     def __init__(self, className='None', showThreshold=0.8):
@@ -464,14 +477,15 @@ class Visualization:
             colorImg (numpy.ndarray): Color image.
             result (dict): Dictionary containing model output and motion direction.
         """
-        # Calculate and display elapsed time
         
-        elapsedTime = time.time() - self.timeTic if runTime is None else runTime
-        self.uiHandle['timeTextBox'].config(text=f'Elapsed Time: {elapsedTime:.4f} s/frame')
-
         # Return if the close button is pressed
         if self.uiHandle['closeButton'].bool:
             return
+        
+        # Calculate and display elapsed time
+        elapsedTime = time.time() - self.timeTic if runTime is None else runTime
+        self.uiHandle['timeTextBox'].config(text=f'Elapsed Time: {elapsedTime:.4f} s/frame')
+
 
         plt.figure(self.hFig.number)
         plt.clf()
@@ -544,7 +558,7 @@ class Visualization:
             else:
                 nmsOutput = modelOpt
             idX, idY = np.where(nmsOutput > self.showThreshold * maxOutput)
-            ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
+            ax.scatter(idY, idX, s=5, c='r', marker = '*')
 
             if motionDirection is not None:
                 if len(motionDirection) > 0:
@@ -581,7 +595,7 @@ class Visualization:
         idY = filtered_rows[:, 0]
         idX = filtered_rows[:, 1]
 
-        ax.plot(idY, idX, '*', markersize=5, markeredgecolor='r')
+        ax.scatter(idY, idX, s=5, c='r', marker = '*')
 
         if direction is not None and len(direction) > 0:
             directionArray = np.array(direction)
@@ -686,7 +700,8 @@ class Visualization:
         plt.close(self.hFig)
         self.hasFigHandle = False
         self.uiHandle['pauseButton'].bool = False
-        logger.info("---Manual termination of visualization.---")
+        self.uiHandle['closeButton'].bool = True
+        logger.info("Manual termination of visualization.")
 
     def _pauseCallback(self, event=None):
         """
