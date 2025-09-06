@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import torch
 
 def compute_temporal_conv(iptCell, kernel, pointer=None):
     """
@@ -32,11 +33,14 @@ def compute_temporal_conv(iptCell, kernel, pointer=None):
     k2 = len(kernel)
     length = min(k1, k2)
 
-    optMatrix = np.zeros_like(iptCell[pointer])
+    if isinstance(iptCell[pointer], np.ndarray):
+        optMatrix = np.zeros_like(iptCell[pointer])
+    elif isinstance(iptCell[pointer], torch.Tensor):
+        optMatrix = torch.zeros_like(iptCell[pointer])
     # Perform temporal convolution
     for t in range(length):
         j = (pointer - t) % k1
-        if np.abs(kernel[t]) > 1e-16 and iptCell[j] is not None:
+        if abs(kernel[t]) > 1e-16 and iptCell[j] is not None:
             optMatrix += iptCell[j] * kernel[t]
 
     return optMatrix

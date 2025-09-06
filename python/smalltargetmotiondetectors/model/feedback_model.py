@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from .backbone import ESTMDBackbone
 from ..core import feedbackstmd_core, fstmd_core, stfeedbackstmd_core
@@ -56,13 +57,13 @@ class FeedbackSTMD(ESTMDBackbone):
         'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
         }
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """
         FeedbackSTMD Constructor method
         Initializes an instance of the FeedbackSTMD class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
 
         # Customize Lobula component
         self.hLobula = feedbackstmd_core.Lobula()
@@ -76,10 +77,6 @@ class FeedbackSTMD(ESTMDBackbone):
         # Customize Medulla's Tm1 component properties
         self.hMedulla.hTm1.hGammaDelay.order = 9
         self.hMedulla.hTm1.hGammaDelay.tau = 45
-
-    def init_config(self):
-        """ INIT Initializes the FeedbackSTMD components. """
-        super().init_config()
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method
@@ -148,13 +145,13 @@ class FSTMD(ESTMDBackbone):
         'a'         : 'self.hFeedbackPathway.feedbackConstant', # Eq. (4)
         }
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ FSTMD Constructor method
 
         Initializes an instance of the FSTMD class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
         
         # Initialize feedback pathway component
         self.hFeedbackPathway = fstmd_core.FeedbackPathway()
@@ -231,11 +228,11 @@ class STFeedbackSTMD(ESTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {} 
 
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """
         Constructor method
         """
-        super().__init__()       
+        super().__init__(device=device)       
 
         # Customize Medulla and Lobula component
         self.hMedulla = stfeedbackstmd_core.Medulla()

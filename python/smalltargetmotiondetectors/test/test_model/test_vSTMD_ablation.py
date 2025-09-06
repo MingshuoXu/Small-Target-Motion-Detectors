@@ -1,10 +1,6 @@
 import os
 import sys
 import time
-import torch
-
-# DEVICE = 'cpu' # 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
@@ -16,11 +12,10 @@ sys.path.append(import_path)
 
 from smalltargetmotiondetectors.api import (instancing_model, get_visualize_handle, inference) # type: ignore
 from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamReader # type: ignore
-from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list # type: ignore
-
+from smalltargetmotiondetectors.model.vstmd import * # type: ignore
 
 ''' Model instantiation '''
-objModel = instancing_model('vSTMD_F', device=DEVICE)
+objModel = vSTMD_without_CDGC()  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
 
 
 ''' Input '''
@@ -33,15 +28,13 @@ hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_
 ''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)
 
-
 ''' Initialize the model '''
 # set the parameter list
 objModel.set_para()
 # print the parameter list
-objModel.print_para()
+# objModel.print_para()
 # init
 objModel.init_config()
-
 
 totalTime = 0
 '''Run inference'''
@@ -49,9 +42,6 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
 
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
-
-    if DEVICE == 'cuda':
-        grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
     
     # Perform inference using the model
     result, runTime = inference(objModel, grayImg)
@@ -67,8 +57,6 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     # result['direction'] = directionListType
     
     # Visualize the result
-    if DEVICE == 'cuda':
-        result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
     hVisual.show_result(colorImg, result, runTime)
 
 print(f"Total time: {totalTime:.4f} seconds")

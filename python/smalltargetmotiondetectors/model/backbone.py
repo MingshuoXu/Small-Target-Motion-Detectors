@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 import warnings
 import logging
+import time
 
 from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core
 from ..util.compute_module import compute_response, compute_direction
+
 
 class BaseModel(ABC):
     """ Base class for Small Target Motion Detector models. """
@@ -15,9 +17,10 @@ class BaseModel(ABC):
             'sigma2': 'self.lobulaOpt.hGaussianBlur.sigma',
         }
 
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ Constructor method.
         """
+        self.device = device
         
         self.hRetina = None # Handle for the retina layer
         self.hLamina = None # Handle for the lamina layer
@@ -34,12 +37,14 @@ class BaseModel(ABC):
         # Model output structure
         self.modelOpt = {'response': [], 'direction': []}
 
-    @abstractmethod
     def init_config(self, *args, **kwargs):
         """
         Abstract method for initializing model components.
         """
         pass
+
+    def _initialize(self, *args, **kwargs):
+        return self.init_config(*args, **kwargs)
 
     @abstractmethod
     def model_structure(self, modelIpt, *args, **kwargs):
@@ -59,11 +64,15 @@ class BaseModel(ABC):
 
         Returns:
             modelOpt: Model output structure.
+            time_end: Time taken for processing.
         """
+        
+        time_start = time.time()
         # Call the model structure method
         self.model_structure(modelIpt)
+        time_end = time.time() - time_start
         # Return the model output
-        return self.modelOpt
+        return self.modelOpt, time_end
     
     def print_para(self):
         logger = logging.getLogger(__name__)
@@ -91,7 +100,6 @@ class BaseModel(ABC):
                 
         logger.info(msg)
         
-
     def set_para(self, **kwargs):
         """
         Sets parameters for the class instance based on provided keyword arguments.
@@ -185,9 +193,9 @@ class ESTMD(BaseModel):
         'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
         } 
      
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         # Call the superclass constructor
-        super().__init__()
+        super().__init__(device=device)
         # Initialize components
         self.hRetina = estmd_core.Retina()
         self.hLamina = estmd_core.Lamina()
@@ -199,6 +207,10 @@ class ESTMD(BaseModel):
         self.hRetina.init_config()
         self.hLamina.init_config()
         self.hMedulla.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         # Define the structure of the ESTMD model
@@ -237,13 +249,13 @@ class ESTMDBackbone(BaseModel):
         'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau'),
         }
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ ESTMDBackbone Constructor method
 
         Initializes an instance of the ESTMDBackbone class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize components
         self.hRetina = estmd_core.Retina()
@@ -260,6 +272,10 @@ class ESTMDBackbone(BaseModel):
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method
@@ -323,13 +339,13 @@ class FracSTMD(ESTMDBackbone):
         'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
         }
 
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """
         FracSTMD Constructor method
         Initializes an instance of the FracSTMD class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
 
         # Customize Lamina and Lobula components
         self.hLamina = fracstmd_core.Lamina()
@@ -399,13 +415,13 @@ class DSTMD(BaseModel):
         'sigma7'    : 'self.hLobula.hDirectionInhi.sigma2',
         } 
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ DSTMD Constructor method
 
         Initializes an instance of the DSTMD class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize components
         self.hRetina = estmd_core.Retina()
@@ -422,6 +438,10 @@ class DSTMD(BaseModel):
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method
@@ -473,13 +493,13 @@ class DSTMDBackbone(BaseModel):
         'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
         } 
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ DSTMDBackbone Constructor method
 
         Initializes an instance of the DSTMDBackbone class.
         """
         # Call superclass constructor
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize components
         self.hRetina = estmd_core.Retina()
@@ -496,6 +516,10 @@ class DSTMDBackbone(BaseModel):
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method

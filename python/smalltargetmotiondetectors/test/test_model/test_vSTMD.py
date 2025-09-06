@@ -1,6 +1,10 @@
 import os
 import sys
 import time
+import torch
+
+# DEVICE = 'cpu' # 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
@@ -15,7 +19,7 @@ from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamR
 from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list # type: ignore
 
 ''' Model instantiation '''
-objModel = instancing_model('vSTMD')  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
+objModel = instancing_model('vSTMD', device=DEVICE)  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
 
 
 ''' Input '''
@@ -42,13 +46,14 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
 
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
+
+    if DEVICE == 'cuda':
+        grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
     
     # Perform inference using the model
-    timeTic = time.time()
-    result = inference(objModel, grayImg)
+    result, runTime = inference(objModel, grayImg)
     # result['response'] = matrix_to_sparse_list(result['response'])
-    totalTime += time.time() - timeTic
-    timeTic = time.time()
+
 
     # # direction
     # direction  = result['direction']
@@ -59,7 +64,12 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     # result['direction'] = directionListType
     
     # Visualize the result
-    # hVisual.show_result(colorImg, result)
+    if DEVICE == 'cuda':
+        result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
+    hVisual.show_result(colorImg, result, runTime)
+    
+    totalTime += runTime
 
 print(f"Total time: {totalTime:.4f} seconds")
+print(f"FPS: {hSteam.endFrame / totalTime :.4f} frames/second")
 

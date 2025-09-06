@@ -1,5 +1,5 @@
 import numpy as np
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_CONSTANT
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
@@ -16,13 +16,13 @@ class Retina(BaseCore):
     Date: 2024-04-23
     """
 
-    def __init__(self):
+    def __init__(self, device ='cpu'):
         """
         Constructor.
         Initializes the Retina object and creates a GaussianBlur object.
         """
-        super().__init__()
-        self.hGaussianBlur = GaussianBlur()
+        super().__init__(device=device)
+        self.hGaussianBlur = GaussianBlur(device=device)
 
     def init_config(self):
         """
@@ -405,10 +405,10 @@ class LaminaLateralInhibition(BaseCore):
         """
         # Lateral inhibition
         self.cellSpatialPositive.record_next(
-            filter2D(iptMatrix, -1, self.spatialPositiveKernel)
+            filter2D(iptMatrix, -1, self.spatialPositiveKernel, borderType=BORDER_CONSTANT)
             ) # conv2(iptMatrix, self.spatialPositiveKernel, 'same')
         self.cellSpatialPositive.record_next(
-            filter2D(iptMatrix, -1, self.spatialNegativeKernel)
+            filter2D(iptMatrix, -1, self.spatialNegativeKernel, borderType=BORDER_CONSTANT)
             )
 
         optMatrix \

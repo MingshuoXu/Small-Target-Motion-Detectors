@@ -1,6 +1,15 @@
 # Update Log
 
 ---
+## Update Log - Version 2.0.12 (Sep 06, 2025)
+
+##### Python Enhancements:
+
+1. Added CUDA acceleration for `vSTMD` and `vSTMD_F` models, significantly improving inference speed on supported GPUs.
+
+2. Enhanced `inference_gui` with CUDA support and asynchronous processing, delivering faster performance and a smoother user experience.
+
+---
 ## Update Log - Version 2.0.11 (Feb 05, 2025)
 
 ##### Python Enhancements:

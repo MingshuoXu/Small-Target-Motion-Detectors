@@ -1,4 +1,4 @@
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_CONSTANT
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -31,7 +31,7 @@ class ContrastPathway(BaseCore):
         lenKernel = len(self.theta)
         dictContrastOpt = {}
         for idx in range(lenKernel):
-            dictContrastOpt[idx] = filter2D(retinaOpt, -1, self.T1Kernel[idx])
+            dictContrastOpt[idx] = filter2D(retinaOpt, -1, self.T1Kernel[idx], borderType=BORDER_CONSTANT)
         self.Opt = dictContrastOpt
         return dictContrastOpt
     

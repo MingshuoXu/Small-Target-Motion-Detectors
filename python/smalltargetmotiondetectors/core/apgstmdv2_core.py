@@ -1,5 +1,5 @@
 import numpy as np
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_CONSTANT
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_prediction_kernel
@@ -52,6 +52,7 @@ class PredictionModule(BaseCore):
                     lobulaOpt[idxD],
                     -1,
                     self.predictionKernel[idxD],
+                    borderType=BORDER_CONSTANT
                 )
             )
 

@@ -1,11 +1,12 @@
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_DEFAULT
 import numpy as np
 from scipy.ndimage import gaussian_filter
-
+import torch
+import torch.nn.functional as F
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
-from ..util.create_kernel import create_gamma_kernel, create_inhi_kernel_W2
+from ..util.create_kernel import create_gaussian_kernel, create_gamma_kernel, create_inhi_kernel_W2
 from ..util.datarecord import CircularList
 
 
@@ -15,25 +16,23 @@ class GaussianBlur(BaseCore):
     This class implements a Gaussian blur filter for image processing.
     """
 
-    def __init__(self):
+    def __init__(self, device ='cpu'):
         """
         Constructor.
         Initializes the GaussianBlur object.
         """
-        super().__init__()
+        super().__init__(device=device)
         self.size = 3   # Size of the filter kernel
         self.sigma = 1  # Standard deviation of the Gaussian distribution
         self.gaussKernel = None  # Gaussian filter kernel
 
     def init_config(self):
-        """
-        Initialization method.
-        Creates the Gaussian filter kernel using scipy.ndimage.gaussian_filter.
-        """
-        # self.gaussKernel = gaussian_filter(size=self.size, sigma=self.sigma)
-        pass
+        self.gaussKernel = create_gaussian_kernel(self.size, self.sigma)
 
-    def process(self, iptMatrix):
+        if self.device == 'cuda':
+            self.gaussKernel = torch.from_numpy(self.gaussKernel).float().to(self.device).unsqueeze(0).unsqueeze(0)
+
+    def process(self, ipt):
         """
         Processing method.
         Applies the Gaussian filter to the input matrix.
@@ -44,8 +43,12 @@ class GaussianBlur(BaseCore):
         Returns:
         - optMatrix: Output matrix after applying the Gaussian filter.
         """
-        optMatrix = gaussian_filter(iptMatrix, sigma=self.sigma)
-        return optMatrix
+        if self.device == 'cpu':
+            optMatrix = filter2D(ipt, -1, self.gaussKernel, borderType=BORDER_DEFAULT)
+            return optMatrix
+        else:
+            optTensor = F.conv2d(ipt, self.gaussKernel, padding='same')
+            return optTensor
     
 
 class GammaDelay(BaseCore):
@@ -113,8 +116,18 @@ class GammaDelay(BaseCore):
             return self.process_list(inputData)
         elif isinstance(inputData, np.ndarray):
             return self.process_matrix(inputData)
+        elif isinstance(inputData, torch.Tensor):
+            return self.process_tensor(inputData)
 
     def process_matrix(self, inputMatrix):
+        if self.isInLoop:
+            self.listInput.cover(inputMatrix)
+        else:
+            self.listInput.record_next(inputMatrix)
+
+        return self.process_circularlist(self.listInput)
+    
+    def process_tensor(self, inputMatrix):
         if self.isInLoop:
             self.listInput.cover(inputMatrix)
         else:
@@ -201,7 +214,7 @@ class SurroundInhibition(BaseCore):
     Gamma_Filter Gamma filter in lamina layer
     """
 
-    def __init__(self, KernelSize=15, Sigma1=1.5, Sigma2=3, e=1.0, rho=0, A=1, B=3):
+    def __init__(self, KernelSize=15, Sigma1=1.5, Sigma2=3, e=1.0, rho=0, A=1, B=3, device='cpu'):
         """
         Constructor
         Initializes the SurroundInhibition object with optional parameters
@@ -215,7 +228,7 @@ class SurroundInhibition(BaseCore):
         - A: Amplitude of the filter
         - B: Offset of the filter
         """
-        super().__init__()
+        super().__init__(device=device)
         self.KernelSize = KernelSize
         self.Sigma1 = Sigma1
         self.Sigma2 = Sigma2
@@ -223,14 +236,13 @@ class SurroundInhibition(BaseCore):
         self.rho = rho
         self.A = A
         self.B = B
-        self.inhiKernelW2 = None
 
     def init_config(self):
         """
         Initialization method
         Creates the surround inhibition filter kernel
         """
-        self.inhiKernelW2 = create_inhi_kernel_W2(
+        self.corrInhiKernelW2 = create_inhi_kernel_W2(
             self.KernelSize,
             self.Sigma1,
             self.Sigma2,
@@ -239,21 +251,30 @@ class SurroundInhibition(BaseCore):
             self.A,
             self.B
         )
+        if self.device != 'cpu':
+            self.convInhiKernelW2 = torch.from_numpy(np.rot90(self.corrInhiKernelW2, 2).copy())
+            self.convInhiKernelW2 = self.convInhiKernelW2.float().to(device=self.device).unsqueeze(0).unsqueeze(0)
 
-    def process(self, iptMatrix):
+    def process(self, ipt):
         """
         Processing method
         Applies the surround inhibition filter to the input matrix
         
         Parameters:
-        - iptMatrix: Input matrix
+        - ipt: Input 
         
         Returns:
         - inhiOpt: Output of the surround inhibition filter
         """
-        inhiOpt = filter2D(iptMatrix, -1, self.inhiKernelW2)
-        inhiOpt = np.maximum(inhiOpt, 0)
-        return inhiOpt
+        if self.device == 'cpu':
+            inhiOpt = filter2D(ipt, -1, self.corrInhiKernelW2, borderType=BORDER_DEFAULT)
+            inhiOpt = np.maximum(inhiOpt, 0)
+            return inhiOpt
+        else:
+            
+            inhiOpt = F.conv2d(ipt, self.convInhiKernelW2, padding='same')
+            inhiOpt = torch.clamp(inhiOpt, min=0)
+            return inhiOpt
 
 
 if __name__ == "__main__":

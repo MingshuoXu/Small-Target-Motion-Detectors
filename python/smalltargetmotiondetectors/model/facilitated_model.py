@@ -1,3 +1,5 @@
+import warnings
+
 from .backbone import DSTMDBackbone
 from ..core import stmdplus_core, apgstmd_core
 from ..util.compute_module import compute_response, compute_direction
@@ -64,9 +66,9 @@ class STMDPlus(DSTMDBackbone):
         'alpha2'    : 'self.hContrastPathway.alpha2', # Eq. (17)
         } 
     
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """ Constructor method """
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize contrast pathway and mushroom body components
         self.hContrastPathway = stmdplus_core.ContrastPathway()
@@ -81,6 +83,10 @@ class STMDPlus(DSTMDBackbone):
         # Initialize contrast pathway and mushroom body
         self.hContrastPathway.init_config()
         self.hMushroomBody.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ Defines the structure of the STMDPlus model. """      
@@ -175,11 +181,11 @@ class ApgSTMD(STMDPlus):
         'kappa'     : 'self.hPredictionPathway.kappa', # Eq. (23)
         } 
 
-    def __init__(self):
+    def __init__(self, device = 'cpu'):
         """
         Constructor method
         """
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize attention pathway and prediction pathway components
         self.hAttentionPathway = apgstmd_core.AttentionModule()
@@ -202,6 +208,10 @@ class ApgSTMD(STMDPlus):
         # Initialize attention pathway and prediction pathway components
         self.hAttentionPathway.init_config()
         self.hPredictionPathway.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ Defines the structure of the ApgSTMD model. """

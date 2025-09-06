@@ -1,5 +1,5 @@
 import numpy as np
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_CONSTANT
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_attention_kernel, create_prediction_kernel
@@ -60,6 +60,7 @@ class AttentionModule(BaseCore):
                             map_retina_opt,
                             -1,
                             self.attention_kernel[i][0],
+                            borderType=BORDER_CONSTANT,
                         )
                     else:
                         attention_response_with_j = np.minimum(
@@ -68,6 +69,7 @@ class AttentionModule(BaseCore):
                                 map_retina_opt,
                                 -1,
                                 self.attention_kernel[i][j],
+                                borderType=BORDER_CONSTANT,
                             )
                         )
                 
@@ -157,12 +159,14 @@ class PredictionModule(BaseCore):
                     self.mu * lobula_opt[idxD],
                     -1,
                     self.prediction_kernel[idxD],
+                    borderType=BORDER_CONSTANT
                 ))
             else:
                 prediction_gain.append(filter2D(
                     self.mu * lobula_opt[idxD] + (1 - self.mu) * self.cell_prediction_gain[0][idxD],
                     -1,
                     self.prediction_kernel[idxD],
+                    borderType=BORDER_CONSTANT
                 ))
         self.cell_prediction_gain[-1] = prediction_gain
         

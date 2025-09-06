@@ -1,3 +1,5 @@
+import warnings
+
 from ..core import haarstmd_core
 from .backbone import ESTMDBackbone
 
@@ -20,8 +22,9 @@ class HaarSTMD(ESTMDBackbone):
             'TAU'       : 'self.hLobula.tau',
             }
         
-    def __init__(self):
-        super().__init__()
+    def __init__(self, device = 'cpu'):
+        ''' Constructor method '''
+        super().__init__(device=device)
 
         self.hMedulla = haarstmd_core.Medulla()
         self.hLobula = haarstmd_core.Lobula()
@@ -44,6 +47,10 @@ class HaarSTMD(ESTMDBackbone):
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
+
+        if self.device != 'cpu':
+            self.device = 'cpu'
+            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         ''' MODEL_STRUCTURE: Defines the structure of the HaarSTMD model. 

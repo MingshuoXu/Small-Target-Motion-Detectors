@@ -1,6 +1,6 @@
 import numpy as np
 
-from cv2 import filter2D
+from cv2 import filter2D, BORDER_CONSTANT
 
 from .base_core import BaseCore
 from ..util.datarecord import CircularList
@@ -52,9 +52,9 @@ class Medulla(BaseCore):
     def process(self, medullaIpt):
         ''' Compute spacial part '''
         # SP_ON
-        spacialOnOpt = np.maximum(filter2D(medullaIpt, -1, self.spacialOnKernel), 0)
+        spacialOnOpt = np.maximum(filter2D(medullaIpt, -1, self.spacialOnKernel, borderType=BORDER_CONSTANT), 0)
         # SP_OFF
-        spacialOffOpt = np.maximum(filter2D(medullaIpt, -1, self.spacialOffKernel), 0)
+        spacialOffOpt = np.maximum(filter2D(medullaIpt, -1, self.spacialOffKernel, borderType=BORDER_CONSTANT), 0)
 
         # SP
         nowSpacialOpt = self.compute_spacial_correlation(spacialOnOpt, 

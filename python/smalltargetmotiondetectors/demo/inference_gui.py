@@ -8,6 +8,7 @@ from typing import Optional, Tuple
 from multiprocessing import Process, Queue, Event
 import tkinter as tk
 import time
+import torch
 
 # configure logging
 logging.basicConfig(level=logging.INFO,
@@ -16,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class StmdGui:
-    def __init__(self):
+    def __init__(self, device='cpu'):
+        self.device = device
         self._setup_paths()
         
     def _setup_paths(self):
@@ -87,16 +89,20 @@ class StmdGui:
     def _run_inference(self, ipt_queue: Queue, res_queue: Queue, model_name: str, exit_event):
         """ inference process """
         try:
-            model = self.instancing_model(model_name)
+            model = self.instancing_model(model_name, device = self.device)
             model.init_config()
             
             while not exit_event.is_set():
                 if (data := self._safe_get(ipt_queue, exit_event)) is None:
                     break
-                timeTick = time.time()
-                result = model.process(data[0])
-                timeToc = time.time() - timeTick
-                self._safe_put(res_queue, (data[1], result, timeToc), exit_event)
+                if self.device != 'cpu':
+                    _ipt = torch.from_numpy(data[0]).float().to(self.device).unsqueeze(0).unsqueeze(0)
+                else:
+                    _ipt = data[0]
+                result, runTime = model.process(_ipt)
+                if self.device != 'cpu':
+                    result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
+                self._safe_put(res_queue, (data[1], result, runTime), exit_event)
                 
             self._safe_put(res_queue, None, exit_event)  # terminate signal
             logger.info("Inference process exited cleanly")
@@ -202,5 +208,6 @@ class StmdGui:
             logger.info("Shutdown completed")
 
 if __name__ == "__main__":
-    obj = StmdGui()
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    obj = StmdGui(DEVICE)
     obj.run()

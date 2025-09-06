@@ -12,7 +12,7 @@ from smalltargetmotiondetectors.util.iostream import *
 from smalltargetmotiondetectors.model import *
 
 ''' Instantiate the model '''
-objModel = instancing_model('Backbonev2')
+objModel = instancing_model('vSTMD_F')
 
 ''' Create a video stream reader '''
 objIptStream = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
@@ -40,7 +40,7 @@ while objIptStream.hasFrame and objVisualize.hasFigHandle:
     grayImg, colorImg = objIptStream.get_next_frame()
     
     # Perform inference using the model
-    result = inference(objModel, grayImg)
+    result, runTime = inference(objModel, grayImg)
     
     # Display the result
-    objVisualize.show_result(colorImg, result)
+    objVisualize.show_result(colorImg, result, runTime)

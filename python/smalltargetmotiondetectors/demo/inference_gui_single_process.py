@@ -39,7 +39,7 @@ while objIptStream.hasFrame and objVisualize.hasFigHandle:
     grayImg, colorImg = objIptStream.get_next_frame()
     
     # Perform inference using the model
-    result = inference(objModel, grayImg)
+    result, runTime = inference(objModel, grayImg)
     
     # Visualize the result
-    objVisualize.show_result(colorImg, result)
+    objVisualize.show_result(colorImg, result, runTime)

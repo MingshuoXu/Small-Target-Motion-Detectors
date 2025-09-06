@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import torch
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_fracdiff_kernel
@@ -9,10 +10,10 @@ from ..util.compute_module import compute_circularlist_conv
 class Lamina(BaseCore):
     """Lamina class for the lamina layer."""
     
-    def __init__(self):
+    def __init__(self, device ='cpu'):
         """Constructor method."""
         # Initializes the Lamina object
-        super().__init__()
+        super().__init__(device=device)
         self.alpha = 0.8
         self.fps = 240
         self.delta = 20
@@ -40,25 +41,28 @@ class Lamina(BaseCore):
         """Processing method."""
         # Processes the LaminaIpt to generate the lamina output
         if self.preLaminaIpt is None:
-            diffLaminaIpt = np.zeros_like(LaminaIpt)
+            if self.device == 'cpu':
+                diffLaminaIpt = np.zeros_like(LaminaIpt)
+            else:
+                diffLaminaIpt = torch.zeros_like(LaminaIpt)
         else:
             # First order difference
             diffLaminaIpt = LaminaIpt - self.preLaminaIpt
         
-        laminaOpt = self.compute_by_iteration(diffLaminaIpt)
+        laminaOpt = self._compute_by_iteration(diffLaminaIpt)
         
         self.Opt = laminaOpt
         self.preLaminaIpt = LaminaIpt
         return laminaOpt
     
-    def compute_by_conv(self, diffLaminaIpt):
+    def _compute_by_conv(self, diffLaminaIpt):
         """Computes the lamina output by convolution."""
        
         self.cellRetinaOutput.circrecord(diffLaminaIpt)
         laminaopt = compute_circularlist_conv(self.cellRetinaOutput, self.fracKernel)
         return laminaopt
     
-    def compute_by_iteration(self, diffLaminaIpt):
+    def _compute_by_iteration(self, diffLaminaIpt):
         """Computes the lamina output by iteration."""
         if self.preLaminaOpt is None:
             laminaopt = self.paraCur * diffLaminaIpt

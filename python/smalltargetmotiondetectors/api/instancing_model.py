@@ -3,7 +3,7 @@ import sys
 from ..model import * # Import all models
 
 
-def instancing_model(modelName, modelPara=None):
+def instancing_model(modelName, device = 'cpu', modelPara=None):
     """
     Instantiate a model object based on the given model name.
 
@@ -18,7 +18,7 @@ def instancing_model(modelName, modelPara=None):
     # Instantiate the model
     modelN =  globals().get(modelName)
     if modelN:
-        objModel = modelN()
+        objModel = modelN(device=device)
     else:
         print(f"Class {modelName} not found.")
 

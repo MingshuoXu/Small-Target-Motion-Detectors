@@ -4,8 +4,10 @@ from scipy.special import gamma
 
 def create_gaussian_kernel(size, sigma):
     # Ensure size is a tuple containing two integers
-    if len(size) != 2:
-        raise ValueError("size must be a tuple containing two integers")
+    if isinstance(size, int):
+        size = (size, size)
+    elif len(size) != 2:
+        raise ValueError("size must be a integer or a tuple containing two integers")
 
     # Calculate the radius of the Gaussian filter
     radius_x = (size[0] - 1) / 2

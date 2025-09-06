@@ -46,10 +46,10 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     grayImg, colorImg = hSteam.get_next_frame()
     
     # Perform inference using the model
-    result = inference(objModel, grayImg)
+    result, runTime = inference(objModel, grayImg)
     
     # Visualize the result
-    hVisual.show_result(colorImg, result)
+    hVisual.show_result(colorImg, result, runTime)
 
 
 

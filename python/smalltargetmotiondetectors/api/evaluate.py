@@ -46,9 +46,8 @@ def inference_task(modelName,
         grayImg, _ = objIptStream.get_next_frame()
         
         # Perform inference using the model
-        tic0 = time.time()
-        result = inference(objModel, grayImg)
-        totalRunningTime += time.time() - tic0
+        result, runTime = inference(objModel, grayImg)
+        totalRunningTime += runTime
 
         # postprocessing
 
