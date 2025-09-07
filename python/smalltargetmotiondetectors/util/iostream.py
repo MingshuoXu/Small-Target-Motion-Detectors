@@ -88,9 +88,9 @@ class ImgstreamReader:
                     break
 
         # Check if start and end frames are found
-        if not 'startIdx' in locals():
+        if 'startIdx' not in locals():
             raise Exception('Cannot find the start frame.')
-        if not 'endIdx' in locals():
+        if 'endIdx' not in locals():
             raise Exception('Cannot find the end frame.')
 
         # Set fileList to frames between startIdx and endIdx
@@ -357,7 +357,7 @@ class Visualization:
         showThreshold: Threshold for visualization.
         isSaveAsVideo: Flag indicating whether to save visualization as a video.
         savePath: Path to save the visualization.
-        videoPath: Path to the video file.
+        videoName: Path to the video file.
         inputClassName: Name of the input class.
         isTestPatter: Flag indicating whether it is a test pattern.
         paraNMS: Parameters for non-maximum suppression.
@@ -398,7 +398,7 @@ class Visualization:
         self.showThreshold = showThreshold
         self.isSaveAsVideo = False
         self.savePath = None
-        self.videoPath = None
+        self.videoName = None
         self.inputClassName = className
         self.isTestPatter = False
         self.paraNMS = {
@@ -416,7 +416,7 @@ class Visualization:
     def __del__(self):
         if self.isSaveAsVideo:
             self.hVideo.release()
-            print(f"Visual output video is saved as '{os.path.join(self.savePath, self.videoPath)}'.")
+            print(f"Visual output video is saved as '{os.path.join(self.savePath, self.videoName)}'.")
         try:
             plt.close(self.hFig)
         except:
@@ -450,19 +450,19 @@ class Visualization:
         self.uiHandle = {}
         self.uiHandle['timeTextBox'] = tk.Label(master=self.hFig.canvas.get_tk_widget(), 
                                                 text='Initiating, please wait...')
-        self.uiHandle['timeTextBox'].place(relx=0.5, rely=0.05, anchor='center')
+        self.uiHandle['timeTextBox'].place(relx=0.5, rely=0.03, anchor='center')
 
         self.uiHandle['closeButton'] = tk.Button(master=self.hFig.canvas.get_tk_widget(), 
                                                   text='Close', 
                                                   command=self._closeCallback)
-        self.uiHandle['closeButton'].place(relx=0.8, rely=0.85, width=80, height=30)
+        self.uiHandle['closeButton'].place(relx=0.8, rely=0.93, width=80, height=30)
         self.uiHandle['closeButton'].bool = False
 
 
         self.uiHandle['pauseButton'] = tk.Button(master=self.hFig.canvas.get_tk_widget(), 
                                                  text='Pause', 
                                                  command=self._pauseCallback)
-        self.uiHandle['pauseButton'].place(relx=0.65, rely=0.85, width=80, height=30)
+        self.uiHandle['pauseButton'].place(relx=0.65, rely=0.93, width=80, height=30)
         self.uiHandle['pauseButton'].bool = False
 
         self.hasFigHandle = True
@@ -523,6 +523,8 @@ class Visualization:
                 %---------------------------------------------------------%
             '''
 
+        plt.tight_layout()
+        plt.subplots_adjust(top = 0.92, bottom = 0.08)
         plt.draw()
         plt.pause(0.001)
 
@@ -670,13 +672,13 @@ class Visualization:
                 if not os.path.isdir(self.savePath):
                     raise FileNotFoundError(f"{self.savePath} is not a folder and cannot be created automatically.")
 
-            if not self.videoPath:
-                self.videoPath = 'visualization_video.avi'
+            if not self.videoName:
+                self.videoName = 'visualization_video.mp4'
 
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             self.hFig.canvas.draw()  # 更新画布
             _width, _height = self.hFig.canvas.get_width_height()
-            self.hVideo = cv2.VideoWriter(os.path.join(self.savePath, self.videoPath),
+            self.hVideo = cv2.VideoWriter(os.path.join(self.savePath, self.videoName),
                                           fourcc, 30, (_width, _height))
             
             self.saveState = True
@@ -684,11 +686,11 @@ class Visualization:
         # 提取图像帧
         self.hFig.canvas.draw()  # 更新画布
         _width, _height = self.hFig.canvas.get_width_height()
-        image = np.frombuffer(self.hFig.canvas.tostring_rgb(), dtype=np.uint8)
-        image = image.reshape((_height, _width, 3))
+        image = np.frombuffer(self.hFig.canvas.buffer_rgba(), dtype=np.uint8)
+        image = image.reshape((_height, _width, 4))
 
         # 将 RGB 转换为 BGR (OpenCV 使用 BGR 颜色格式)
-        imageBGR = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        imageBGR = cv2.cvtColor(image[:,:,:3], cv2.COLOR_RGB2BGR)
 
         # 写入视频文件
         self.hVideo.write(imageBGR)

@@ -207,6 +207,11 @@ class StmdGui:
             signal.signal(signal.SIGINT, original_sigint)
             logger.info("Shutdown completed")
 
+def main():
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    obj = StmdGui(DEVICE)
+    obj.run()
+
 if __name__ == "__main__":
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     obj = StmdGui(DEVICE)
