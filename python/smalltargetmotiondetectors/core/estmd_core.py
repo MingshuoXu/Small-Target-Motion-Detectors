@@ -1,5 +1,9 @@
+from math import exp
+
 import numpy as np
 from cv2 import filter2D, BORDER_CONSTANT
+import torch
+import torch.nn.functional as F
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
@@ -56,14 +60,15 @@ class Lamina(BaseCore):
     Date: 2024-04-29
     """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor
         Initializes the Lamina object and creates GammaBankPassFilter
         and LaminaLateralInhibition objects
         """
-        self.hGammaBandPassFilter = GammaBandPassFilter()
-        self.hLaminaLateralInhibition = LaminaLateralInhibition()
+        super().__init__(device=device)
+        self.hGammaBandPassFilter = GammaBandPassFilter(device=device)
+        self.hLaminaLateralInhibition = LaminaLateralInhibition(device=device)
 
     def init_config(self):
         """
@@ -96,16 +101,16 @@ class Medulla(BaseCore):
     This class implements the Medulla layer of the ESTMD.
     """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the Medulla object
         """
-
-        self.hTm1 = Tm1()  # Initialize Tm1 object
-        self.hTm2 = Tm2()  # Initialize Tm2 object
-        self.hTm3 = Tm3()  # Initialize Tm3 object
-        self.hMi1 = Mi1()  # Initialize Tm3 object
+        super().__init__(device=device)
+        self.hTm1 = Tm1(device=device)  # Initialize Tm1 object
+        self.hTm2 = Tm2(device=device)  # Initialize Tm2 object
+        self.hTm3 = Tm3(device=device)  # Initialize Tm3 object
+        self.hMi1 = Mi1(device=device)  # Initialize Tm3 object
 
     def init_config(self):
         """
@@ -144,12 +149,12 @@ class Lobula(BaseCore):
     This class implements the Lobula layer of the ESTMD.
     """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the Lobula object
         """
-        super().__init__()
+        super().__init__(device=device)
         self.a = 0  # Parameter a
         self.b = 0  # Parameter b
         self.c = 1  # Parameter c
@@ -186,13 +191,13 @@ class Mi1(BaseCore):
     MI1 
     """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the Mi1 object
         """
         super().__init__()
-        self.hGammaDelay = GammaDelay(12, 25)  # Initialize GammaDelay object
+        self.hGammaDelay = GammaDelay(12, 25, device=device)  # Initialize GammaDelay object
 
     def init_config(self):
         """
@@ -222,12 +227,13 @@ class Tm1(BaseCore):
     Tm1 
     """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the Tm1 object
         """
-        self.hGammaDelay = GammaDelay(12, 25)  # Initialize GammaDelay object
+        super().__init__(device=device)
+        self.hGammaDelay = GammaDelay(12, 25, device=device)  # Initialize GammaDelay object
 
     def init_config(self):
         """
@@ -257,12 +263,13 @@ class Tm2(BaseCore):
     Tm2 Medulla Layer Neurons in ESTMD
     """
    
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the Tm2 object
         """
-        self.hSubInhi = SurroundInhibition()  # Initialize SurroundInhibition object
+        super().__init__(device=device)
+        self.hSubInhi = SurroundInhibition(device=device)  # Initialize SurroundInhibition object
 
     def init_config(self):
         """
@@ -283,7 +290,10 @@ class Tm2(BaseCore):
         - tm2Opt: Output of the Tm2 layer
         """
         # Extract the OFF signal from iptMatrix
-        offSignal = np.maximum(-iptMatrix, 0)  
+        if self.device != 'cpu':
+            offSignal = torch.clamp(-iptMatrix, min=0)
+        else:
+            offSignal = np.maximum(-iptMatrix, 0)  
         # Process the OFF signal using SurroundInhibition
         tm2Opt = self.hSubInhi.process(offSignal)  
         self.Opt = tm2Opt
@@ -293,12 +303,13 @@ class Tm2(BaseCore):
 class Tm3(BaseCore):
     """ Tm3  """
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """ Constructor method
 
         Initializes the Tm3 object
         """
-        self.hSubInhi = SurroundInhibition()  # Initialize SurroundInhibition object
+        super().__init__(device=device)
+        self.hSubInhi = SurroundInhibition(device=device)  # Initialize SurroundInhibition object
 
     def init_config(self):
         """ Initialization method
@@ -319,7 +330,10 @@ class Tm3(BaseCore):
         Returns:
         - tm3Opt: Output of the Tm3 layer
         """
-        onSignal = np.maximum(iptMatrix, 0)  # Extract the On-signal from iptMatrix
+        if self.device != 'cpu':
+            onSignal = torch.clamp(iptMatrix, min=0)
+        else:
+            onSignal = np.maximum(iptMatrix, 0)  # Extract the On-signal from iptMatrix
         tm3Opt = self.hSubInhi.process(onSignal)  # Processes the On-signal using SurroundInhibition
         self.Opt = tm3Opt
         return tm3Opt
@@ -349,11 +363,13 @@ class LaminaLateralInhibition(BaseCore):
                  lambda1=3, 
                  lambda2=9, 
                  sigma2=1.5, 
-                 sigma3=None):
+                 sigma3=None,
+                 device='cpu'):
         """
         Constructor
         Initializes the LaminaLateralInhibition object
         """
+        super().__init__(device=device)
         self.sizeW1 = sizeW1
         self.lambda1 = lambda1
         self.lambda2 = lambda2
@@ -384,16 +400,24 @@ class LaminaLateralInhibition(BaseCore):
         G_sigma2 = create_gaussian_kernel(self.sizeW1[:2], self.sigma2)
         G_sigma3 = create_gaussian_kernel(self.sizeW1[:2], self.sigma3)
         diffOfGaussian = G_sigma2 - G_sigma3
-        # W_{S}^{P} in formulate (8) of DSTMD
-        self.spatialPositiveKernel = np.maximum(diffOfGaussian, 0) 
-        # W_{S}^{N} in formulate (9) of DSTMD
-        self.spatialNegativeKernel = np.maximum(-diffOfGaussian, 0) 
+        if self.device != 'cpu':
+            diffOfGaussian = torch.from_numpy(diffOfGaussian).to(device=self.device)
+            # W_{S}^{P} in formulate (8) of DSTMD
+            self.spatialPositiveKernel = torch.clamp(diffOfGaussian, min=0)
+            self.spatialPositiveKernel = self.spatialPositiveKernel.unsqueeze(0).unsqueeze(0)
+            # W_{S}^{N} in formulate (9) of DSTMD
+            self.spatialNegativeKernel = torch.clamp(-diffOfGaussian, min=0)
+            self.spatialNegativeKernel = self.spatialNegativeKernel.unsqueeze(0).unsqueeze(0)
+        else:
+            # W_{S}^{P} in formulate (8) of DSTMD
+            self.spatialPositiveKernel = np.maximum(diffOfGaussian, 0) 
+            # W_{S}^{N} in formulate (9) of DSTMD
+            self.spatialNegativeKernel = np.maximum(-diffOfGaussian, 0) 
 
-        t = np.arange(self.sizeW1[2])
         # W_{T}^{P} in formulate (10) of DSTMD
-        self.temporalPositiveKernel = np.exp(-t / self.lambda1) / self.lambda1
+        self.temporalPositiveKernel = [exp(-t / self.lambda1) / self.lambda1 for t in range(self.sizeW1[2])]
         # W_{T}^{N} in formulate (11) of DSTMD
-        self.temporalNegativeKernel = np.exp(-t / self.lambda2) / self.lambda2
+        self.temporalNegativeKernel = [exp(-t / self.lambda2) / self.lambda2 for t in range(self.sizeW1[2])]
 
         self.cellSpatialPositive = CircularList(self.sizeW1[2])
         self.cellSpatialNagetive = CircularList(self.sizeW1[2])
@@ -404,20 +428,18 @@ class LaminaLateralInhibition(BaseCore):
         Applies lateral inhibition to the input matrix
         """
         # Lateral inhibition
-        self.cellSpatialPositive.record_next(
-            filter2D(iptMatrix, -1, self.spatialPositiveKernel, borderType=BORDER_CONSTANT)
-            ) # conv2(iptMatrix, self.spatialPositiveKernel, 'same')
-        self.cellSpatialPositive.record_next(
-            filter2D(iptMatrix, -1, self.spatialNegativeKernel, borderType=BORDER_CONSTANT)
-            )
+        if self.device != 'cpu':
+            _on_conv = F.conv2d(iptMatrix, self.spatialPositiveKernel, padding='same')
+            _off_conv = F.conv2d(iptMatrix, self.spatialNegativeKernel, padding='same')
+        else:
+            _on_conv = filter2D(iptMatrix, -1, self.spatialPositiveKernel, borderType=BORDER_CONSTANT)
+            _off_conv = filter2D(iptMatrix, -1, self.spatialNegativeKernel, borderType=BORDER_CONSTANT)
+        self.cellSpatialPositive.record_next(_on_conv) 
+        self.cellSpatialNagetive.record_next(_off_conv) 
 
         optMatrix \
-            = compute_circularlist_conv(
-                self.cellSpatialPositive, 
-                self.temporalPositiveKernel) \
-            + compute_circularlist_conv(
-                self.cellSpatialPositive, 
-                self.temporalNegativeKernel)
+            = compute_circularlist_conv(self.cellSpatialPositive, self.temporalPositiveKernel) \
+            + compute_circularlist_conv(self.cellSpatialNagetive, self.temporalNegativeKernel)
 
         if optMatrix.size == 0:
             optMatrix = np.zeros_like(iptMatrix)

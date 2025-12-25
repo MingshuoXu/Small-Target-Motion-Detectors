@@ -7,15 +7,17 @@ pyPackagePath = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
 gitCodePath = os.path.dirname(pyPackagePath)
 sys.path.append(pyPackagePath)
 
-from smalltargetmotiondetectors.api import *
-from smalltargetmotiondetectors.util.iostream import *
-from smalltargetmotiondetectors.model import *
+from smalltargetmotiondetectors.api import * # type: ignore
+from smalltargetmotiondetectors.util.iostream import * # type: ignore
+from smalltargetmotiondetectors.model import * # type: ignore
 
 ''' Instantiate the model '''
 objModel = instancing_model('vSTMD_F')
 
 ''' Create a video stream reader '''
-objIptStream = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+# objIptStream = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+objIptStream = VidstreamReader(os.path.join('D:/', 'STMD_Dataset', 'Search_and_rescue', 
+                                            'SeaDronesSee_MOT', 'SeaDronesSee_MOT_jpg_compressed', 'out.mp4'))
 
 ''' Alternatively, uncomment the following options for different inputs: '''
 # objIptStream = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'), 1)
@@ -24,7 +26,7 @@ objIptStream = VidstreamReader(os.path.join(gitCodePath, 'demodata', 'RIST_GX010
 
 ''' Get visualization handle and initiate model '''
 # Get visualization handle
-objVisualize = get_visualize_handle(objModel.__class__.__name__)
+objVisualize = get_visualize_handle(objModel.__class__.__name__, 0.2)
 
 ''' Initialize the model '''
 # set the parameter list

@@ -1,4 +1,3 @@
-from scipy.ndimage import gaussian_filter
 import numpy as np
 from cv2 import filter2D, BORDER_CONSTANT
 import torch
@@ -42,17 +41,17 @@ class Lobula(BaseCore):
 
         if self.device == 'cpu':
             # Formula (8)
-            correlationD \
-                = np.clip((onSignal - feedbackSignal), 0, None) \
-                * np.clip((offSignal - feedbackSignal), 0, None)
+            self.v_on = np.maximum(onSignal - feedbackSignal, 0)
+            self.v_off = np.maximum(offSignal - feedbackSignal, 0)
+            correlationD = self.v_on * self.v_off
 
             # Formula (10)
             correlationE = filter2D(onSignal * offSignal, -1, self.gaussKernel, borderType=BORDER_CONSTANT)
         else:
             # Formula (8)
-            correlationD \
-                = torch.clamp((onSignal - feedbackSignal), 0) \
-                * torch.clamp((offSignal - feedbackSignal), 0)
+            self.v_on = torch.clamp(onSignal - feedbackSignal, min=0) 
+            self.v_off = torch.clamp(offSignal - feedbackSignal, min=0)
+            correlationD = self.v_on * self.v_off
 
             # Formula (10)
             correlationE = F.conv2d(onSignal * offSignal, 

@@ -25,7 +25,7 @@ def create_gaussian_kernel(size, sigma):
     # Set values below a threshold to zero
     gaussianFilter[gaussianFilter < 1e-4] = 0
     
-    return gaussianFilter
+    return gaussianFilter.astype(np.float32)
 
 
 def create_gamma_kernel(order=100, 
@@ -60,7 +60,7 @@ def create_gamma_kernel(order=100,
     gammaKernel[gammaKernel < 1e-4] = 0
     gammaKernel /= np.sum(gammaKernel)
     
-    return gammaKernel
+    return gammaKernel.astype(np.float32)
 
 
 def create_inhi_kernel_W2(kernelSize=15, 
@@ -99,7 +99,7 @@ def create_inhi_kernel_W2(kernelSize=15,
     # Inhibition Kernel
     inhibitionKernelW2 = A * positiveComponent - B * negativeComponent
 
-    return inhibitionKernelW2
+    return inhibitionKernelW2.astype(np.float32)
 
 
 def create_direction_inhi_kernel(KernelSize=8, Sigma1=1.5, Sigma2=3.0):
@@ -211,12 +211,11 @@ def create_fracdiff_kernel(alpha=0.8, wide=3):
         # Normalize the kernel
         sum_kernel = np.sum(frackernel)  # 1/M(\alpha)
         frackernel = frackernel / sum_kernel
-        frackernel[frackernel < 1e-4] = 0
-        frackernel = frackernel / np.sum(frackernel)
+        frackernel[frackernel < 1e-16] = 0
     else:
         raise ValueError("Alpha must be in the interval (0,1].")
 
-    return frackernel
+    return frackernel.astype(np.float32)
 
 
 def create_attention_kernel(kernel_size=17, 

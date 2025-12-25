@@ -1,5 +1,8 @@
-import numpy as np
 import math
+
+import numpy as np
+import torch
+import torch.nn.functional as F
 
 from .base_core import BaseCore
 from ..util.datarecord import CircularList
@@ -11,18 +14,18 @@ from ..util.create_kernel import create_direction_inhi_kernel
 class Medulla(BaseCore):
     """Medulla class for motion detection."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Medulla object
-        super().__init__()
+        super().__init__(device=device)
 
         # Initialize components
-        self.hTm3 = Tm3()
-        self.hMi1Para4 = Mi1()
+        self.hTm3 = Tm3(device=device)
+        self.hMi1Para4 = Mi1(device=device)
 
-        self.hTm2 = Tm2()
-        self.hTm1Para5 = Tm1()
-        self.hTm1Para6 = Tm1()
+        self.hTm2 = Tm2(device=device)
+        self.hTm1Para5 = Tm1(device=device)
+        self.hTm1Para6 = Tm1(device=device)
         
         # Set parameters for hDelay6Tm1
         self.hTm1Para6.hGammaDelay.order = 8
@@ -71,13 +74,13 @@ class Medulla(BaseCore):
 class Mi1(BaseCore):
     """Mi1 class for motion detection."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Mi1 object
-        super().__init__()
+        super().__init__(device=device)
         
         # Initialize gamma delay component with default parameters
-        self.hGammaDelay = GammaDelay(3, 15)
+        self.hGammaDelay = GammaDelay(3, 15, device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -99,13 +102,13 @@ class Mi1(BaseCore):
 class Tm1(BaseCore):
     """Tm1 class for motion detection."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Tm1 object
-        super().__init__()
+        super().__init__(device=device)
         
         # Initialize gamma delay component with default parameters
-        self.hGammaDelay = GammaDelay(5, 25)
+        self.hGammaDelay = GammaDelay(5, 25, device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -127,10 +130,10 @@ class Tm1(BaseCore):
 class Tm2(BaseCore):
     """Tm2 class for motion detection."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Tm2 object
-        super().__init__()
+        super().__init__(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -140,8 +143,10 @@ class Tm2(BaseCore):
     def process(self, iptMatrix):
         """Processing method."""
         # Processes the input matrix by performing a maximum operation with zero for negative values
-        
-        tm2Opt = np.maximum(-iptMatrix, 0)
+        if self.device != 'cpu':
+            tm2Opt = torch.clamp(-iptMatrix, min=0)
+        else:
+            tm2Opt = np.maximum(-iptMatrix, 0)
         self.Opt = tm2Opt  # Update output
         return self.Opt
 
@@ -149,10 +154,10 @@ class Tm2(BaseCore):
 class Tm3(BaseCore):
     """Tm3 class for motion detection."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Tm3 object
-        super().__init__()
+        super().__init__(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -162,8 +167,10 @@ class Tm3(BaseCore):
     def process(self, iptMatrix):
         """Processing method."""
         # Processes the input matrix by performing a maximum operation with zero for negative values
-        
-        tm3Opt = np.maximum(iptMatrix, 0)
+        if self.device != 'cpu':
+            tm3Opt = torch.clamp(iptMatrix, min=0)
+        else:
+            tm3Opt = np.maximum(iptMatrix, 0)
         self.Opt = tm3Opt  # Update output
         return self.Opt
 
@@ -171,14 +178,14 @@ class Tm3(BaseCore):
 class Lobula(BaseCore):
     """Lobula class for motion detection."""
 
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Lobula object
-        super().__init__()
+        super().__init__(device=device)
         self.alpha1 = 3  # Alpha parameter
         self.thetaList = [(i * math.pi / 4) for i in range(8)]  # List of theta values
-        self.hLateralInhi = SurroundInhibition()  # Lateral inhibition component
-        self.hDirectionInhi = DirectionInhi()  # Directional inhibition component
+        self.hLateralInhi = SurroundInhibition(device=device, channel_size=len(self.thetaList))  # Lateral inhibition component
+        self.hDirectionInhi = DirectionInhi(device=device)  # Directional inhibition component
 
     def init_config(self):
         """Initialization method."""
@@ -187,38 +194,103 @@ class Lobula(BaseCore):
         self.hDirectionInhi.init_config()
 
     def process(self, lobulaIpt):
-        """Processing method."""
-        # Performs motion processing on the input
-
+        
         tm3Signal, mi1Para4Signal, tm1Para5Signal, tm1Para6Signal = lobulaIpt
-        imgH, imgW = tm3Signal.shape
-        numDict = len(self.thetaList)
 
-        # Correlation range
-        xRange = slice(self.alpha1, imgH - self.alpha1)
-        yRange = slice(self.alpha1, imgW - self.alpha1)
+        if self.device != 'cpu':    
+            # tm3, mi1_p4, tm1_p5, tm1_p6 形状均为 [1, 1, H, W]
+            tm3, mi1_p4, tm1_p5, tm1_p6 = lobulaIpt
+            _, _, imgH, imgW = tm3.shape
+            num_thetas = len(self.thetaList)
+            a1 = self.alpha1
 
-        # Correlation Output
-        correOutput = [np.zeros((imgH, imgW)) for _ in range(numDict)]
+            # 2. 计算偏移索引
+            theta_tensor = torch.tensor(self.thetaList, device=self.device)
+            angles = theta_tensor + torch.pi / 2
+            shifts_x = torch.round(a1 * torch.cos(angles)).long() # 形状: [num_thetas]
+            shifts_y = torch.round(a1 * torch.sin(angles)).long() # 形状: [num_thetas]
 
-        for countTheta, theta in enumerate(self.thetaList):
-            # Correlation position
-            shiftX = round(self.alpha1 * math.cos(theta + math.pi / 2))
-            shiftY = round(self.alpha1 * math.sin(theta + math.pi / 2))
-            shiftXRange = slice(self.alpha1 - shiftX, imgH - self.alpha1 - shiftX)
-            shiftYRange = slice(self.alpha1 - shiftY, imgW - self.alpha1 - shiftY)
+            # 3. 提取中心 ROI
+            x_s, x_e = a1, imgH - a1
+            y_s, y_e = a1, imgW - a1
+            
+            # 提取不变部分的 ROI，保持 4D 形状: [1, 1, h_roi, w_roi]
+            tm3_roi = tm3[:, :, x_s:x_e, y_s:y_e]
+            tm1_p5_roi = tm1_p5[:, :, x_s:x_e, y_s:y_e]
 
-            # Calculate correlation output
-            correOutput[countTheta][xRange, yRange] = (
-                tm3Signal[xRange, yRange]
-                * (tm1Para5Signal[xRange, yRange] + mi1Para4Signal[shiftXRange, shiftYRange])
-                * tm1Para6Signal[shiftXRange, shiftYRange]
+            # 4. 生成偏移索引网格 (关键点)
+            h_roi, w_roi = x_e - x_s, y_e - y_s
+            grid_y, grid_x = torch.meshgrid(
+                torch.arange(x_s, x_e, device=self.device),
+                torch.arange(y_s, y_e, device=self.device),
+                indexing='ij'
             )
 
-        # Perform lateral inhibition
-        lateralInhiOpt = [self.hLateralInhi.process(output) for output in correOutput]
+            # 计算所有方向的索引: [num_thetas, h_roi, w_roi]
+            src_idx_x = grid_x.unsqueeze(0) - shifts_y.view(-1, 1, 1) # 注意：y对应W，x对应H
+            src_idx_y = grid_y.unsqueeze(0) - shifts_x.view(-1, 1, 1)
 
-        # Perform directional inhibition
+            # 5. 高级索引提取偏移信号
+            # mi1_p4[0, 0] 是 [H, W]，通过 src_idx 提取后变成 [num_thetas, h_roi, w_roi]
+            # 我们将其扩展回 4D: [1, num_thetas, h_roi, w_roi]
+            mi1_p4_shifted = mi1_p4[0, 0, src_idx_y, src_idx_x].unsqueeze(0)
+            tm1_p6_shifted = tm1_p6[0, 0, src_idx_y, src_idx_x].unsqueeze(0)
+
+            # 6. 计算相关输出 (利用广播)
+            # tm3_roi: [1, 1, h_roi, w_roi]
+            # mi1_p4_shifted: [1, num_thetas, h_roi, w_roi]
+            # 结果 corre_roi: [1, num_thetas, h_roi, w_roi]
+            corre_roi = tm3_roi * (tm1_p5_roi + mi1_p4_shifted) * tm1_p6_shifted
+
+            # 7. 填回全零张量
+            correOutput = torch.zeros((1, num_thetas, imgH, imgW), device=self.device)
+            correOutput[:, :, x_s:x_e, y_s:y_e] = corre_roi
+
+            lateralInhiOpt = self.hLateralInhi.process(correOutput)
+
+        else:
+            imgH, imgW = tm3Signal.shape
+            theta_arr = np.array(self.thetaList)
+            numDict = len(theta_arr)
+            a1 = self.alpha1
+
+            # 1. 预计算偏移量 (向量化计算)
+            # 提前加上 pi/2 减少循环内运算
+            angles = theta_arr + np.pi / 2
+            shiftsX = np.round(a1 * np.cos(angles)).astype(int)
+            shiftsY = np.round(a1 * np.sin(angles)).astype(int)
+
+            # 2. 预提取不需要偏移的静态区域 (ROI)
+            # 这样在循环内只需要处理偏移部分
+            x_start, x_end = a1, imgH - a1
+            y_start, y_end = a1, imgW - a1
+            
+            tm3_roi = tm3Signal[x_start:x_end, y_start:y_end]
+            tm1P5_roi = tm1Para5Signal[x_start:x_end, y_start:y_end]
+
+            # 3. 初始化 3D 输出数组 (比 list 效率更高)
+            correOutput = np.zeros((numDict, imgH, imgW))
+
+            # 4. 优化后的循环
+            for i in range(numDict):
+                sx, sy = shiftsX[i], shiftsY[i]
+                
+                # 计算偏移后的起始和结束索引
+                # 原代码：shiftXRange = slice(a1 - sx, imgH - a1 - sx)
+                sx_s, sx_e = a1 - sx, imgH - a1 - sx
+                sy_s, sy_e = a1 - sy, imgW - a1 - sy
+
+                # 执行核心计算
+                # 减少了对 self 属性的访问和重复切片对象的创建
+                correOutput[i, x_start:x_end, y_start:y_end] = (
+                    tm3_roi 
+                    * (tm1P5_roi + mi1Para4Signal[sx_s:sx_e, sy_s:sy_e]) 
+                    * tm1Para6Signal[sx_s:sx_e, sy_s:sy_e]
+                )
+
+            # 5. 执行抑制处理
+            lateralInhiOpt = [self.hLateralInhi.process(correOutput[i]) for i in range(numDict)]
+
         lobulaOpt = self.hDirectionInhi.process(lateralInhiOpt)
 
         self.Opt = lobulaOpt
@@ -228,10 +300,10 @@ class Lobula(BaseCore):
 class DirectionInhi(BaseCore):
     """Directional inhibition in DSTMD."""
 
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the DirectionInhi object
-        super().__init__()
+        super().__init__(device=device)
         self.direction = 8  # Number of directions
         self.sigma1 = 1.5  # Sigma for the first Gaussian kernel
         self.sigma2 = 3.0  # Sigma for the second Gaussian kernel
@@ -244,7 +316,10 @@ class DirectionInhi(BaseCore):
             self.diretionalInhiKernel = create_direction_inhi_kernel(
                 self.direction, self.sigma1, self.sigma2
             )
-        self.diretionalInhiKernel = self.diretionalInhiKernel.squeeze()
+        if self.device != 'cpu':
+            self.diretionalInhiKernel = torch.from_numpy(self.diretionalInhiKernel).float().cuda()
+        else:
+            self.diretionalInhiKernel = self.diretionalInhiKernel.squeeze()
 
     def process(self, iptCell):
         """Processing method."""
@@ -253,23 +328,59 @@ class DirectionInhi(BaseCore):
         len1 = len(iptCell)
         len2 = len(self.diretionalInhiKernel)
         certer = len2 // 2
-        opt = []
+        
 
-        for idx in range(len1):
-            result = np.zeros_like(iptCell[0])
-            matrixPoint = idx
-            kernelPoint = certer
+        if self.device != 'cpu':
+            # 1. 准备数据维度
+            # 输入是 [1, C, H, W]，卷积需要在 C 维度上滑，所以要把 H, W 暂时视为 Batch
+            b, c, h, w = iptCell.shape
+            
+            # 转换形状: [1, C, H, W] -> [1, C, H*W] -> [H*W, 1, C]
+            # 这样对于 conv1d 来说，BatchSize = H*W, 通道数 = 1, 序列长度 = C
+            x = iptCell.view(c, -1).permute(1, 0).unsqueeze(1) 
+            
+            
+            # 3. 执行循环卷积 (Circular Convolution)
+            # padding 设为 kernel_size // 2，且模式设为 'circular'
+            pad_size = self.diretionalInhiKernel.shape[-1]
+            center_idx = pad_size // 2
+            
+            pad_left = center_idx
+            pad_right = pad_size - center_idx - 1
+            
+            # F.pad 在 1D 信号上的填充格式是 (left, right)
+            x_padded = F.pad(x, (pad_left, pad_right), mode='circular')
 
-            for shiftPoint in range(len(self.diretionalInhiKernel)):
-                matrixPoint = idx    - shiftPoint
-                kernelPoint = certer - shiftPoint
-                '''
-                  This takes advantage of the fact that the convolution kernel is symmetric, 
-                    there is no flip convolution kernel
-                '''
-                result += iptCell[matrixPoint] * self.diretionalInhiKernel[kernelPoint]
-            opt.append(np.maximum(result, 0))
+            # F.conv1d 会在 C 维度（方向轴）上滑动
+            # 结果形状依然是 [H*W, 1, C]
+            result = F.conv1d(x_padded, self.diretionalInhiKernel)
+            
+            # 4. 激活与恢复形状
+            # np.maximum(result, 0) 对应 F.relu
+            opt = F.relu(result)
+            
+            # 恢复回 [1, C, H, W]
+            opt = opt.squeeze(1).permute(1, 0).view(b, c, h, w)
+
+        else:
+            opt = []
+            for idx in range(len1):
+                result = np.zeros_like(iptCell[0])
+                matrixPoint = idx
+                kernelPoint = certer
+
+                for shiftPoint in range(len(self.diretionalInhiKernel)):
+                    matrixPoint = idx    - shiftPoint
+                    kernelPoint = certer - shiftPoint
+                    '''
+                    This takes advantage of the fact that the convolution kernel is symmetric, 
+                        there is no flip convolution kernel
+                    '''
+                    result += iptCell[matrixPoint] * self.diretionalInhiKernel[kernelPoint]
+
+                opt.append(np.maximum(result, 0))
 
         return opt
+    
 
 

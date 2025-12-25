@@ -36,7 +36,7 @@ def evaluation_model_by_video(modelOpt: list,
     # Iterate over each frame
     for idx in range(totalLen):
         # Check if current frame data is available
-        if modelOpt[idx] and groundTruth[idx]:
+        if len(modelOpt[idx]) and len(groundTruth[idx]):
             if isinstance(modelOpt[idx][0], int):
                 modelOpt[idx] = [modelOpt[idx], ]
             # Compute metrics for the current frame
@@ -45,7 +45,7 @@ def evaluation_model_by_video(modelOpt: list,
                                                   confidenceThreshold, 
                                                   gTError,
                                                   ROIThreshold)
-        elif groundTruth[idx]:
+        elif len(groundTruth[idx]):
             TP, FN, FP = 0, len(groundTruth[idx]), 0
         else:
             # If data for the frame is not available, set metrics to zero
@@ -231,7 +231,7 @@ def compute_ROI(rect1, rect2):
            divided by the union of the areas of the two rectangles.
     """
     # Unpack rectangle coordinates and dimensions
-    x1, y1, w1, h1 = rect1
+    x1, y1, w1, h1 = rect1[:4]
     x2, y2, w2, h2 = rect2
 
     # Determine the coordinates of the intersection rectangle

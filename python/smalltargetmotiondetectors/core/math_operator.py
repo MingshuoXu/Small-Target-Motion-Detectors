@@ -1,4 +1,4 @@
-from cv2 import filter2D, BORDER_DEFAULT
+from cv2 import filter2D, BORDER_CONSTANT
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import torch
@@ -41,14 +41,15 @@ class GaussianBlur(BaseCore):
         - iptMatrix: Input matrix.
 
         Returns:
-        - optMatrix: Output matrix after applying the Gaussian filter.
+        - opt: Output after applying the Gaussian filter.
         """
         if self.device == 'cpu':
-            optMatrix = filter2D(ipt, -1, self.gaussKernel, borderType=BORDER_DEFAULT)
-            return optMatrix
+            opt = filter2D(ipt, -1, self.gaussKernel, borderType=BORDER_CONSTANT)
+
         else:
-            optTensor = F.conv2d(ipt, self.gaussKernel, padding='same')
-            return optTensor
+            opt = F.conv2d(ipt, self.gaussKernel, padding='same')
+
+        return opt
     
 
 class GammaDelay(BaseCore):
@@ -73,7 +74,7 @@ class GammaDelay(BaseCore):
         process_cell(objListIpt): Process method for cell input. Applies the gamma filter to the input cell array.
         process_circularcell(objCircularList): Process method for circular cell input. Applies the gamma filter to the circular cell object.
     """
-    def __init__(self, order=1, tau=1, lenKernel=None):
+    def __init__(self, order=1, tau=1, lenKernel=None, device='cpu'):
         """
         Constructor method.
         
@@ -91,6 +92,8 @@ class GammaDelay(BaseCore):
         self.isInLoop = False
         self.gammaKernel = None
         self.listInput = None
+
+        self.device = device
 
     def init_config(self, isRecord=True):
         self.isRecord = isRecord
@@ -153,16 +156,16 @@ class GammaBandPassFilter(BaseCore):
     Date: [Date]
     """
 
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """
         Constructor method
         Initializes the GammaBankPassFilter object
         """
-        super().__init__()
+        super().__init__(device=device)
         
         # Initialize gamma delays with specified parameters
-        self.hGammaDelay1 = GammaDelay(2, 3)
-        self.hGammaDelay2 = GammaDelay(3, 6)
+        self.hGammaDelay1 = GammaDelay(2, 3, device=device)
+        self.hGammaDelay2 = GammaDelay(3, 6, device=device)
         self.objListIpt = CircularList()
 
     def init_config(self):
@@ -214,7 +217,7 @@ class SurroundInhibition(BaseCore):
     Gamma_Filter Gamma filter in lamina layer
     """
 
-    def __init__(self, KernelSize=15, Sigma1=1.5, Sigma2=3, e=1.0, rho=0, A=1, B=3, device='cpu'):
+    def __init__(self, KernelSize=15, Sigma1=1.5, Sigma2=3, e=1.0, rho=0, A=1, B=3, device='cpu', channel_size=1):
         """
         Constructor
         Initializes the SurroundInhibition object with optional parameters
@@ -236,6 +239,8 @@ class SurroundInhibition(BaseCore):
         self.rho = rho
         self.A = A
         self.B = B
+        if device != 'cpu':
+            self.channel_size = channel_size
 
     def init_config(self):
         """
@@ -252,8 +257,8 @@ class SurroundInhibition(BaseCore):
             self.B
         )
         if self.device != 'cpu':
-            self.convInhiKernelW2 = torch.from_numpy(np.rot90(self.corrInhiKernelW2, 2).copy())
-            self.convInhiKernelW2 = self.convInhiKernelW2.float().to(device=self.device).unsqueeze(0).unsqueeze(0)
+            self.convInhiKernelW2 = \
+                torch.from_numpy(self.corrInhiKernelW2).float().to(device=self.device).unsqueeze(0).unsqueeze(0).repeat(self.channel_size, 1, 1, 1)
 
     def process(self, ipt):
         """
@@ -267,12 +272,11 @@ class SurroundInhibition(BaseCore):
         - inhiOpt: Output of the surround inhibition filter
         """
         if self.device == 'cpu':
-            inhiOpt = filter2D(ipt, -1, self.corrInhiKernelW2, borderType=BORDER_DEFAULT)
+            inhiOpt = filter2D(ipt, -1, self.corrInhiKernelW2, borderType=BORDER_CONSTANT)
             inhiOpt = np.maximum(inhiOpt, 0)
             return inhiOpt
         else:
-            
-            inhiOpt = F.conv2d(ipt, self.convInhiKernelW2, padding='same')
+            inhiOpt = F.conv2d(ipt, self.convInhiKernelW2, padding='same', groups=self.channel_size)
             inhiOpt = torch.clamp(inhiOpt, min=0)
             return inhiOpt
 

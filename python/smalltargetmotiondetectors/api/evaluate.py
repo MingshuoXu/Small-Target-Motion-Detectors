@@ -2,8 +2,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import torch
 
-from . import (instancing_model, inference)
+from . import instancing_model
 from ..model import *
 from ..util.iostream import (ImgstreamReader, VidstreamReader)
 from ..util.evaluate_module import (get_ROC_curve_data, compute_AUC, 
@@ -18,9 +19,10 @@ def inference_task(modelName,
                    inputType = 'ImgstreamReader', 
                    startFrame = 0, 
                    endFrame = None, 
+                   device = 'cpu',
                    **kwargs):
     ''' Instantiate the model '''
-    objModel = instancing_model(modelName)
+    objModel = instancing_model(modelName, device=device)
 
     ''' Dynamically create a video stream reader or other input type '''
     inputModule = globals().get(inputType)
@@ -44,13 +46,17 @@ def inference_task(modelName,
     while objIptStream.hasFrame:
         # Read the next frame from the video stream
         grayImg, _ = objIptStream.get_next_frame()
+        if device != 'cpu':
+            grayImg = torch.from_numpy(grayImg).to(device=device).float().unsqueeze(0).unsqueeze(0)
         
         # Perform inference using the model
-        result, runTime = inference(objModel, grayImg)
+        result, runTime = objModel.process(grayImg)
         totalRunningTime += runTime
 
         # postprocessing
-
+        if device != 'cpu':
+            torch.cuda.synchronize()
+            result = {k: v.squeeze(0).squeeze(0).cpu().numpy() for k, v in result.items()}
         # response
         response = result['response']
         if np.max(response) == 0:
@@ -60,7 +66,7 @@ def inference_task(modelName,
         maxOpt = np.max(response)
         if maxOpt > 0:
             response /= np.max(response)
-            responseListType = matrix_to_sparse_list(response)
+            responseListType = matrix_to_sparse_list(response.astype(np.float64))
         else:
             responseListType = []
         results.append(responseListType)          
@@ -68,7 +74,7 @@ def inference_task(modelName,
         # direction
         direction  = result['direction']
         if (direction is not None) and len(direction) and len(responseListType):
-            directionListType = [[y, x, direction[x, y]] for y, x, _ in responseListType]
+            directionListType = [[y, x, float(direction[x, y])] for y, x, _ in responseListType]
         else:
             directionListType = []
         directions.append(directionListType)

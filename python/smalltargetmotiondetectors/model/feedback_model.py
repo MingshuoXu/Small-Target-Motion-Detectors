@@ -1,7 +1,9 @@
-import numpy as np
+from copy import deepcopy
 import warnings
 
-from .backbone import ESTMDBackbone
+import numpy as np
+
+from .backbone import ESTMDBackbone, FracSTMD
 from ..core import feedbackstmd_core, fstmd_core, stfeedbackstmd_core
 
 class FeedbackSTMD(ESTMDBackbone):
@@ -245,7 +247,41 @@ class STFeedbackSTMD(ESTMDBackbone):
         super().init_config()
 
 
+class FracSTMD_F(FracSTMD):
 
+    # Bind model parameters and their corresponding parameter pointers.
+    __paraMappingList = deepcopy(FracSTMD._FracSTMD__paraMappingList)
+    __paraMappingList.update({
+        # lobula
+        'beta'      : 'self.hLobula.alpha', # Eq. (9)
+        'n4'        : 'self.hLobula.hGammaDelay.order',
+        'tau4'      : 'self.hLobula.hGammaDelay.tau', 
+        'eta'       : 'self.hLobula.paraGaussKernel[\'eta\']', # Eq. (10)
+    })
+
+    def __init__(self, device = 'cpu'):
+        """
+        Constructor method
+        """
+        super().__init__(device=device)       
+
+        # Customize Lamina component to include fractional differentiation
+        self.hLobula = feedbackstmd_core.Lobula()
+
+    def model_structure(self, iptMatrix):
+        """ MODEL_STRUCTURE Method
+
+        Defines the structure of the FeedbackSTMD model.
+        """
+        # Process input matrix through model components
+        self.retinaOpt = self.hRetina.process(iptMatrix)
+        self.laminaOpt = self.hLamina.process(self.retinaOpt)
+        self.hMedulla.process(self.laminaOpt)
+        self.medullaOpt = self.hMedulla.Opt
+        self.lobulaOpt = self.hLobula.process(self.medullaOpt[0], self.medullaOpt[1])
+
+        # Set model response
+        self.modelOpt['response'] = self.lobulaOpt
 
 
 

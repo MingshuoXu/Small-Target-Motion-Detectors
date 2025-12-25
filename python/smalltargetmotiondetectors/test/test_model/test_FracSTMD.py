@@ -1,6 +1,10 @@
 import os
 import sys
 
+
+import torch
+
+
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
 # Find the index of '/+smalltargetmotiondetectors/'
@@ -12,8 +16,12 @@ sys.path.append(import_path)
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 ''' Model instantiation '''
-objModel = instancing_model('FracSTMD')
+# objModel = instancing_model('FracSTMD')
+objModel = instancing_model('FracSTMD', device=DEVICE)
+
 
 ''' Input '''
 # Demo video (RIST)
@@ -37,8 +45,19 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
     
+    if DEVICE == 'cuda':
+        grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
+    else:
+        grayImg = grayImg.astype('float32')
+
     # Perform inference using the model
     result, runTime = inference(objModel, grayImg)
     
+    if DEVICE == 'cuda':
+        result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
+    hVisual.show_result(colorImg, result, runTime)
+
     # Visualize the result
     hVisual.show_result(colorImg, result, runTime)
+
+print(runTime)

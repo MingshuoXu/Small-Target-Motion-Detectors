@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from .base_core import BaseCore
 from .math_operator import GammaBandPassFilter, SurroundInhibition
@@ -7,12 +8,12 @@ from . import estmd_core
 class Lamina(BaseCore):
     """Lamina layer of the motion detection system."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Lamina object
-        super().__init__()
+        super().__init__(device=device)
         # Initialize the GammaBankPassFilter component
-        self.hGammaBandPassFilter = GammaBandPassFilter()
+        self.hGammaBandPassFilter = GammaBandPassFilter(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -32,15 +33,15 @@ class Lamina(BaseCore):
 class Medulla(BaseCore):
     """Medulla layer of the motion detection system."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Medulla object
-        super().__init__()
+        super().__init__(device=device)
         # Initialize components
-        self.hTm1 = estmd_core.Tm1()
-        self.hMi1 = estmd_core.Mi1()
-        self.hTm2 = Tm2()
-        self.hTm3 = Tm3()
+        self.hTm1 = estmd_core.Tm1(device=device)
+        self.hMi1 = estmd_core.Mi1(device=device)
+        self.hTm2 = Tm2(device=device)
+        self.hTm3 = Tm3(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -69,12 +70,12 @@ class Medulla(BaseCore):
 class Lobula(BaseCore):
     """Lobula layer of the motion detection system."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Lobula object
-        super().__init__()
+        super().__init__(device=device)
         # Initialize the SurroundInhibition component
-        self.hSubInhi = SurroundInhibition()
+        self.hSubInhi = SurroundInhibition(device=device)
         # Parameters related to the recombination of ON and OFF channels
         self.a = 0
         self.b = 0
@@ -112,10 +113,10 @@ class Lobula(BaseCore):
 class Tm2(BaseCore):
     """Tm2"""
 
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Tm2 object
-        super().__init__()
+        super().__init__(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -125,8 +126,10 @@ class Tm2(BaseCore):
     def process(self, tm2Ipt):
         """Processing method."""
         # Applies surround inhibition to the input to generate the output
-        
-        tm2Opt = np.maximum(-tm2Ipt, 0)  # Apply surround inhibition
+        if self.device != 'cpu':
+            tm2Opt = torch.clamp(-tm2Ipt, min=0)
+        else:
+            tm2Opt = np.maximum(-tm2Ipt, 0)  # Apply surround inhibition
         self.Opt = tm2Opt  # Store the output in Opt property
         return tm2Opt
     
@@ -134,10 +137,10 @@ class Tm2(BaseCore):
 class Tm3(BaseCore):
     """Tm3 is On signal with a Surround Inhibition."""
     
-    def __init__(self):
+    def __init__(self, device='cpu'):
         """Constructor method."""
         # Initializes the Tm3 object
-        super().__init__()
+        super().__init__(device=device)
 
     def init_config(self):
         """Initialization method."""
@@ -147,8 +150,10 @@ class Tm3(BaseCore):
     def process(self, tm3OptIpt):
         """Processing method."""
         # Applies a surround inhibition to the input to generate the output
-        
-        tm3Opt = np.maximum(tm3OptIpt, 0)  # Apply surround inhibition
+        if self.device != 'cpu':
+            tm3Opt = torch.clamp(tm3OptIpt, min=0)
+        else:
+            tm3Opt = np.maximum(tm3OptIpt, 0)  # Apply surround inhibition
         self.Opt = tm3Opt  # Store the output in Opt property
         return tm3Opt
 

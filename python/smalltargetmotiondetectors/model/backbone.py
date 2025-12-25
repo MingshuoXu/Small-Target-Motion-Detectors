@@ -3,6 +3,8 @@ import warnings
 import logging
 import time
 
+import torch
+
 from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core
 from ..util.compute_module import compute_response, compute_direction
 
@@ -70,6 +72,8 @@ class BaseModel(ABC):
         time_start = time.time()
         # Call the model structure method
         self.model_structure(modelIpt)
+        if self.device != 'cpu':
+            torch.cuda.synchronize()
         time_end = time.time() - time_start
         # Return the model output
         return self.modelOpt, time_end
@@ -197,10 +201,10 @@ class ESTMD(BaseModel):
         # Call the superclass constructor
         super().__init__(device=device)
         # Initialize components
-        self.hRetina = estmd_core.Retina()
-        self.hLamina = estmd_core.Lamina()
-        self.hMedulla = estmd_core.Medulla()
-        self.hLobula = estmd_core.Lobula()
+        self.hRetina = estmd_core.Retina(device=device)
+        self.hLamina = estmd_core.Lamina(device=device)
+        self.hMedulla = estmd_core.Medulla(device=device)
+        self.hLobula = estmd_core.Lobula(device=device)
 
     def init_config(self):
         # Initialize ESTMD components
@@ -208,9 +212,6 @@ class ESTMD(BaseModel):
         self.hLamina.init_config()
         self.hMedulla.init_config()
 
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         # Define the structure of the ESTMD model
@@ -258,10 +259,10 @@ class ESTMDBackbone(BaseModel):
         super().__init__(device=device)
 
         # Initialize components
-        self.hRetina = estmd_core.Retina()
+        self.hRetina = estmd_core.Retina(device=device)
         self.hLamina = estmd_backbone.Lamina()
-        self.hMedulla = estmd_backbone.Medulla()
-        self.hLobula = estmd_backbone.Lobula()
+        self.hMedulla = estmd_backbone.Medulla(device=device)
+        self.hLobula = estmd_backbone.Lobula(device=device)
         
     def init_config(self):
         """ INIT Method
@@ -273,10 +274,7 @@ class ESTMDBackbone(BaseModel):
         self.hMedulla.init_config()
         self.hLobula.init_config()
 
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
-
+        
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method
 
@@ -348,9 +346,19 @@ class FracSTMD(ESTMDBackbone):
         super().__init__(device=device)
 
         # Customize Lamina and Lobula components
-        self.hLamina = fracstmd_core.Lamina()
+        self.hLamina = fracstmd_core.Lamina(device=device)
         self.hMedulla.hTm1.hGammaDelay.order = 100
         self.hLobula.hSubInhi.e = 1.8
+
+    def init_config(self):
+        """ INIT Method
+
+        Initializes the ESTMDBackbone components.
+        """
+        self.hRetina.init_config()
+        self.hLamina.init_config()
+        self.hMedulla.init_config()
+        self.hLobula.init_config()
 
 
 class DSTMD(BaseModel):
@@ -424,10 +432,10 @@ class DSTMD(BaseModel):
         super().__init__(device=device)
 
         # Initialize components
-        self.hRetina = estmd_core.Retina()
-        self.hLamina = estmd_core.Lamina()
-        self.hMedulla = dstmd_core.Medulla()
-        self.hLobula = dstmd_core.Lobula()
+        self.hRetina = estmd_core.Retina(device=device)
+        self.hLamina = estmd_core.Lamina(device=device)
+        self.hMedulla = dstmd_core.Medulla(device=device)
+        self.hLobula = dstmd_core.Lobula(device=device)
 
     def init_config(self):
         """ INIT Method
@@ -438,10 +446,6 @@ class DSTMD(BaseModel):
         self.hLamina.init_config()
         self.hMedulla.init_config()
         self.hLobula.init_config()
-
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method
@@ -456,8 +460,8 @@ class DSTMD(BaseModel):
         self.lobulaOpt = self.hLobula.process(self.medullaOpt)
 
         # Compute response and direction
-        self.modelOpt['response'] = compute_response(self.lobulaOpt)
-        self.modelOpt['direction'] = compute_direction(self.lobulaOpt)
+        self.modelOpt['response'] = compute_response(self.lobulaOpt, device=self.device)
+        self.modelOpt['direction'] = compute_direction(self.lobulaOpt, device=self.device)
 
 
 class DSTMDBackbone(BaseModel):
@@ -502,10 +506,10 @@ class DSTMDBackbone(BaseModel):
         super().__init__(device=device)
 
         # Initialize components
-        self.hRetina = estmd_core.Retina()
-        self.hLamina = estmd_backbone.Lamina()
-        self.hMedulla = dstmd_core.Medulla()
-        self.hLobula = dstmd_core.Lobula()
+        self.hRetina = estmd_core.Retina(device=device)
+        self.hLamina = estmd_backbone.Lamina(device=device)
+        self.hMedulla = dstmd_core.Medulla(device=device)
+        self.hLobula = dstmd_core.Lobula(device=device)
 
     def init_config(self):
         """ INIT Method
@@ -517,9 +521,6 @@ class DSTMDBackbone(BaseModel):
         self.hMedulla.init_config()
         self.hLobula.init_config()
 
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
 
     def model_structure(self, iptMatrix):
         """ MODEL_STRUCTURE Method

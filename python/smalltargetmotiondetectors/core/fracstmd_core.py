@@ -65,9 +65,10 @@ class Lamina(BaseCore):
     def _compute_by_iteration(self, diffLaminaIpt):
         """Computes the lamina output by iteration."""
         if self.preLaminaOpt is None:
-            laminaopt = self.paraCur * diffLaminaIpt
+            laminaopt = diffLaminaIpt
         else:
             laminaopt = self.paraCur * diffLaminaIpt + self.paraPre * self.preLaminaOpt
         
         self.preLaminaOpt = laminaopt
+        
         return laminaopt

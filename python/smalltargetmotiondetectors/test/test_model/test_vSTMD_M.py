@@ -17,16 +17,19 @@ sys.path.append(import_path)
 from smalltargetmotiondetectors.api import (instancing_model, get_visualize_handle, inference) # type: ignore
 from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamReader # type: ignore
 from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list # type: ignore
-
+from smalltargetmotiondetectors.model.vstmd import vSTMD_M # type: ignore
 
 ''' Model instantiation '''
-objModel = instancing_model('vSTMD_F', device=DEVICE)
+objModel = vSTMD_M(device=DEVICE)
 
 ''' Input '''
 # Demo video (RIST)
 hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
 # hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_compressed2_60Hz.mp4'))
 # hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_compressed2_250Hz.mp4'))
+# hSteam = ImgstreamReader(os.path.join('D:/', 'STMD_Dataset', 'vSTMD_Panorama_Stimuli', 
+#                                       'Bgr_dire=Leftward_v=250', 'ET-Target_Num=1_W=5_H=5_V=3000_L=0-Traj=Ellipse_FPS=1000',
+#                                       'vSTMD_Panorama_Stimuli*.tif'))
 
 
 ''' Get visualization handle '''

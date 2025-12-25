@@ -5,6 +5,7 @@ import torch
 
 # DEVICE = 'cpu' # 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+# DEVICE = 'cpu'
 
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
@@ -20,7 +21,6 @@ from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list
 
 ''' Model instantiation '''
 objModel = instancing_model('vSTMD', device=DEVICE)  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
-
 
 ''' Input '''
 # Demo video (RIST)
@@ -49,6 +49,8 @@ while hSteam.hasFrame and hVisual.hasFigHandle:
 
     if DEVICE == 'cuda':
         grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
+    else:
+        grayImg = grayImg.astype('float32')
     
     # Perform inference using the model
     result, runTime = inference(objModel, grayImg)

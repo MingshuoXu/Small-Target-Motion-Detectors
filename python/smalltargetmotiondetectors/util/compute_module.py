@@ -1,5 +1,4 @@
 import numpy as np
-import math
 import torch
 
 def compute_temporal_conv(iptCell, kernel, pointer=None):
@@ -63,7 +62,7 @@ def compute_circularlist_conv(circularCell, temporalKernel):
     return optMatrix
 
 
-def compute_response(ipt):
+def compute_response(ipt, device='cpu'):
     """
     Computes the maximum response from multiple inputs.
 
@@ -73,18 +72,16 @@ def compute_response(ipt):
     Returns:
     - response: Maximum response computed from the inputs.
     """
-    k = len(ipt)
-    response = ipt[0]
+    if device != 'cpu':
+        response = torch.amax(ipt, dim=1, keepdim=True)
+    else:
+        response = np.max(ipt, axis=0)
 
-    # Compute maximum response
-    if k > 1:
-        for idx in range(1, k):
-            response = np.maximum(response, ipt[idx])
 
     return response
 
 
-def compute_direction(ipt):
+def compute_direction(ipt, device='cpu'):
     """
     Compute the dominant direction given a set of directional responses
 
@@ -92,34 +89,71 @@ def compute_direction(ipt):
     - ipt: List containing directional responses.
 
     Returns:
-    - directionOpt: Dominant direction computed from the responses.
+    - direction_opt: Dominant direction computed from the responses.
     """
-    # Get the number of directions
-    numDirection = len(ipt)
 
-    # Get the size of the input matrix
-    m, n = ipt[0].shape
 
-    # Initialize variables for cosine and sine components of the direction response
-    outputCos = np.zeros((m, n))
-    outputSin = np.zeros((m, n))
+    if device != 'cpu':
+        B, C, H, W = ipt.shape # C = 8 (numDirection)
+    
+        # 1. 预计算每个通道对应的单位向量角度 (theta)
+        # angles = [0, 1/8*2pi, 2/8*2pi, ...]
+        angles = torch.linspace(0, 2 * torch.pi, steps=C+1, device=device)[:-1].to(device=device)
+        
+        # 2. 计算对应的 Cos 和 Sin 权重基准
+        # 形状为 [8]，调整为 [1, 8, 1, 1] 以便进行广播乘法
+        cos_weight = torch.cos(angles).view(1, C, 1, 1)
+        sin_weight = torch.sin(angles).view(1, C, 1, 1)
+        
+        # 3. 计算加权和 (替代原代码中的 for 循环)
+        # ipt * cos_weight 形状仍为 [1, 8, H, W]
+        # 对 dim=1 (通道维) 求和，得到 [1, H, W]
+        output_cos = torch.sum(ipt * cos_weight, dim=1)
+        output_sin = torch.sum(ipt * sin_weight, dim=1)
+        
+        # 4. 使用 atan2 计算合成方向
+        # 结果范围是 (-pi, pi]
+        direction_opt = torch.atan2(output_sin, output_cos)
+        
+        # 5. 调整范围到 [0, 2*pi]
+        direction_opt = torch.where(direction_opt < 0, direction_opt + 2 * torch.pi, direction_opt)
+        
+        # 6. 处理无效像素 (Sin 和 Cos 同时接近 0 的地方)
+        # 原代码用 bool 转换，torch 中建议用极小阈值判断，或者直接检查全零
+        # 只有当两个分量都非常小时才设为 NaN
+        mask = (output_sin == 0) & (output_cos == 0)
+        direction_opt[mask] = float('nan')
+        direction_opt = direction_opt.unsqueeze(0)  # 去掉批次维度
+    else:
+        numDirection = len(ipt)
+    
+        # 1. 预计算每个方向的角度 (theta)
+        # 使用 np.linspace 快速生成 [0, 2*pi)
+        angles = np.linspace(0, 2 * np.pi, numDirection, endpoint=False)
+        
+        # 2. 预计算权重向量 (形状为 [numDirection, 1, 1])
+        # 增加维度是为了利用广播机制直接与 (C, H, W) 相乘
+        cos_weights = np.cos(angles)[:, np.newaxis, np.newaxis]
+        sin_weights = np.sin(angles)[:, np.newaxis, np.newaxis]
+        
+        # 3. 向量化计算加权和 (替代 for 循环)
+        # 对第一个轴 (axis=0) 求和，一次性得到所有的 Cos 和 Sin 分量
+        outputCos = np.sum(ipt * cos_weights, axis=0)
+        outputSin = np.sum(ipt * sin_weights, axis=0)
+        
+        # 4. 计算方向并调整范围至 [0, 2*pi]
+        # np.arctan2 自动处理象限
+        direction_opt = np.arctan2(outputSin, outputCos)
+        direction_opt %= (2 * np.pi) # 使用取模运算替代 if 判断，更简洁
+        
+        # 5. 处理无效像素 (Sin 和 Cos 同时为 0 的地方)
+        # 注意：浮点数比较建议使用 np.isclose 或设定极小阈值
+        # 原代码逻辑：非(Sin且Cos) -> 即(Sin为0 或 Cos为0)
+        # 修正逻辑：通常应该是两者都为 0 时才设为 NaN
+        invalid_mask = np.isclose(outputSin, 0) & np.isclose(outputCos, 0)
+        direction_opt[invalid_mask] = np.nan
 
-    # Compute the weighted sum of cosine and sine components for each direction
-    for idx, iptDire in enumerate(ipt):
-        outputCos += iptDire * math.cos(idx * 2 * math.pi / numDirection)
-        outputSin += iptDire * math.sin(idx * 2 * math.pi / numDirection)
-
-    # Compute the direction based on the arctan2 function
-    directionOpt = np.arctan2(outputSin, outputCos)
-
-    # Adjust directions to be in the range [0, 2*pi]
-    directionOpt[directionOpt < 0] += 2 * math.pi
-
-    # Set directions where both sine and cosine components are zero to NaN
-    nonId = ~(outputSin.astype(bool) & outputCos.astype(bool))
-    directionOpt[nonId] = np.nan
-
-    return directionOpt
+    return direction_opt
 
 
 def slice_matrix_holding_size(iptMatrix, shiftX, shiftY):

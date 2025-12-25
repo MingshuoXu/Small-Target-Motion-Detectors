@@ -1,6 +1,8 @@
 import os
 import sys
 
+import torch
+
 # Get the full path of this file
 filePath = os.path.realpath(__file__)
 # Find the index of '/+smalltargetmotiondetectors/'
@@ -12,13 +14,16 @@ sys.path.append(import_path)
 from smalltargetmotiondetectors.api import *
 from smalltargetmotiondetectors.util.iostream import *
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
 ''' Model instantiation '''
-objModel = instancing_model('DSTMD')
+objModel = instancing_model('DSTMD', device=DEVICE)
 
 ''' Input '''
 # Demo video (RIST)
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_orignal_1000Hz.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
+# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_orignal_1000Hz.mp4'))
+hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
 
 ''' Get visualization handle '''
 hVisual = get_visualize_handle(objModel.__class__.__name__)
@@ -35,9 +40,15 @@ objModel.init_config()
 while hSteam.hasFrame and hVisual.hasFigHandle:
     # Get the next frame from the input source
     grayImg, colorImg = hSteam.get_next_frame()
+    if DEVICE == 'cuda':
+        grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
+    else:
+        grayImg = grayImg.astype('float32')
     
     # Perform inference using the model
     result, runTime = inference(objModel, grayImg)
+    if DEVICE == 'cuda':
+        result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
     
     # Visualize the result
     hVisual.show_result(colorImg, result, runTime)
