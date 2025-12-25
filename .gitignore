@@ -1,25 +1,60 @@
+# 字节码缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C 扩展
+*.so
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+
+# 构建产物
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+
+# 配置文件包含定义
+MANIFEST
+
+
+# 日志文件
+*.log
+
+# 实验跟踪 (Tensorboard, WandB 等)
+events.out.tfevents.*
+wandb/
+
+# Jupyter Notebook 缓存
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+
+# macOS 系统文件
+.DS_Store
+
+# 环境变量敏感信息
+.env
+
+# 临时文件
 "`
 untrack_*
-"`
-
-"`
 temp_*
-"`
-
-"`
-**/__pycache__
-"`
-
-"`
 **/vstmd*.py
 "`
 
-"`
-**/+stmdnet_core/*.m
-**/+stmdnetf_core/*.m
-STMDNet.m
-STMDNetF.m
-"`
-
-
-uv.lock
