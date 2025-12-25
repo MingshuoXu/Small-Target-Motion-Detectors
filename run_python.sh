@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-python ./python/smalltargetmotiondetectors/demo/inference_gui.py
+python ./src/XTT-MP/main.py
