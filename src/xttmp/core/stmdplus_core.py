@@ -4,7 +4,7 @@ from scipy.spatial.distance import cdist
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_T1_kernels
-from ..util.matrixnms import MatrixNMS
+from ..util.compute_module import AreaNMS
 from ..util.compute_module import compute_response
 
 class ContrastPathway(BaseCore):
@@ -60,7 +60,7 @@ class MushroomBody(BaseCore):
     def init_config(self):
         # Initialization method
         # Initializes the non-maximum suppression
-        self.hNMS = MatrixNMS(self.paraNMS['maxRegionSize'], self.paraNMS['method'])
+        self.hNMS = AreaNMS(self.paraNMS['maxRegionSize'], self.paraNMS['method'])
 
 
     def process(self, lobulaOpt, contrastOpt):

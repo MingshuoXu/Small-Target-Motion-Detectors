@@ -6,11 +6,9 @@ import torch
 
 from . import instancing_model
 from ..model import *
-from ..util.iostream import (ImgstreamReader, VidstreamReader)
 from ..util.evaluate_module import (get_ROC_curve_data, compute_AUC, 
                                     get_thres_recall_data, compute_AR,
                                     get_P_R_curve_data, compute_AP, )
-from ..util.matrixnms import MatrixNMS
 from ..util.compute_module import matrix_to_sparse_list
 
 

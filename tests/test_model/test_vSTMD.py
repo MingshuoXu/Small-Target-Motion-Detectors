@@ -1,77 +1,77 @@
 import os
 import sys
-import time
 import torch
+import time
+
+import cv2
+import numpy as np
+
+filePath = os.path.realpath(__file__)
+project_path = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
+sys.path.append(os.path.join(project_path, 'src'))
+from xttmp.util.iostream import FrameIterator, FrameVisualizer
+from xttmp.api import (instancing_model, inference) # type: ignore
+from xttmp.util.compute_module import PostProcessing, AreaNMS, matrix_to_sparse_list # type: ignore
+
 
 # DEVICE = 'cpu' # 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-# DEVICE = 'cpu'
 
-# Get the full path of this file
-filePath = os.path.realpath(__file__)
-# Find the index of '/+smalltargetmotiondetectors/'
-indexPath = filePath.rfind('smalltargetmotiondetectors')
-# Add the path to the package containing the models
-import_path = filePath[:indexPath]
-sys.path.append(import_path)
-
-from smalltargetmotiondetectors.api import (instancing_model, get_visualize_handle, inference) # type: ignore
-from smalltargetmotiondetectors.util.iostream import VidstreamReader, ImgstreamReader # type: ignore
-from smalltargetmotiondetectors.util.compute_module import matrix_to_sparse_list # type: ignore
-
-''' Model instantiation '''
-objModel = instancing_model('vSTMD', device=DEVICE)  # or 'vSTMD_without_CDGC', 'vSTMD_F_without_GF', 'vSTMD_without_GF', 'vSTMD_F_without_cIDP', 'vSTMD_without_cIDP'
-
-''' Input '''
-# Demo video (RIST)
-hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_orignal_240Hz.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'RIST_GX010290_compressed2_60Hz.mp4'))
-# hSteam = VidstreamReader(os.path.join(filePath[:indexPath-7], 'demodata', 'simulatedVideo0_compressed2_250Hz.mp4'))
-
-
-''' Get visualization handle '''
-hVisual = get_visualize_handle(objModel.__class__.__name__)
-
-''' Initialize the model '''
-# set the parameter list
-objModel.set_para()
-# print the parameter list
-objModel.print_para()
-# init
-objModel.init_config()
-
-totalTime = 0
-'''Run inference'''
-while hSteam.hasFrame and hVisual.hasFigHandle:
-
-    # Get the next frame from the input source
-    grayImg, colorImg = hSteam.get_next_frame()
-
-    if DEVICE == 'cuda':
-        grayImg = torch.from_numpy(grayImg).to(device=DEVICE).float().unsqueeze(0).unsqueeze(0)
-    else:
-        grayImg = grayImg.astype('float32')
+def test():
+    # model
+    model = instancing_model('vSTMD', device=DEVICE) 
+    # input
+    # frame_reader = FrameIterator(os.path.join(project_path, 'example-data', 'RIST_GX010290_orignal_240Hz.mp4'), is_video=True)
+    frame_reader = FrameIterator(os.path.join('D:/', 'STMD_Dataset', 'vSTMD_Panorama_Stimuli', 
+                                              'Bgr_dire=Leftward_v=250', 
+                                              'ET-Target_Num=1_W=5_H=5_V=1500_L=0-Traj=Ellipse_FPS=1000'),
+                                is_video=False)
+    # visualizer
+    visualizer = FrameVisualizer(window_name=model.__class__.__name__, 
+                                 result_index_type="dots",
+                                 win_height = frame_reader.img_height,
+                                 win_width = frame_reader.img_width)
+    post_processor = PostProcessing(device=DEVICE, nms_radio=8, get_top_num=100)
     
-    # Perform inference using the model
-    result, runTime = inference(objModel, grayImg)
-    # result['response'] = matrix_to_sparse_list(result['response'])
+    # Initialize
+    # set the parameter list
+    model.set_para()
+    # print the parameter list
+    model.print_para()
+    # init
+    model.init_config()
+
+    total_tunning_time = 0.0
+    while True:
+        color_img, gray_img, ret = frame_reader.get_next_frame(device=DEVICE)
+        if not ret: break
+            
+        # Perform inference using the model
+        time_start = time.time()
+        result, run_time = inference(model, gray_img)
+        # dot_res = post_processor.process(result)
+
+        # ret = visualizer.update(color_img, dot_res, process_time=run_time)
+        if not ret: break
+
+        total_tunning_time += time.time() - time_start
+
+    print(f"Total time: {total_tunning_time:.4f} seconds, "\
+          f"FPS: {frame_reader.current_index / total_tunning_time :.4f} frames/second")
 
 
-    # # direction
-    # direction  = result['direction']
-    # if (direction is not None) and len(direction) and len(result['response']):
-    #     directionListType = [[y, x, direction[x, y]] for y, x, _ in result['response']]
-    # else:
-    #     directionListType = []
-    # result['direction'] = directionListType
-    
+
+        
+        
+
+
+
+
+if __name__ == "__main__":
+    test()
+
+
+
+
     # Visualize the result
-    if DEVICE == 'cuda':
-        result = {k: v.cpu().numpy().squeeze(0).squeeze(0) if isinstance(v, torch.Tensor) else v for k, v in result.items()}
-    hVisual.show_result(colorImg, result, runTime)
     
-    totalTime += runTime
-
-print(f"Total time: {totalTime:.4f} seconds")
-print(f"FPS: {hSteam.endFrame / totalTime :.4f} frames/second")
-

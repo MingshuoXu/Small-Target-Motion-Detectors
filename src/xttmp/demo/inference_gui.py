@@ -16,12 +16,12 @@ py_pkg_path = os.path.dirname(os.path.dirname(os.path.dirname(file_path)))
 sys.path.append(py_pkg_path)
 
 try:
-    from smalltargetmotiondetectors.util.iostream import ( # type: ignore
+    from xttmp.util.iostream import ( # type: ignore
                     ModelAndInputSelectorGUI,
                     ImgstreamReader,
                     VidstreamReader
                 )
-    from smalltargetmotiondetectors.api import ( # type: ignore
+    from xttmp.api import ( # type: ignore
         instancing_model,
         get_visualize_handle,
     ) 
