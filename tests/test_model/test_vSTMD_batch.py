@@ -42,19 +42,32 @@ def test():
     model.setup()
 
     total_tunning_time = 0.0
+    batch_size = 16
+    i = 0
     while True:
         color_img, gray_img, ret = frame_reader.get_next_frame(device=DEVICE)
         if not ret: break
-            
+        
+        if i < batch_size-1:
+            if i == 0:
+                input_torch = gray_img
+            else:
+                input_torch = torch.cat((input_torch, gray_img), dim=0)
+            i += 1
+            continue
+
+        input_torch = torch.cat((input_torch, gray_img), dim=0)
+
         # Perform inference using the model
         time_start = time.time()
-        result, run_time = inference(model, gray_img)
-
-        dot_res = post_processor.process(result['response'], result['direction'])
-        ret = visualizer.update(color_img, dot_res, process_time=run_time)
-        if not ret: break
-
+        results = model.forward(input_torch)
+        torch.cuda.synchronize() if DEVICE == 'cuda' else None
+        # dot_res = post_processor.process(result)
+        # ret = visualizer.update(color_img, dot_res, process_time=run_time)
+        # if not ret: break
         total_tunning_time += time.time() - time_start
+
+        i = 0
 
     print(f"Total time: {total_tunning_time:.4f} seconds, "\
           f"FPS: {frame_reader.current_index / total_tunning_time :.4f} frames/second")

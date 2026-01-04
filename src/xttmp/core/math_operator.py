@@ -1,8 +1,8 @@
 from cv2 import filter2D, BORDER_CONSTANT
 import numpy as np
-from scipy.ndimage import gaussian_filter
 import torch
 import torch.nn.functional as F
+import torchvision.transforms.functional as TVF
 
 from .base_core import BaseCore
 from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
@@ -27,10 +27,9 @@ class GaussianBlur(BaseCore):
         self.gaussKernel = None  # Gaussian filter kernel
 
     def init_config(self):
-        self.gaussKernel = create_gaussian_kernel(self.size, self.sigma)
+        if self.device == 'cpu':
+            self.gaussKernel = create_gaussian_kernel(self.size, self.sigma)
 
-        if self.device == 'cuda':
-            self.gaussKernel = torch.from_numpy(self.gaussKernel).float().to(self.device).unsqueeze(0).unsqueeze(0)
 
     def process(self, ipt):
         """
@@ -45,9 +44,8 @@ class GaussianBlur(BaseCore):
         """
         if self.device == 'cpu':
             opt = filter2D(ipt, -1, self.gaussKernel, borderType=BORDER_CONSTANT)
-
         else:
-            opt = F.conv2d(ipt, self.gaussKernel, padding='same')
+            opt = TVF.gaussian_blur(ipt, kernel_size=[self.size, self.size], sigma=[self.sigma, self.sigma])
 
         return opt
     
@@ -258,7 +256,7 @@ class SurroundInhibition(BaseCore):
         )
         if self.device != 'cpu':
             self.convInhiKernelW2 = \
-                torch.from_numpy(self.corrInhiKernelW2).float().to(device=self.device).unsqueeze(0).unsqueeze(0).repeat(self.channel_size, 1, 1, 1)
+                torch.from_numpy(self.corrInhiKernelW2).float().to(device=self.device).unsqueeze(0).unsqueeze(0)
 
     def process(self, ipt):
         """
@@ -276,7 +274,10 @@ class SurroundInhibition(BaseCore):
             inhiOpt = np.maximum(inhiOpt, 0)
             return inhiOpt
         else:
-            inhiOpt = F.conv2d(ipt, self.convInhiKernelW2, padding='same', groups=self.channel_size)
+            if self.convInhiKernelW2.shape[1] != ipt.shape[1]:
+                self.convInhiKernelW2 = self.convInhiKernelW2.repeat(1, ipt.shape[1], 1, 1)
+
+            inhiOpt = F.conv2d(ipt, self.convInhiKernelW2, padding='same')
             inhiOpt = torch.clamp(inhiOpt, min=0)
             return inhiOpt
 

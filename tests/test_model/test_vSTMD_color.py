@@ -47,12 +47,14 @@ def test():
         if not ret: break
             
         # Perform inference using the model
+        
+        input = torch.from_numpy(color_img).permute(2, 0, 1).unsqueeze(0).float().to(DEVICE) / 255.0  # [1, C, H, W]
         time_start = time.time()
-        result, run_time = inference(model, gray_img)
-
-        dot_res = post_processor.process(result['response'], result['direction'])
+        result, run_time = inference(model, input)
+        torch.cuda.synchronize() if DEVICE == 'cuda' else None
+        dot_res = post_processor.process(result)
         ret = visualizer.update(color_img, dot_res, process_time=run_time)
-        if not ret: break
+        # if not ret: break
 
         total_tunning_time += time.time() - time_start
 

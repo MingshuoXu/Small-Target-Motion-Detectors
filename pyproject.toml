@@ -1,5 +1,5 @@
 [project]
-name = "XTTMP"
+name = "xttmp"
 version = "2.2.0"
 description = "eXtremely Tiny Target - Motion Perception"
 readme = "README.md"

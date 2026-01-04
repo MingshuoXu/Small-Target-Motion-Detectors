@@ -39,14 +39,11 @@ class BaseModel(ABC):
         # Model output structure
         self.modelOpt = {'response': [], 'direction': []}
 
-    def init_config(self, *args, **kwargs):
+    def setup(self, *args, **kwargs):
         """
         Abstract method for initializing model components.
         """
         pass
-
-    def _initialize(self, *args, **kwargs):
-        return self.init_config(*args, **kwargs)
 
     @abstractmethod
     def model_structure(self, modelIpt, *args, **kwargs):
@@ -138,15 +135,7 @@ class BaseModel(ABC):
             else:
                 warnings.warn(f"Private variable '{key}' does not exist.", UserWarning)
 
-    # The following code has been retained for compatibility with older versions
-    def print_parameter(self):
-        """Compatibility method for older versions. See `print_para` for the new version."""
-        self.print_para()
-
-    def set_parameter(self, **kwargs):
-        """Compatibility method for older versions. See `set_para` for the new version."""
-        self.set_para(**kwargs)
-    
+ 
 
 class ESTMD(BaseModel):
     """ ESTMD: Elementary small target motion detector
