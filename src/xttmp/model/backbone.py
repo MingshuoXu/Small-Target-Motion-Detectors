@@ -92,9 +92,9 @@ class BaseModel(ABC):
                     if i == 0:
                         msg += ' -->'
                     elif i == len(value) - 1:
-                        msg += f'{' '*len(name):6} \\--->'
+                        msg += f'{" "*len(name):6} \\--->'
                     else:
-                        msg += f'{' '*len(name):6} |--->'
+                        msg += f'{" "*len(name):6} |--->'
                     msg += f' {item} = {eval(item)}\n'
             else:
                 msg += f' --> {value} = {eval(value)}\n'

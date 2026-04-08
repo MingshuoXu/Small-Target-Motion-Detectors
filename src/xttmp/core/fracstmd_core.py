@@ -20,8 +20,6 @@ class Lamina(BaseCore):
         self.fracKernel = None
         self.paraCur = None
         self.paraPre = None
-        self.preLaminaIpt = None
-        self.preLaminaOpt = None
         self.cellRetinaOutput = None
     
     def init_config(self):
@@ -36,6 +34,9 @@ class Lamina(BaseCore):
         else:
             raise ValueError("Invalid alpha value.")
         self.cellRetinaOutput = CircularList(self.delta)
+
+        self.preLaminaIpt = None
+        self.preLaminaOpt = None
     
     def process(self, LaminaIpt):
         """Processing method."""

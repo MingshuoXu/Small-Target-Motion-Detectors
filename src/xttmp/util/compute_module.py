@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import cv2
 import numpy as np
 import torch
@@ -292,7 +294,7 @@ def get_top_k_torch(response_tensor, direction_tensor, k=1000):
         response_tensor: (..., H, W) 任意维度的 Tensor
         direction_tensor: (..., H, W) 形状需与 response 匹配 (可选)
     输出: 
-        numpy.ndarray: shape=(k, 4), dtype=float32
+        torch.Tensor: shape=(M, 4), dtype=float32, 其中 M <= k
         格式: [[x, y, response, direction], ...]
     """
     # 1. 获取维度
@@ -312,7 +314,7 @@ def get_top_k_torch(response_tensor, direction_tensor, k=1000):
     
     # 如果全都是 0，直接返回空数组，避免后续报错
     if not mask.any():
-        return np.empty((0, 4), dtype=np.float32)
+        return torch.empty((0, 4))
 
     # 应用掩码，缩减 tensor 长度
     top_vals = top_vals[mask]
@@ -335,8 +337,7 @@ def get_top_k_torch(response_tensor, direction_tensor, k=1000):
     # 7. 堆叠 (Stack) -> (M, 4)
     result_tensor = torch.stack([top_x, top_y, top_vals, top_dirs], dim=1)
 
-    # 8. 转为 Numpy
-    return result_tensor.detach().cpu().numpy()
+    return result_tensor
 
 
 def get_top_k_numpy(response_array, direction_array=None, k=1000):
@@ -409,7 +410,6 @@ def get_top_k_numpy(response_array, direction_array=None, k=1000):
     return result
 
 
-
 class PostProcessing:
     """
     Post-processing class to apply AreaNMS, get top K, and return list format.
@@ -441,16 +441,22 @@ class PostProcessing:
             res = get_top_k_torch(nms_response, 
                                   direction, 
                                   k=self.get_top_num)
+            if res.shape[0] == 0:
+                res = torch.empty((0, 4), device=response.device)
+            else:
+                max_score = deepcopy(res[0, 2])
+                if max_score > 0:
+                    res[:, 2] /= max_score
         else:
             res = get_top_k_numpy(nms_response, 
                                   direction, 
                                   k=self.get_top_num)
             
-        if res.size == 0:
-            res = np.empty((0, 4), dtype=np.float32)
-        else:
-            max_score = res[0, 2]
-            if max_score > 0:
-                res[:, 2] /= max_score
+            if res.shape[0] == 0:
+                res = np.empty((0, 4), dtype=np.float32)
+            else:
+                max_score = deepcopy(res[0, 2])
+                if max_score > 0:
+                    res[:, 2] /= max_score
 
         return res

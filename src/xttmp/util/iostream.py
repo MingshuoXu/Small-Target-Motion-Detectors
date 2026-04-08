@@ -64,7 +64,6 @@ class FrameIterator:
             if not success:
                 print(f"Warning: Unable to set video frame position to {current_index}.")
 
-
     # --- Video processing logic ---
     def _init_video_source(self):
         """ Initialize video file reading. """
@@ -80,6 +79,7 @@ class FrameIterator:
         # Get total frame count
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.is_open = True
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         if self.is_silence is False:
             print(f"Successfully opened video file. Total frames: {self.total_frames}")
 
@@ -163,6 +163,17 @@ class FrameIterator:
 
             return color_img, gray_img, True
 
+    def __iter__(self):
+        """Enable iterator protocol for FrameIterator."""
+        return self
+
+    def __next__(self):
+        """Get next frame in iteration. Raises StopIteration when done."""
+        color_img, gray_img, ret = self.get_next_frame(device='cpu')
+        if not ret:
+            raise StopIteration
+        return color_img, gray_img
+
     def release(self):
         """ Release resources. """
         if self.is_open:
@@ -203,7 +214,8 @@ class FrameVisualizer:
                  result_index_type="matrix",
                  win_width=None, win_height=None, 
                  is_headless=False,
-                 conf_threshold=0.8): # 新增阈值参数
+                 conf_threshold=0.8 # 阈值参数
+                 ): 
         """
         初始化可视化器
         :param conf_threshold: 可视化过滤的相对阈值 (0.0 ~ 1.0)
@@ -225,7 +237,7 @@ class FrameVisualizer:
         """初始化窗口"""
         if self.is_headless:
             return
-        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+        cv2.namedWindow(self.window_name, cv2.WINDOW_GUI_NORMAL)
         cv2.resizeWindow(self.window_name, self.win_width, self.win_height)
 
     def setup_video_writer(self, output_path, fps=30, width=None, height=None):
@@ -244,7 +256,7 @@ class FrameVisualizer:
         self.save_output = True
         print(f">>> Video writer initialized: {output_path}")
 
-    def update(self, frame, result, direction=None, process_time=None) -> bool:
+    def update(self, frame, result=None, direction=None, annotation=None, process_time=None) -> bool:
         if frame is None:
             return False
 
@@ -254,9 +266,10 @@ class FrameVisualizer:
             if self.result_index_type == "matrix":
                 self._draw_matrix(frame, result, direction, self.conf_threshold)
             elif self.result_index_type == "dots": 
+                result = result.cpu().numpy() if isinstance(result, torch.Tensor) else result
                 self._draw_dots(frame, result, self.conf_threshold)
             elif self.result_index_type == "bbox": 
-                self._draw_bbox(frame, result, self.conf_threshold)
+                self._draw_bbox(frame, result, self.conf_threshold, annotation)
 
         # --- 信息显示 ---
         if process_time is not None:
@@ -278,7 +291,7 @@ class FrameVisualizer:
         while True:
             key = cv2.waitKey(1) & 0xFF
 
-            if key == 27: # Esc
+            if key == 27 or key == ord('q'): # Esc
                 return False
 
             if key == 32: # Space
@@ -301,7 +314,6 @@ class FrameVisualizer:
             cv2.destroyWindow(self.window_name)
         if self.video_writer is not None:
             self.video_writer.release()
-
 
     @staticmethod
     def _draw_arrows(frame, x_coords, y_coords, directions, length=15):
@@ -384,37 +396,45 @@ class FrameVisualizer:
                                          directions=dirs[valid_mask])
 
     @staticmethod
-    def _draw_bbox(frame, response, threshold):
-        """处理 BBox 格式: [[x, y, w, h, score, dir], ...]"""
-        if len(response) == 0: return
+    def _draw_bbox(frame, response, threshold, annotation=None):
+        """处理 BBox 格式: [[x1, y1, x2, y2, score, dir], ...]"""
+        if response.size == 0: return
 
-        scores = response[:, 4]
+        # 1. 提前过滤：先做 Mask 过滤，减少后续转换的数据量
+        mask = response[:, 4] > threshold
+        filtered_res = response[mask]
+        if filtered_res.size == 0: return
+
+        # 2. 批量转换类型
+        # 只转换坐标部分，避免对整个 response 进行转换
+        boxes = filtered_res[:, :4].astype(np.int32)
         
-        mask = scores > threshold
-        filtered = response[mask]
+        # 3. 提取方向（如果有）
+        # 优化点：直接从过滤后的结果拿第 5 列，避免多次索引 filtered
+        has_dir = filtered_res.shape[1] > 5
+        
+        # 4. 优化循环逻辑：将判断移出循环
+        if annotation is not None:
+            filtered_anno = np.asanyarray(annotation)[mask]
+            for (x1, y1, x2, y2), anno in zip(boxes, filtered_anno):
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 1, cv2.LINE_AA)
+                cv2.putText(frame, str(anno), (x1, y1 - 5), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+        else:
+            for x1, y1, x2, y2 in boxes:
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 1, cv2.LINE_AA)
 
-        if len(filtered) == 0: return
-
-        # 解包前 4 列
-        for box in filtered:
-            x, y, w, h = box[0:4]
-            pt1 = (int(x), int(y))
-            pt2 = (int(x + w), int(y + h))
-            cv2.rectangle(frame, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
-
-        # 处理方向 (假设 Col 5 是方向，画在中心)
-        if response.shape[1] > 5:
-            dirs = filtered[:, 5]
-            valid_mask = ~np.isnan(dirs)
-            
-            valid_boxes = filtered[valid_mask]
-            valid_dirs = dirs[valid_mask]
-            
-            # 计算中心点
-            center_xs = valid_boxes[:, 0] + valid_boxes[:, 2] / 2
-            center_ys = valid_boxes[:, 1] + valid_boxes[:, 3] / 2
-            
-            FrameVisualizer._draw_arrows(frame, center_xs, center_ys, valid_dirs)
+        # 5. 绘制方向向量（矢量化计算中心点）
+        if has_dir:
+            dirs = filtered_res[:, 5]
+            v_mask = ~np.isnan(dirs)
+            if np.any(v_mask):
+                v_boxes = boxes[v_mask]
+                # 使用位移运算或更快的加法，并保持 float 计算中心点
+                # 这里的 // 2 直接得到整数坐标，方便画图
+                c_xs = (v_boxes[:, 0] + v_boxes[:, 2]) // 2
+                c_ys = (v_boxes[:, 1] + v_boxes[:, 3]) // 2
+                FrameVisualizer._draw_arrows(frame, c_xs, c_ys, dirs[v_mask])
 
 
 

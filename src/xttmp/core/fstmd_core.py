@@ -9,7 +9,6 @@ class FeedbackPathway(BaseCore):
         # Initializes the FeedbackPathway object
         super().__init__()
         
-        
         self.hGammaDelay = GammaDelay(5, 10)
         self.feedbackConstant = 0.22
 
