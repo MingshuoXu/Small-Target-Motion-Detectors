@@ -44,6 +44,7 @@ wandb/
 # IDEs
 .vscode/
 .idea/
+.github/
 
 # macOS 系统文件
 .DS_Store
@@ -55,6 +56,5 @@ wandb/
 "`
 untrack_*
 temp_*
-**/vstmd*.py
 "`
 

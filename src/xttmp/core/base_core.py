@@ -1,26 +1,35 @@
 from abc import ABC, abstractmethod
 
-class BaseCore(ABC):
+import torch
+
+
+class BaseCore(ABC, torch.nn.Module):
     """
     Abstract base class for core processing components.
     """
 
-    def __init__(self, device ='cpu'):
+    def __init__(self):
         """
         Constructor.
         """
-        self.Opt = None
-        self.device = device
+        super().__init__()
 
-    @abstractmethod
-    def init_config(self, *args, **kwargs):
+        self.output = None
+
+    def setup(self, *args, **kwargs):
         """
         Abstract method for initialization.
         """
         pass
 
+    def reset(self):
+        """
+        Abstract method for resetting the state.
+        """
+        pass
+
     @abstractmethod
-    def process(self, *args, **kwargs):
+    def forward(self, *args, **kwargs):
         """
         Abstract method for processing.
         """

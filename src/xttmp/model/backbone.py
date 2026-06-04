@@ -9,98 +9,124 @@ from ..core import estmd_core, estmd_backbone, fracstmd_core, dstmd_core
 from ..util.compute_module import compute_response, compute_direction
 
 
-class BaseModel(ABC):
+class BaseModel(ABC, torch.nn.Module):
     """ Base class for Small Target Motion Detector models. """
 
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = { 
         # here is just an example
-            'sigma1': 'self.hRetina.hGaussianBlur.sigma',
-            'sigma2': 'self.lobulaOpt.hGaussianBlur.sigma',
+            'sigma1': 'retina.gaussian_blur.sigma',
+            'sigma2': 'lobula.gaussian_blur.sigma',
         }
 
-    def __init__(self, device = 'cpu'):
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # 检查子类的字典中是否定义了同名方法
+        if 'reset' in cls.__dict__:
+            raise TypeError(f"禁止重写: 子类 {cls.__name__} 不能覆盖 'reset_buffer' 方法。")
+        if 'setup' in cls.__dict__:
+            raise TypeError(f"禁止重写: 子类 {cls.__name__} 不能覆盖 'setup' 方法。")
+        if 'print_para' in cls.__dict__:
+            raise TypeError(f"禁止重写: 子类 {cls.__name__} 不能覆盖 'print_para' 方法。")
+        if 'set_para' in cls.__dict__:
+            raise TypeError(f"禁止重写: 子类 {cls.__name__} 不能覆盖 'set_para' 方法。")
+        
+    def __init__(self):
         """ Constructor method.
         """
-        self.device = device
+        super().__init__()
         
-        self.hRetina = None # Handle for the retina layer
-        self.hLamina = None # Handle for the lamina layer
-        self.hMedulla = None # Handle for the medulla layer
-        self.hLobula = None # Handle for the lobula layer
+        self.retina = None # Handle for the retina layer
+        self.lamina = None # Handle for the lamina layer
+        self.medulla = None # Handle for the medulla layer
+        self.lobula = None # Handle for the lobula layer
 
-        self.inputFps = None
+        self.input_fps = None
 
-        self.retinaOpt = None # Retina layer output
-        self.laminaOpt = None # Lamina layer output
-        self.medullaOpt = None # Medulla layer output
-        self.lobulaOpt = None # Lobula layer output
+        self.register_buffer('_dummy_device', torch.empty(0)) # Buffer for the correlation output, used for direction computation
 
         # Model output structure
-        self.modelOpt = {'response': [], 'direction': []}
+        self.model_output = {'response': None, 'direction': None}
 
-    def setup(self, *args, **kwargs):
+    def setup(self):
         """
-        Abstract method for initializing model components.
+        递归地遍历模型中的所有子模块，
+        如果该子模块有 setup 方法，就调用它。
         """
-        pass
+        for module in self.children():
+            if hasattr(module, 'setup'):
+                module.setup()
+
+    def reset_buffer(self):
+        """
+        递归地遍历模型中的所有子模块，
+        如果该子模块有 reset_buffer 方法，就调用它。
+        """
+        for module in self.children():
+            if hasattr(module, 'reset_buffer'):
+                module.reset_buffer()
 
     @abstractmethod
-    def model_structure(self, modelIpt, *args, **kwargs):
+    def forward(self, img_tensor: torch.Tensor):
         """
-        Abstract method for defining model structure.
-        
+        Abstract method for forwarding input through the model.
+
         Parameters:
-            modelIpt: Input for model processing.
+            modelIpt: torch.tensor([B, 1, H, W]) Input for model forwarding.
+        Returns:
+            model_output: Model output structure.
         """
         pass
+    
+    def process(self, img_tensor: torch.Tensor):
+        """ (Old API) Process method for the model.
 
-    def process(self, modelIpt):
-        """ Processes the input and returns the model output.
+        This method serves as a wrapper around the forward method
 
         Parameters:
-            modelIpt: Input for model processing.
-
+            img_tensor: torch.Tensor Input tensor for processing.
         Returns:
-            modelOpt: Model output structure.
-            time_end: Time taken for processing.
+            model_output: The output from the forward method, potentially after additional processing.
+            time_cost: The time taken to process the input, useful for performance evaluation.
         """
-        
-        time_start = time.time()
-        # Call the model structure method
-        self.model_structure(modelIpt)
-        if self.device != 'cpu':
-            torch.cuda.synchronize()
-        time_end = time.time() - time_start
-        # Return the model output
-        return self.modelOpt, time_end
-    
-    def print_para(self):
+        device = self._dummy_device.device
+        if device == torch.device('cuda'):
+            torch.cuda.synchronize()  # Ensure all CUDA operations are complete before starting the timer
+        start_time = time.perf_counter()
+        model_output = self.forward(img_tensor)
+        if device == torch.device('cuda'):
+            torch.cuda.synchronize()  # Ensure all CUDA operations are complete before starting the timer
+        end_time = time.perf_counter()
+
+        return model_output, end_time - start_time
+
+    def print_para(self) -> None:
         logger = logging.getLogger(__name__)
 
-        paraList = eval(f'self._{self.__class__.__name__}__paraMappingList')
+        para_list = eval(f'self._{self.__class__.__name__}__paraMappingList')
 
-        if not paraList:
+        if not para_list:
             logger.info(f'The parameters of <{self.__class__.__name__}> is empty.')
             return
         
         msg = f'The parameters of <{self.__class__.__name__}> are:\n'
-        for name, value in paraList.items():
+        for name, paths in para_list.items():
             msg += f'  {name:6}'
-            if isinstance(value, tuple):
-                for i, item in enumerate(value):
+            if isinstance(paths, tuple):
+                for i, path in enumerate(paths):
+                    val = self._get_nested_attr(path)
                     if i == 0:
-                        msg += ' -->'
-                    elif i == len(value) - 1:
-                        msg += f'{" "*len(name):6} \\--->'
+                        msg += f' --> {path} = {val}\n'
+                    elif i == len(paths) - 1:
+                        msg += f'{" "*len(name):6} \\---> {path} = {val}\n'
                     else:
-                        msg += f'{" "*len(name):6} |--->'
-                    msg += f' {item} = {eval(item)}\n'
+                        msg += f'{" "*len(name):6} |---> {path} = {val}\n'
             else:
-                msg += f' --> {value} = {eval(value)}\n'
+                val = self._get_nested_attr(paths)
+                msg += f' --> {paths} = {val}\n'
                 
         logger.info(msg)
-        
+
     def set_para(self, **kwargs):
         """
         Sets parameters for the class instance based on provided keyword arguments.
@@ -123,18 +149,33 @@ class BaseModel(ABC):
         Raises:
         - None directly, but issues a warning if the parameter does not exist.
         """
-        _paraList = getattr(self, f'_{self.__class__.__name__}__paraMappingList', {})
+        para_list = getattr(self, f'self._{self.__class__.__name__}__paraMappingList', {})
         
         for key, value in kwargs.items():
-            if key in _paraList.keys():
-                if isinstance(_paraList[key], tuple):
-                    for mapKey in _paraList[key]:
-                        exec(mapKey + ' = value') 
+            if key in para_list.keys():
+                paths = para_list[key]
+                if isinstance(paths, tuple):
+                    for mapped_key in paths:
+                        self._set_nested_attr(mapped_key, value)
                 else:
-                    exec(_paraList[key] + ' = value') 
+                    self._set_nested_attr(paths, value)
             else:
                 warnings.warn(f"Private variable '{key}' does not exist.", UserWarning)
 
+    def _get_nested_attr(self, attr_str):
+        """ 安全地获取嵌套属性，如 'retina.gaussian_blur.sigma' """
+        obj = self
+        for attr in attr_str.split('.'):
+            obj = getattr(obj, attr)
+        return obj
+
+    def _set_nested_attr(self, attr_str, value):
+        """ 安全地设置嵌套属性，如将 'retina.gaussian_blur.sigma' 设为 value """
+        obj = self
+        attrs = attr_str.split('.')
+        for attr in attrs[:-1]:
+            obj = getattr(obj, attr)
+        setattr(obj, attrs[-1], value)
  
 
 class ESTMD(BaseModel):
@@ -149,7 +190,7 @@ class ESTMD(BaseModel):
 
     Parameters:
         Retina:
-            - sigma1: Standard deviation for Gaussian blur in the retina, representing visual preprocessing. (Eq. 1)
+            - sigma1: Standard deviation for Gaussian blur in the retina, representing visual preforwarding. (Eq. 1)
         Lamina:
             - n1, tau1: Order and time constant for the first gamma bandpass filter delay in the lamina. (Eq. 4)
             - n2, tau2: Order and time constant for the second gamma bandpass filter delay in the lamina. (Eq. 4)
@@ -165,53 +206,47 @@ class ESTMD(BaseModel):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = { 
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (1)
+        'sigma1'    : 'retina.sigma', # Eq. (1)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order', # Eq. (4)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
-        'sigma2'    : 'self.hLamina.hLaminaLateralInhibition.sigma2', # Eq. (8)(9)
-        'sigma3'    : 'self.hLamina.hLaminaLateralInhibition.sigma3',
-        'lambda1'   : 'self.hLamina.hLaminaLateralInhibition.lambda1', # Eq. (10)(11)
-        'lambda2'   : 'self.hLamina.hLaminaLateralInhibition.lambda2',
+        'n1'        : 'lamina.gamma_BPF.order1', # Eq. (4)
+        'tau1'      : 'lamina.gamma_BPF.tau1',
+        'n2'        : 'lamina.gamma_BPF.order2',
+        'tau2'      : 'lamina.gamma_BPF.tau2',
+        'sigma2'    : 'lamina.spatial_inhibition.sigma1', # Eq. (8)(9)
+        'sigma3'    : 'lamina.spatial_inhibition.sigma2',
+        'lambda1'   : 'lamina.spatial_inhibition.lambda1', # Eq. (10)(11)
+        'lambda2'   : 'lamina.spatial_inhibition.lambda2',
         # medulla
-        'A'         : ('self.hMedulla.hTm2.hSubInhi.A', 'self.hMedulla.hTm3.hSubInhi.A'), # Eq. (20)
-        'B'         : ('self.hMedulla.hTm2.hSubInhi.B', 'self.hMedulla.hTm3.hSubInhi.B'),
-        'sigma4'    : ('self.hMedulla.hTm2.hSubInhi.Sigma1', 'self.hMedulla.hTm3.hSubInhi.Sigma1'), # Eq. (21)
-        'sigma5'    : ('self.hMedulla.hTm2.hSubInhi.Sigma2', 'self.hMedulla.hTm3.hSubInhi.Sigma2'),
-        'e'         : ('self.hMedulla.hTm2.hSubInhi.e', 'self.hMedulla.hTm3.hSubInhi.e'),
-        'rho'       : ('self.hMedulla.hTm2.hSubInhi.rho', 'self.hMedulla.hTm3.hSubInhi.rho'),
-        'n3'        : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'), # Eq. (24)
-        'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau')
+        'A'         : ('medulla.tm2.spatial_inhibition.A', 'medulla.tm3.spatial_inhibition.A'), # Eq. (20)
+        'B'         : ('medulla.tm2.spatial_inhibition.B', 'medulla.tm3.spatial_inhibition.B'),
+        'sigma4'    : ('medulla.tm2.spatial_inhibition.sigma1', 'medulla.tm3.spatial_inhibition.sigma1'), # Eq. (21)
+        'sigma5'    : ('medulla.tm2.spatial_inhibition.sigma2', 'medulla.tm3.spatial_inhibition.sigma2'),
+        'e'         : ('medulla.tm2.spatial_inhibition.e', 'medulla.tm3.spatial_inhibition.e'),
+        'rho'       : ('medulla.tm2.spatial_inhibition.rho', 'medulla.tm3.spatial_inhibition.rho'),
+        'n3'        : ('medulla.tm1.order', 'medulla.mi1.order'), # Eq. (24)
+        'tau3'      : ('medulla.tm1.tau', 'medulla.mi1.tau')
         } 
      
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         # Call the superclass constructor
-        super().__init__(device=device)
+        super().__init__()
         # Initialize components
-        self.hRetina = estmd_core.Retina(device=device)
-        self.hLamina = estmd_core.Lamina(device=device)
-        self.hMedulla = estmd_core.Medulla(device=device)
-        self.hLobula = estmd_core.Lobula(device=device)
+        self.retina = estmd_core.Retina()
+        self.lamina = estmd_core.Lamina()
+        self.medulla = estmd_core.Medulla()
+        self.lobula = estmd_core.Lobula()
 
-    def init_config(self):
-        # Initialize ESTMD components
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-
-
-    def model_structure(self, iptMatrix):
+    def forward(self, x):
         # Define the structure of the ESTMD model
-        # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
+        # forward input matrix through model components
+        retina_output = self.retina.forward(x)
+        lamina_output = self.lamina.forward(retina_output)
+        medulla_ON, medulla_OFF = self.medulla.forward(lamina_output)
+        lobula_output = self.lobula.forward(medulla_ON, medulla_OFF)
         # direction not set in the  ESTMD model
-        self.modelOpt['response'] = self.lobulaOpt
+        self.model_output['response'] = lobula_output
+
+        return self.model_output
 
 
 class ESTMDBackbone(BaseModel):
@@ -224,60 +259,50 @@ class ESTMDBackbone(BaseModel):
 
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = { 
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
-        'A'         : 'self.hLobula.hSubInhi.A',
-        'B'         : 'self.hLobula.hSubInhi.B',
-        'e'         : 'self.hLobula.hSubInhi.e',
-        'rho'       : 'self.hLobula.hSubInhi.rho',
-        'sigma4'    : 'self.hLobula.hSubInhi.Sigma1',
-        'sigma5'    : 'self.hLobula.hSubInhi.Sigma2',
-        'order3'    : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'),
-        'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau'),
+        'sigma1'    : 'retina.sigma',
+        'n1'        : 'lamina.order1',
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
+        'A'         : 'lobula.spatial_inhibition.A',
+        'B'         : 'lobula.spatial_inhibition.B',
+        'e'         : 'lobula.spatial_inhibition.e',
+        'rho'       : 'lobula.spatial_inhibition.rho',
+        'sigma4'    : 'lobula.spatial_inhibition.sigma1',
+        'sigma5'    : 'lobula.spatial_inhibition.sigma2',
+        'order3'    : ('medulla.tm1.order', 'medulla.mi1.order'),
+        'tau3'      : ('medulla.tm1.tau', 'medulla.mi1.tau'),
         }
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """ ESTMDBackbone Constructor method
 
         Initializes an instance of the ESTMDBackbone class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
 
         # Initialize components
-        self.hRetina = estmd_core.Retina(device=device)
-        self.hLamina = estmd_backbone.Lamina()
-        self.hMedulla = estmd_backbone.Medulla(device=device)
-        self.hLobula = estmd_backbone.Lobula(device=device)
-        
-    def init_config(self):
-        """ INIT Method
+        self.retina = estmd_core.Retina()
+        self.lamina = estmd_backbone.Lamina()
+        self.medulla = estmd_backbone.Medulla()
+        self.lobula = estmd_backbone.Lobula()
 
-        Initializes the ESTMDBackbone components.
-        """
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-        self.hLobula.init_config()
-
-        
-    def model_structure(self, iptMatrix):
-        """ MODEL_STRUCTURE Method
+    def forward(self, img_tensor):
+        """ forward Method
 
         Defines the structure of the ESTMDBackbone model.
         """
-        # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt, _ = self.hLobula.process(self.medullaOpt)
+        # forward input matrix through model components
+        retina_output = self.retina.forward(img_tensor)
+        lamina_output = self.lamina.forward(retina_output)
+        medulla_ON, medulla_OFF = self.medulla.forward(lamina_output)
+        self.lobula_output, _ = self.lobula.forward(medulla_ON, medulla_OFF)
 
         # Set model response
-        self.modelOpt['response'] = self.lobulaOpt
+        self.model_output['response'] = self.lobula_output
+
+        return self.model_output
 
 
 class FracSTMD(ESTMDBackbone):
@@ -292,7 +317,7 @@ class FracSTMD(ESTMDBackbone):
 
     Parameters:
         Retina:
-            - sigma1: Standard deviation of the Gaussian blur applied in the retina layer to reduce noise and high-frequency artifacts, enhancing visual clarity for subsequent processing. (Eq. 2)
+            - sigma1: Standard deviation of the Gaussian blur applied in the retina layer to reduce noise and high-frequency artifacts, enhancing visual clarity for subsequent forwarding. (Eq. 2)
 
         Lamina:
             - alpha: Order of Fractional-differnece operator in the lamina. (Eq. 5)
@@ -310,44 +335,34 @@ class FracSTMD(ESTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = { 
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (2)
+        'sigma1'    : 'retina.sigma', # Eq. (2)
         # lamina
-        'alpha'     : 'self.hLamina.alpha', # Eq. (5)
-        'delta'     : 'self.hLamina.delta',
+        'alpha'     : 'lamina.alpha', # Eq. (5)
+        'delta'     : 'lamina.delta',
         # medulla
-        'n1'    : 'self.hMedulla.hTm1.hGammaDelay.order', # Eq. (10)
-        'tau1'      : 'self.hMedulla.hTm1.hGammaDelay.tau',  
+        'n1'        : 'medulla.tm1.order', # Eq. (10)
+        'tau1'      : 'medulla.tm1.tau',  
         # lobula
-        'A'         : 'self.hLobula.hSubInhi.A', # Eq. (14)
-        'B'         : 'self.hLobula.hSubInhi.B',
-        'e'         : 'self.hLobula.hSubInhi.e', # Eq. (15)
-        'rho'       : 'self.hLobula.hSubInhi.rho',
-        'sigma2'    : 'self.hLobula.hSubInhi.Sigma1',
-        'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
+        'A'         : 'lobula.spatial_inhibition.A', # Eq. (14)
+        'B'         : 'lobula.spatial_inhibition.B',
+        'e'         : 'lobula.spatial_inhibition.e', # Eq. (15)
+        'rho'       : 'lobula.spatial_inhibition.rho',
+        'sigma2'    : 'lobula.spatial_inhibition.sigma1',
+        'sigma3'    : 'lobula.spatial_inhibition.sigma2',
         }
 
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """
         FracSTMD Constructor method
         Initializes an instance of the FracSTMD class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
 
         # Customize Lamina and Lobula components
-        self.hLamina = fracstmd_core.Lamina(device=device)
-        self.hMedulla.hTm1.hGammaDelay.order = 100
-        self.hLobula.hSubInhi.e = 1.8
-
-    def init_config(self):
-        """ INIT Method
-
-        Initializes the ESTMDBackbone components.
-        """
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-        self.hLobula.init_config()
+        self.lamina = fracstmd_core.Lamina()
+        self.medulla.tm1.order = 100
+        self.lobula.spatial_inhibition.e = 1.8
 
 
 class DSTMD(BaseModel):
@@ -383,77 +398,71 @@ class DSTMD(BaseModel):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (1)
+        'sigma1'    : 'retina.sigma', # Eq. (1)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order', # Eq. (4)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
-        'sigma2'    : 'self.hLamina.hLaminaLateralInhibition.sigma2', # Eq. (8)(9)
-        'sigma3'    : 'self.hLamina.hLaminaLateralInhibition.sigma3',
-        'lambda1'   : 'self.hLamina.hLaminaLateralInhibition.lambda1', # Eq. (10)(11)
-        'lambda2'   : 'self.hLamina.hLaminaLateralInhibition.lambda2',
+        'n1'        : 'lamina.gamma_BPF.order1', # Eq. (4)
+        'tau1'      : 'lamina.gamma_BPF.tau1',
+        'n2'        : 'lamina.gamma_BPF.order2',
+        'tau2'      : 'lamina.gamma_BPF.tau2',
+        'sigma2'    : 'lamina.spatial_inhibition.sigma1', # Eq. (8)(9)
+        'sigma3'    : 'lamina.spatial_inhibition.sigma2',
+        'lambda1'   : 'lamina.spatial_inhibition.lambda1', # Eq. (10)(11)
+        'lambda2'   : 'lamina.spatial_inhibition.lambda2',
         # medulla
-        'n4'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order', # Eq. (25)
-        'tau4'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n6'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau6'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n4'        : 'medulla.mi1_para4.order', # Eq. (25)
+        'tau4'      : 'medulla.mi1_para4.tau',
+        'n5'        : 'medulla.tm1_para5.order',
+        'tau5'      : 'medulla.tm1_para5.tau',
+        'n6'        : 'medulla.tm1_para6.order',
+        'tau6'      : 'medulla.tm1_para6.tau',
         # lobula
-        'alpha1'    : 'self.hLobula.alpha1', # Eq. (26)
-        'A'         : 'self.hLobula.hLateralInhi.A', # Eq. (20)
-        'B'         : 'self.hLobula.hLateralInhi.B', 
-        'e'         : 'self.hLobula.hLateralInhi.e',  # Eq. (21)
-        'rho'       : 'self.hLobula.hLateralInhi.rho', 
-        'sigma4'    : 'self.hLobula.hLateralInhi.Sigma1', 
-        'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
-        'sigma6'    : 'self.hLobula.hDirectionInhi.sigma1', # Eq. (29)
-        'sigma7'    : 'self.hLobula.hDirectionInhi.sigma2',
+        'alpha1'    : 'lobula.alpha1', # Eq. (26)
+        'A'         : 'lobula.hLateralInhi.A', # Eq. (20)
+        'B'         : 'lobula.hLateralInhi.B', 
+        'e'         : 'lobula.hLateralInhi.e',  # Eq. (21)
+        'rho'       : 'lobula.hLateralInhi.rho', 
+        'sigma4'    : 'lobula.hLateralInhi.sigma1', 
+        'sigma5'    : 'lobula.hLateralInhi.sigma2', 
+        'sigma6'    : 'lobula.hDirectionInhi.sigma1', # Eq. (29)
+        'sigma7'    : 'lobula.hDirectionInhi.sigma2',
         } 
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """ DSTMD Constructor method
 
         Initializes an instance of the DSTMD class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
 
         # Initialize components
-        self.hRetina = estmd_core.Retina(device=device)
-        self.hLamina = estmd_core.Lamina(device=device)
-        self.hMedulla = dstmd_core.Medulla(device=device)
-        self.hLobula = dstmd_core.Lobula(device=device)
+        self.retina = estmd_core.Retina()
+        self.lamina = estmd_core.Lamina()
+        self.medulla = dstmd_core.Medulla()
+        self.lobula = dstmd_core.Lobula()
 
-    def init_config(self):
-        """ INIT Method
 
-        Initializes the DSTMD components.
-        """
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-        self.hLobula.init_config()
-
-    def model_structure(self, iptMatrix):
-        """ MODEL_STRUCTURE Method
+    def forward(self, x):
+        """ forward Method
 
         Defines the structure of the DSTMD model.
         """        
-        # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
+        # forward input matrix through model components
+        retina_output = self.retina.forward(x)
+        lamina_output = self.lamina.forward(retina_output)
+        medulla_tm3_output, medulla_mi1_p4_output, medulla_tm1_p5_output, medulla_tm1_p6_output = \
+            self.medulla.forward(lamina_output)
+        lobula_output = self.lobula.forward(medulla_tm3_output, medulla_mi1_p4_output, 
+                                            medulla_tm1_p5_output, medulla_tm1_p6_output)
 
         # Compute response and direction
-        self.modelOpt['response'] = compute_response(self.lobulaOpt, device=self.device)
-        self.modelOpt['direction'] = compute_direction(self.lobulaOpt, device=self.device)
+        self.model_output['response'] = compute_response(lobula_output)
+        self.model_output['direction'] = compute_direction(lobula_output)
+
+        return self.model_output
 
 
-class DSTMDBackbone(BaseModel):
+class DSTMDBackbone(DSTMD):
     """ DSTMDBackbone: A directional backbone based on DSTMD 
     
     Ref: 
@@ -463,70 +472,39 @@ class DSTMDBackbone(BaseModel):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma',
+        'sigma1'    : 'retina.sigma',
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+        'n1'        : 'lamina.order1',
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
         # medulla
-        'n4'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',
-        'tau4'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n6'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau6'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n4'        : 'medulla.mi1_para4.order',
+        'tau4'      : 'medulla.mi1_para4.tau',
+        'n5'        : 'medulla.tm1_para5.order',
+        'tau5'      : 'medulla.tm1_para5.tau',
+        'n6'        : 'medulla.tm1_para6.order',
+        'tau6'      : 'medulla.tm1_para6.tau',
         # lobula
-        'alpha1'    : 'self.hLobula.alpha1', 
-        'A'         : 'self.hLobula.hLateralInhi.A',
-        'B'         : 'self.hLobula.hLateralInhi.B', 
-        'e'         : 'self.hLobula.hLateralInhi.e', 
-        'rho'       : 'self.hLobula.hLateralInhi.rho', 
-        'sigma4'    : 'self.hLobula.hLateralInhi.Sigma1', 
-        'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
+        'alpha1'    : 'lobula.alpha1', 
+        'A'         : 'lobula.hLateralInhi.A',
+        'B'         : 'lobula.hLateralInhi.B', 
+        'e'         : 'lobula.hLateralInhi.e', 
+        'rho'       : 'lobula.hLateralInhi.rho', 
+        'sigma4'    : 'lobula.hLateralInhi.sigma1', 
+        'sigma5'    : 'lobula.hLateralInhi.sigma2', 
         } 
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """ DSTMDBackbone Constructor method
 
         Initializes an instance of the DSTMDBackbone class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
 
         # Initialize components
-        self.hRetina = estmd_core.Retina(device=device)
-        self.hLamina = estmd_backbone.Lamina(device=device)
-        self.hMedulla = dstmd_core.Medulla(device=device)
-        self.hLobula = dstmd_core.Lobula(device=device)
-
-    def init_config(self):
-        """ INIT Method
-
-        Initializes the DSTMDBackbone components.
-        """
-        self.hRetina.init_config()
-        self.hLamina.init_config()
-        self.hMedulla.init_config()
-        self.hLobula.init_config()
-
-
-    def model_structure(self, iptMatrix):
-        """ MODEL_STRUCTURE Method
-
-        Defines the structure of the DSTMDBackbone model.
-        """
-        
-        # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
-
-        # Compute response and direction
-        self.modelOpt['response'] = compute_response(self.lobulaOpt)
-        self.modelOpt['direction'] = compute_direction(self.lobulaOpt)
+        self.lamina = estmd_backbone.Lamina()
 
 
 

@@ -67,7 +67,7 @@ def compute_circularlist_conv(circularCell, temporalKernel):
     return optMatrix
 
 
-def compute_response(ipt, device='cpu'):
+def compute_response(ipt):
     """
     Computes the maximum response from multiple inputs.
 
@@ -77,16 +77,10 @@ def compute_response(ipt, device='cpu'):
     Returns:
     - response: Maximum response computed from the inputs.
     """
-    if device != 'cpu':
-        response = torch.amax(ipt, dim=1, keepdim=True)
-    else:
-        response = np.max(ipt, axis=0)
+    return torch.amax(ipt, dim=1, keepdim=True)
 
 
-    return response
-
-
-def compute_direction(ipt, device='cpu'):
+def compute_direction(ipt):
     """
     Compute the dominant direction given a set of directional responses
 
@@ -97,67 +91,37 @@ def compute_direction(ipt, device='cpu'):
     - direction_opt: Dominant direction computed from the responses.
     """
 
+    B, C, H, W = ipt.shape # C = 8 (numDirection)
+    device = ipt.device  # 获取输入信号所在的设备
 
-    if device != 'cpu':
-        B, C, H, W = ipt.shape # C = 8 (numDirection)
+    # 1. 预计算每个通道对应的单位向量角度 (theta)
+    # angles = [0, 1/8*2pi, 2/8*2pi, ...]
+    angles = torch.linspace(0, 2 * torch.pi, steps=C+1, device=device)[:-1]
     
-        # 1. 预计算每个通道对应的单位向量角度 (theta)
-        # angles = [0, 1/8*2pi, 2/8*2pi, ...]
-        angles = torch.linspace(0, 2 * torch.pi, steps=C+1, device=device)[:-1].to(device=device)
-        
-        # 2. 计算对应的 Cos 和 Sin 权重基准
-        # 形状为 [8]，调整为 [1, 8, 1, 1] 以便进行广播乘法
-        cos_weight = torch.cos(angles).view(1, C, 1, 1)
-        sin_weight = torch.sin(angles).view(1, C, 1, 1)
-        
-        # 3. 计算加权和 (替代原代码中的 for 循环)
-        # ipt * cos_weight 形状仍为 [1, 8, H, W]
-        # 对 dim=1 (通道维) 求和，得到 [1, H, W]
-        output_cos = torch.sum(ipt * cos_weight, dim=1)
-        output_sin = torch.sum(ipt * sin_weight, dim=1)
-        
-        # 4. 使用 atan2 计算合成方向
-        # 结果范围是 (-pi, pi]
-        direction_opt = torch.atan2(output_sin, output_cos)
-        
-        # 5. 调整范围到 [0, 2*pi]
-        direction_opt = torch.where(direction_opt < 0, direction_opt + 2 * torch.pi, direction_opt)
-        
-        # 6. 处理无效像素 (Sin 和 Cos 同时接近 0 的地方)
-        # 原代码用 bool 转换，torch 中建议用极小阈值判断，或者直接检查全零
-        # 只有当两个分量都非常小时才设为 NaN
-        mask = (output_sin == 0) & (output_cos == 0)
-        direction_opt[mask] = float('nan')
-        direction_opt = direction_opt.unsqueeze(0)  # 去掉批次维度
-    else:
-        numDirection = len(ipt)
+    # 2. 计算对应的 Cos 和 Sin 权重基准
+    # 形状为 [8]，调整为 [1, 8, 1, 1] 以便进行广播乘法
+    cos_weight = torch.cos(angles).view(1, C, 1, 1)
+    sin_weight = torch.sin(angles).view(1, C, 1, 1)
     
-        # 1. 预计算每个方向的角度 (theta)
-        # 使用 np.linspace 快速生成 [0, 2*pi)
-        angles = np.linspace(0, 2 * np.pi, numDirection, endpoint=False)
-        
-        # 2. 预计算权重向量 (形状为 [numDirection, 1, 1])
-        # 增加维度是为了利用广播机制直接与 (C, H, W) 相乘
-        cos_weights = np.cos(angles)[:, np.newaxis, np.newaxis]
-        sin_weights = np.sin(angles)[:, np.newaxis, np.newaxis]
-        
-        # 3. 向量化计算加权和 (替代 for 循环)
-        # 对第一个轴 (axis=0) 求和，一次性得到所有的 Cos 和 Sin 分量
-        outputCos = np.sum(ipt * cos_weights, axis=0)
-        outputSin = np.sum(ipt * sin_weights, axis=0)
-        
-        # 4. 计算方向并调整范围至 [0, 2*pi]
-        # np.arctan2 自动处理象限
-        direction_opt = np.arctan2(outputSin, outputCos)
-        direction_opt %= (2 * np.pi) # 使用取模运算替代 if 判断，更简洁
-        
-        # 5. 处理无效像素 (Sin 和 Cos 同时为 0 的地方)
-        # 注意：浮点数比较建议使用 np.isclose 或设定极小阈值
-        # 原代码逻辑：非(Sin且Cos) -> 即(Sin为0 或 Cos为0)
-        # 修正逻辑：通常应该是两者都为 0 时才设为 NaN
-        invalid_mask = np.isclose(outputSin, 0) & np.isclose(outputCos, 0)
-        direction_opt[invalid_mask] = np.nan
-
+    # 3. 计算加权和 (替代原代码中的 for 循环)
+    # ipt * cos_weight 形状仍为 [1, 8, H, W]
+    # 对 dim=1 (通道维) 求和，得到 [1, H, W]
+    output_cos = torch.sum(ipt * cos_weight, dim=1)
+    output_sin = torch.sum(ipt * sin_weight, dim=1)
+    
+    # 4. 使用 atan2 计算合成方向
+    # 结果范围是 (-pi, pi]
+    direction_opt = torch.atan2(output_sin, output_cos)
+    
+    # 5. 调整范围到 [0, 2*pi]
+    direction_opt = torch.where(direction_opt < 0, direction_opt + 2 * torch.pi, direction_opt)
+    
+    # 6. 处理无效像素 (Sin 和 Cos 同时接近 0 的地方)
+    # 只有当两个分量都非常小时才设为 NaN
+    mask = (output_sin == 0) & (output_cos == 0)
+    direction_opt[mask] = float('nan')
+    direction_opt = direction_opt.unsqueeze(0)  # 去掉批次维度
+    
     return direction_opt
 
 
@@ -238,54 +202,35 @@ class AreaNMS:
     Suppresses non-local maximum values using dilation (CPU) or max pooling (GPU).
     """
 
-    def __init__(self, radio=8, device='cpu'):
+    def __init__(self, radio=8):
         """
         Args:
             radio (int): Neighborhood radius. Window size = 2 * radio + 1.
             device (str): Computing device ('cpu' or 'cuda').
         """
-        self.device = device
         self.radio = radio
         self.ksize = self.radio * 2 + 1
-        
-        self._setup()
 
-    def _setup(self):
-        self.ksize = self.radio * 2 + 1
-        """Initialize device-specific resources."""
-        if self.device == 'cpu':
-            # Pre-compute structuring element for morphological dilation
-            self.cv2_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, 
-                                                        (self.ksize, self.ksize))
-
-    def process(self, matrix):
+    def __call__(self, matrix):
         """
         Apply NMS to the input matrix.
 
         Args:
-            matrix (np.ndarray | torch.Tensor): Input heatmap or score map.
-                - If CPU: Expected shape (H, W) as numpy array.
+            matrix (torch.Tensor): Input heatmap or score map.
                 - If CUDA: Expected shape (B, C, H, W) as torch tensor.
 
         Returns:
             nms_matrix: Matrix where non-maximum pixels are set to zero.
         """
-        if self.device == 'cpu':
-            # Find local maxima via grayscale dilation
-            local_max = cv2.dilate(matrix, self.cv2_kernel)
-        else:
-            # Find local maxima via 2D max pooling
-            local_max = F.max_pool2d(
-                matrix, 
-                kernel_size=self.ksize, 
-                stride=1, 
-                padding=self.radio
-            )
-            
-        # Mask out values that are not equal to the local maximum
-        nms_matrix = matrix * (matrix == local_max)
+        # Find local maxima via 2D max pooling
+        local_max = F.max_pool2d(
+            matrix, 
+            kernel_size=self.ksize, 
+            stride=1, 
+            padding=self.radio
+        )
 
-        return nms_matrix
+        return matrix * (matrix == local_max)
     
 
 def get_top_k_torch(response_tensor, direction_tensor, k=1000):
@@ -421,11 +366,18 @@ class PostProcessing:
             device (str): Computing device ('cpu' or 'cuda').
         """
         self.device = device
-        self.area_nms = AreaNMS(radio=nms_radio, device=device)
+        self.area_nms = AreaNMS(radio=nms_radio)
         self.get_top_num = get_top_num
 
-    def _setup(self):
-        self.area_nms._setup()
+    def __call__(self, response, direction=None):
+        if self.get_top_num == 1:
+            idx = torch.argmax(response)
+            y, x = divmod(idx.item(), response.shape[-1])
+            response_value = response[0, 0, y, x].item()
+            direction_value = direction[0, 0, y, x].item() if direction is not None else float('nan')
+            return torch.tensor([[x, y, response_value, direction_value]])
+        else:
+            return self.process(response, direction)
 
     def process(self, response, direction=None):
         """
@@ -435,28 +387,16 @@ class PostProcessing:
             result (dict): Dictionary containing the results with a 'response' key.
         Returns:            result (dict): Updated dictionary with NMS applied to 'response'.
         """
-        nms_response = self.area_nms.process(response)
+        nms_response = self.area_nms(response)
 
-        if self.device != 'cpu':
-            res = get_top_k_torch(nms_response, 
-                                  direction, 
-                                  k=self.get_top_num)
-            if res.shape[0] == 0:
-                res = torch.empty((0, 4), device=response.device)
-            else:
-                max_score = deepcopy(res[0, 2])
-                if max_score > 0:
-                    res[:, 2] /= max_score
+        res = get_top_k_torch(nms_response, 
+                                direction, 
+                                k=self.get_top_num)
+        if res.shape[0] == 0:
+            res = torch.empty((0, 4), device=response.device)
         else:
-            res = get_top_k_numpy(nms_response, 
-                                  direction, 
-                                  k=self.get_top_num)
-            
-            if res.shape[0] == 0:
-                res = np.empty((0, 4), dtype=np.float32)
-            else:
-                max_score = deepcopy(res[0, 2])
-                if max_score > 0:
-                    res[:, 2] /= max_score
+            max_score = deepcopy(res[0, 2])
+            if max_score > 0:
+                res[:, 2] /= max_score
 
         return res

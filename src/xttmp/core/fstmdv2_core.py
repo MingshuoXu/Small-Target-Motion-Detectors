@@ -12,7 +12,7 @@ class Lamina(fracstmd_core.Lamina):
         self.loopLaminaOpt = None
         self.isInLoop = False
 
-    def process(self, LaminaIpt):
+    def forward(self, LaminaIpt):
         """Processing method."""
         # Processes the LaminaIpt to generate the lamina output
         if self.preLaminaIpt is None:

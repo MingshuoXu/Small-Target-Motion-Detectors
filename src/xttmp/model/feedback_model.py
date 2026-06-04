@@ -1,10 +1,10 @@
 from copy import deepcopy
-import warnings
 
-import numpy as np
+import torch
 
 from .backbone import ESTMDBackbone, FracSTMD
 from ..core import feedbackstmd_core, fstmd_core, stfeedbackstmd_core
+
 
 class FeedbackSTMD(ESTMDBackbone):
     """ FeedbackSTMD: Small Target Motion Detector with feedback pathway in lobula
@@ -37,63 +37,61 @@ class FeedbackSTMD(ESTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (2)
+        'sigma1'    : 'retina.sigma', # Eq. (2)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order', # Eq. (3)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+        'n1'        : 'lamina.order1', # Eq. (3)
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order1',
+        'tau2'      : 'lamina.tau1',
         # medulla
-        'n3'        : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'), # Eq. (7)
-        'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau'), 
+        'n3'        : ('medulla.tm1.order', 'medulla.mi1.order'), # Eq. (7)
+        'tau3'      : ('medulla.tm1.tau', 'medulla.mi1.tau'), 
         # lobula
-        'alpha'     : 'self.hLobula.alpha', # Eq. (9)
-        'n4'        : 'self.hLobula.hGammaDelay.order',
-        'tau4'      : 'self.hLobula.hGammaDelay.tau', 
-        'eta'       : 'self.hLobula.paraGaussKernel[\'eta\']', # Eq. (10)
-        'A'         : 'self.hLobula.hSubInhi.A', # Eq. (15)
-        'B'         : 'self.hLobula.hSubInhi.B',
-        'e'         : 'self.hLobula.hSubInhi.e', # Eq. (16)
-        'rho'       : 'self.hLobula.hSubInhi.rho',
-        'sigma2'    : 'self.hLobula.hSubInhi.Sigma1',
-        'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
+        'alpha'     : 'lobula.alpha', # Eq. (9)
+        'n4'        : 'lobula.gamma_delay.order',
+        'tau4'      : 'lobula.gamma_delay.tau', 
+        'eta'       : 'lobula.sigma', # Eq. (10)
+        'A'         : 'lobula.spatial_inhibition.A', # Eq. (15)
+        'B'         : 'lobula.spatial_inhibition.B',
+        'e'         : 'lobula.spatial_inhibition.e', # Eq. (16)
+        'rho'       : 'lobula.spatial_inhibition.rho',
+        'sigma2'    : 'lobula.spatial_inhibition.sigma1',
+        'sigma3'    : 'lobula.spatial_inhibition.sigma2',
         }
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """
         FeedbackSTMD Constructor method
         Initializes an instance of the FeedbackSTMD class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
 
         # Customize Lobula component
-        self.hLobula = feedbackstmd_core.Lobula()
+        self.lobula = feedbackstmd_core.Lobula()
         
         # Customize Lamina's GammaBankPassFilter properties
-        self.hLamina.hGammaBandPassFilter.hGammaDelay1.order = 4
-        self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau = 8
-        self.hLamina.hGammaBandPassFilter.hGammaDelay2.order = 16
-        self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau = 32
+        self.lamina.order1 = 4
+        self.lamina.tau1 = 8
+        self.lamina.order2 = 16
+        self.lamina.tau2 = 32
 
         # Customize Medulla's Tm1 component properties
-        self.hMedulla.hTm1.hGammaDelay.order = 9
-        self.hMedulla.hTm1.hGammaDelay.tau = 45
+        self.medulla.tm1.order = 9
+        self.medulla.tm1.tau = 45
 
-    def model_structure(self, iptMatrix):
+    def forward(self, x):
         """ MODEL_STRUCTURE Method
 
         Defines the structure of the FeedbackSTMD model.
         """
         # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt[0], self.medullaOpt[1])
+        retina_output = self.retina(x)
+        lamina_output = self.lamina(retina_output)
+        medulla_ON, medulla_OFF = self.medulla(lamina_output)
+        self.model_output['response'] = self.lobula(medulla_ON, medulla_OFF)
 
-        # Set model response
-        self.modelOpt['response'] = self.lobulaOpt
+        return self.model_output
 
 
 class FSTMD(ESTMDBackbone):
@@ -127,93 +125,81 @@ class FSTMD(ESTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (1)
+        'sigma1'    : 'retina.sigma', # Eq. (1)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order', # Eq. (6)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+        'n1'        : 'lamina.order1', # Eq. (6)
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
         # medulla
-        'n3'        : ('self.hMedulla.hTm1.hGammaDelay.order', 'self.hMedulla.hMi1.hGammaDelay.order'), # Eq. (9)
-        'tau3'      : ('self.hMedulla.hTm1.hGammaDelay.tau', 'self.hMedulla.hMi1.hGammaDelay.tau'), 
+        'n3'        : ('medulla.tm1.order', 'medulla.mi1.order'), # Eq. (9)
+        'tau3'      : ('medulla.tm1.tau', 'medulla.mi1.tau'), 
         # lobula
-        'e'         : 'self.hLobula.hSubInhi.e', # Eq. (13)
-        'rho'       : 'self.hLobula.hSubInhi.rho',
-        'sigma2'    : 'self.hLobula.hSubInhi.Sigma1',
-        'sigma3'    : 'self.hLobula.hSubInhi.Sigma2',
+        'e'         : 'lobula.spatial_inhibition.e', # Eq. (13)
+        'rho'       : 'lobula.spatial_inhibition.rho',
+        'sigma2'    : 'lobula.spatial_inhibition.sigma1',
+        'sigma3'    : 'lobula.spatial_inhibition.sigma2',
         # feedback pathway
-        'n4'        : 'self.hFeedbackPathway.hGammaDelay.order', # Eq. (4)
-        'tau4'      : 'self.hFeedbackPathway.hGammaDelay.tau', 
-        'a'         : 'self.hFeedbackPathway.feedbackConstant', # Eq. (4)
+        'n4'        : 'feedback_pathway.order', # Eq. (4)
+        'tau4'      : 'feedback_pathway.tau', 
+        'a'         : 'feedback_pathway.feedback_coefficient', # Eq. (4)
         }
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """ FSTMD Constructor method
 
         Initializes an instance of the FSTMD class.
         """
         # Call superclass constructor
-        super().__init__(device=device)
+        super().__init__()
         
         # Initialize feedback pathway component
-        self.hFeedbackPathway = fstmd_core.FeedbackPathway()
+        self.feedback_pathway = fstmd_core.FeedbackPathway()
 
         self.maxIterationNum = 10
         self.iterationThreshold = 1e-3
 
         # Customize Medulla's Tm1 component properties
-        self.hMedulla.hTm1.hGammaDelay.order = 5
+        self.medulla.tm1.order = 5
 
-    def init_config(self):
-        """ INIT Method
-
-        Initializes the FSTMD components.
-        """
-        # Call superclass init method
-        super().init_config()
-
-        # Initialize feedback pathway
-        self.hFeedbackPathway.init_config()
-
-    def model_structure(self, iptMatrix):
+    def forward(self, x):
         """ MODEL_STRUCTURE Method
 
         Defines the structure of the FSTMD model.
         """
-        m, n = iptMatrix.shape
-        lastFeedbackSignal = np.ones((m, n))
-        self.feedbackSignal = np.zeros((m, n))
+        last_feedback_output = torch.ones_like(x)
+        self.feedback_output = torch.zeros_like(x)
 
         # Retina layer
-        self.retinaOpt = self.hRetina.process(iptMatrix)
+        retina_output = self.retina(x)
 
         # Feedback loop
-        iterationCount = 1
+        iteration_count = 1
         self.set_loop_state(False)
-        while iterationCount < self.maxIterationNum and np.max(
-                np.abs(self.feedbackSignal - lastFeedbackSignal)) > self.iterationThreshold:
-            lastFeedbackSignal = self.feedbackSignal.copy()
+        while iteration_count < self.maxIterationNum and torch.max(
+                torch.abs(self.feedback_output - last_feedback_output)) > self.iterationThreshold:
+            last_feedback_output = self.feedback_output.clone()
 
             # Execute feedback loop
-            self.laminaOpt = self.hLamina.process(self.retinaOpt + self.feedbackSignal)
-            self.hMedulla.process(self.laminaOpt)
-            self.medullaOpt = self.hMedulla.Opt
-            self.lobulaOpt, correlationOpt = self.hLobula.process(self.medullaOpt)
-            self.feedbackSignal = self.hFeedbackPathway.process(correlationOpt)
+            lamina_output = self.lamina(retina_output + self.feedback_output)
+            medulla_ON, medulla_OFF = self.medulla(lamina_output)
+            lobula_output, correlation_output = self.lobula(medulla_ON, medulla_OFF)
+            self.feedback_output = self.feedback_pathway(correlation_output)
 
-            iterationCount += 1
+            iteration_count += 1
             self.set_loop_state(True)
 
         # Set model response
-        self.modelOpt['response'] = self.lobulaOpt
+        self.model_output['response'] = lobula_output
+
+        return self.model_output
 
     def set_loop_state(self, state):
         """ Sets the loop state of certain components. """
         # Disable circshift for certain components
-        self.hLamina.hGammaBandPassFilter.hGammaDelay1.isInLoop = state
-        self.hLamina.hGammaBandPassFilter.hGammaDelay2.isInLoop = state
-        self.hMedulla.hTm1.hGammaDelay.isInLoop = state
-        self.hFeedbackPathway.hGammaDelay.isInLoop = state
+        self.lamina.in_loop = state
+        self.medulla.tm1.in_loop = state
+        self.feedback_pathway.in_loop = state
 
 
 class STFeedbackSTMD(ESTMDBackbone):
@@ -230,21 +216,15 @@ class STFeedbackSTMD(ESTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {} 
 
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """
         Constructor method
         """
-        super().__init__(device=device)       
+        super().__init__()       
 
         # Customize Medulla and Lobula component
-        self.hMedulla = stfeedbackstmd_core.Medulla()
-        self.hLobula = stfeedbackstmd_core.Lobula()
-
-    def init_config(self):
-        """
-        Initializes the STFeedbackSTMD components.
-        """
-        super().init_config()
+        self.medulla = stfeedbackstmd_core.Medulla()
+        self.lobula = stfeedbackstmd_core.Lobula()
 
 
 class FracSTMD_F(FracSTMD):
@@ -253,35 +233,35 @@ class FracSTMD_F(FracSTMD):
     __paraMappingList = deepcopy(FracSTMD._FracSTMD__paraMappingList)
     __paraMappingList.update({
         # lobula
-        'beta'      : 'self.hLobula.alpha', # Eq. (9)
-        'n4'        : 'self.hLobula.hGammaDelay.order',
-        'tau4'      : 'self.hLobula.hGammaDelay.tau', 
-        'eta'       : 'self.hLobula.paraGaussKernel[\'eta\']', # Eq. (10)
+        'beta'      : 'lobula.alpha', # Eq. (9)
+        'n4'        : 'lobula.hGammaDelay.order',
+        'tau4'      : 'lobula.hGammaDelay.tau', 
+        'eta'       : 'lobula.paraGaussKernel[\'eta\']', # Eq. (10)
     })
 
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """
         Constructor method
         """
-        super().__init__(device=device)       
+        super().__init__()       
 
         # Customize Lamina component to include fractional differentiation
-        self.hLobula = feedbackstmd_core.Lobula()
+        self.lobula = feedbackstmd_core.Lobula()
 
-    def model_structure(self, iptMatrix):
+    def forward(self, iptMatrix):
         """ MODEL_STRUCTURE Method
 
         Defines the structure of the FeedbackSTMD model.
         """
         # Process input matrix through model components
-        self.retinaOpt = self.hRetina.process(iptMatrix)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt[0], self.medullaOpt[1])
+        self.retinaOpt = self.retina.forward(iptMatrix)
+        lamina_output = self.lamina.forward(self.retinaOpt)
+        self.medulla.forward(lamina_output)
+        self.medullaOpt = self.medulla.Opt
+        lobula_output = self.lobula.forward(self.medullaOpt[0], self.medullaOpt[1])
 
         # Set model response
-        self.modelOpt['response'] = self.lobulaOpt
+        self.model_output['response'] = lobula_output
 
 
 

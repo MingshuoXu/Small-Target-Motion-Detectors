@@ -1,54 +1,17 @@
-from math import exp
+from collections import deque
 
-import numpy as np
-from cv2 import filter2D, BORDER_CONSTANT
 import torch
 import torch.nn.functional as F
 
 from .base_core import BaseCore
-from ..util.compute_module import compute_temporal_conv, compute_circularlist_conv
-from ..util.create_kernel import create_gaussian_kernel
-from .math_operator import *
+from .math_operator import (compute_temporal_conv_inplace,
+                            GaussianBlur, SpatialInhibition, 
+                            GammaDelay, GammaBandPassFilter)
+from ..util.create_kernel import create_2d_gaussian_kernel
 
 
-class Retina(BaseCore):
-    """
-    Retina filter.
-    This class implements Retina Layer.
-
-    Author: Mingshuo Xu
-    Date: 2024-04-23
-    """
-
-    def __init__(self, device ='cpu'):
-        """
-        Constructor.
-        Initializes the Retina object and creates a GaussianBlur object.
-        """
-        super().__init__(device=device)
-        self.hGaussianBlur = GaussianBlur(device=device)
-
-    def init_config(self):
-        """
-        Initialization method.
-        Initializes the GaussianBlur object.
-        """
-        self.hGaussianBlur.init_config()
-
-    def process(self, retinaIpt):
-        """
-        Processing method.
-        Applies the Gaussian blur filter to the input matrix.
-
-        Parameters:
-        - retinaIpt: Input matrix.
-
-        Returns:
-        - retinaOpt: Output matrix after applying the Gaussian blur filter.
-        """
-        retinaOpt = self.hGaussianBlur.process(retinaIpt)
-        self.Opt = retinaOpt
-        return retinaOpt
+class Retina(GaussianBlur):
+    pass
 
 
 class Lamina(BaseCore):
@@ -60,25 +23,24 @@ class Lamina(BaseCore):
     Date: 2024-04-29
     """
     
-    def __init__(self, device='cpu'):
+    def __init__(self):
         """
         Constructor
         Initializes the Lamina object and creates GammaBankPassFilter
         and LaminaLateralInhibition objects
         """
-        super().__init__(device=device)
-        self.hGammaBandPassFilter = GammaBandPassFilter(device=device)
-        self.hLaminaLateralInhibition = LaminaLateralInhibition(device=device)
+        super().__init__()
+        self.gamma_BPF = GammaBandPassFilter()
+        self.spatial_inhibition = LaminaLateralInhibition()
 
-    def init_config(self):
-        """
-        Initialization method
-        Initializes the GammaBankPassFilter and LaminaLateralInhibition objects
-        """
-        self.hGammaBandPassFilter.init_config()
-        self.hLaminaLateralInhibition.init_config()
+    def setup(self):
+        self.gamma_BPF.setup()
+        self.spatial_inhibition.setup()
 
-    def process(self, laminaIpt):
+    def reset_buffer(self):
+        self.gamma_BPF.reset_buffer()
+
+    def forward(self, laminaIpt):
         """
         Processing method
         Applies GammaBankPassFilter and LaminaLateralInhibition to the input matrix
@@ -89,10 +51,10 @@ class Lamina(BaseCore):
         Returns:
         - laminaOpt: Processed output matrix
         """
-        signalWithBPF = self.hGammaBandPassFilter.process(laminaIpt)
-        laminaOpt = self.hLaminaLateralInhibition.process(signalWithBPF)
-        self.Opt = laminaOpt
-        return laminaOpt
+        signalWithBPF = self.gamma_BPF.forward(laminaIpt)
+        self.output = self.spatial_inhibition.forward(signalWithBPF)
+
+        return self.output
 
 
 class Medulla(BaseCore):
@@ -101,28 +63,36 @@ class Medulla(BaseCore):
     This class implements the Medulla layer of the ESTMD.
     """
     
-    def __init__(self, device='cpu'):
+    def __init__(self):
         """
         Constructor method
         Initializes the Medulla object
         """
-        super().__init__(device=device)
-        self.hTm1 = Tm1(device=device)  # Initialize Tm1 object
-        self.hTm2 = Tm2(device=device)  # Initialize Tm2 object
-        self.hTm3 = Tm3(device=device)  # Initialize Tm3 object
-        self.hMi1 = Mi1(device=device)  # Initialize Tm3 object
+        super().__init__()
+        self.tm1 = Tm1(order=12, tau=25)  # Initialize Tm1 object
+        self.tm2 = Tm2()  # Initialize Tm2 object
+        self.tm3 = Tm3()  # Initialize Tm3 object
+        self.mi1 = Mi1(order=12, tau=25)  # Initialize Tm3 object
 
-    def init_config(self):
+    def setup(self):
         """
         Initialization method
         Initializes the Tm1, Tm2, and Tm3 objects
         """
-        self.hTm1.init_config()
-        self.hTm2.init_config()
-        self.hTm3.init_config()
-        self.hMi1.init_config()
+        self.tm1.setup()
+        self.tm2.setup()
+        self.tm3.setup()
+        self.mi1.setup()
 
-    def process(self, MedullaIpt):
+    def reset_buffer(self):
+        """
+        Buffer reset method
+        Resets the buffers of Tm1, Tm2, and Tm3 objects
+        """
+        self.tm1.reset_buffer()
+        self.mi1.reset_buffer()
+
+    def forward(self, x):
         """
         Processing method
         Processes the input MedullaIpt through Tm1, Tm2, and Tm3 layers
@@ -134,13 +104,13 @@ class Medulla(BaseCore):
         - tm3Signal: Output of Tm3 layer
         - tm1Signal: Output of Tm1 layer
         """
-        tm2Signal = self.hTm2.process(MedullaIpt)  # Process input through Tm2
-        tm3Signal = self.hTm3.process(MedullaIpt)  # Process input through Tm3
+        tm2_output = self.tm2.forward(x)  # Process input through Tm2
+        tm3_output = self.tm3.forward(x)  # Process input through Tm3
 
-        tm1Signal = self.hTm1.process(tm2Signal)  # Process Tm2 output through Tm1
+        tm1_output = self.tm1.forward(tm2_output)  # Process Tm2 output through Tm1
 
-        self.Opt = (tm3Signal, tm1Signal)  # Update Opt property with output
-        return tm3Signal, tm1Signal
+        self.output = (tm3_output, tm1_output)  # Update output property with output
+        return tm3_output, tm1_output
 
 
 class Lobula(BaseCore):
@@ -149,23 +119,23 @@ class Lobula(BaseCore):
     This class implements the Lobula layer of the ESTMD.
     """
     
-    def __init__(self, device='cpu'):
+    def __init__(self):
         """
         Constructor method
         Initializes the Lobula object
         """
-        super().__init__(device=device)
+        super().__init__()
         self.a = 0  # Parameter a
         self.b = 0  # Parameter b
         self.c = 1  # Parameter c
 
-    def init_config(self):
+    def setup(self):
         """
         Initialization method
         """
         pass
 
-    def process(self, varagein):
+    def forward(self, onSignal, offSignal):
         """
         Processing method
         Processes the input ON and OFF signals
@@ -176,86 +146,19 @@ class Lobula(BaseCore):
         Returns:
         - lobulaOpt: Output of the Lobula layer
         """
-        onSignal = varagein[0]  # Extract ON signal
-        offSignal = varagein[1]  # Extract OFF signal
         
         # Compute Lobula output using the provided formula
-        lobulaOpt = self.a*onSignal + self.b*offSignal + self.c*onSignal*offSignal
+        self.output = self.a*onSignal + self.b*offSignal + self.c*onSignal*offSignal
         
-        self.Opt = lobulaOpt  # Update Opt property with output
-        return lobulaOpt
+        return self.output
 
 
-class Mi1(BaseCore):
-    """
-    MI1 
-    """
-    
-    def __init__(self, device='cpu'):
-        """
-        Constructor method
-        Initializes the Mi1 object
-        """
-        super().__init__()
-        self.hGammaDelay = GammaDelay(12, 25, device=device)  # Initialize GammaDelay object
-
-    def init_config(self):
-        """
-        Initialization method
-        Initializes the GammaDelay object
-        """
-        self.hGammaDelay.init_config()
-
-    def process(self, tm3Signal):
-        """
-        Processing method
-        Apply gamma delay to the input signal
-        
-        Parameters:
-        - tm3Signal: Input signal
-        
-        Returns:
-        - mi1Opt: Output of the Mi1 layer
-        """
-        mi1Opt = self.hGammaDelay.process(tm3Signal)
-        self.Opt = mi1Opt
-        return mi1Opt
+class Mi1(GammaDelay):
+    pass
 
 
-class Tm1(BaseCore):
-    """
-    Tm1 
-    """
-    
-    def __init__(self, device='cpu'):
-        """
-        Constructor method
-        Initializes the Tm1 object
-        """
-        super().__init__(device=device)
-        self.hGammaDelay = GammaDelay(12, 25, device=device)  # Initialize GammaDelay object
-
-    def init_config(self):
-        """
-        Initialization method
-        Initializes the GammaDelay object
-        """
-        self.hGammaDelay.init_config()
-
-    def process(self, tm2Signal):
-        """
-        Processing method
-        Apply gamma delay to the input signal
-        
-        Parameters:
-        - tm2Signal: Input signal
-        
-        Returns:
-        - tm1Opt: Output of the Tm1 layer
-        """
-        tm1Opt = self.hGammaDelay.process(tm2Signal)
-        self.Opt = tm1Opt
-        return tm1Opt
+class Tm1(GammaDelay):
+    pass
 
 
 class Tm2(BaseCore):
@@ -268,17 +171,17 @@ class Tm2(BaseCore):
         Constructor method
         Initializes the Tm2 object
         """
-        super().__init__(device=device)
-        self.hSubInhi = SurroundInhibition(device=device)  # Initialize SurroundInhibition object
+        super().__init__()
+        self.spatial_inhibition = SpatialInhibition()  # Initialize SurroundInhibition object
 
-    def init_config(self):
+    def setup(self):
         """
         Initialization method
         Initializes the SurroundInhibition object
         """
-        self.hSubInhi.init_config()
+        self.spatial_inhibition.setup()
 
-    def process(self, iptMatrix):
+    def forward(self, x):
         """
         Processing method
         Applies the Surround Inhibition mechanism to the input matrix iptMatrix
@@ -290,14 +193,12 @@ class Tm2(BaseCore):
         - tm2Opt: Output of the Tm2 layer
         """
         # Extract the OFF signal from iptMatrix
-        if self.device != 'cpu':
-            offSignal = torch.clamp(-iptMatrix, min=0)
-        else:
-            offSignal = np.maximum(-iptMatrix, 0)  
+        L_OFF = torch.clamp(-x, min=0)
+
         # Process the OFF signal using SurroundInhibition
-        tm2Opt = self.hSubInhi.process(offSignal)  
-        self.Opt = tm2Opt
-        return tm2Opt
+        self.output = self.spatial_inhibition.forward(L_OFF)  
+
+        return self.output
 
 
 class Tm3(BaseCore):
@@ -308,17 +209,17 @@ class Tm3(BaseCore):
 
         Initializes the Tm3 object
         """
-        super().__init__(device=device)
-        self.hSubInhi = SurroundInhibition(device=device)  # Initialize SurroundInhibition object
+        super().__init__()
+        self.spatial_inhibition = SpatialInhibition()  # Initialize SurroundInhibition object
 
-    def init_config(self):
+    def setup(self):
         """ Initialization method
 
         Initializes the SurroundInhibition object
         """
-        self.hSubInhi.init_config()
+        self.spatial_inhibition.setup()
 
-    def process(self, iptMatrix):
+    def forward(self, iptMatrix):
         """ Processing method
         
         Description:
@@ -330,20 +231,19 @@ class Tm3(BaseCore):
         Returns:
         - tm3Opt: Output of the Tm3 layer
         """
-        if self.device != 'cpu':
-            onSignal = torch.clamp(iptMatrix, min=0)
-        else:
-            onSignal = np.maximum(iptMatrix, 0)  # Extract the On-signal from iptMatrix
-        tm3Opt = self.hSubInhi.process(onSignal)  # Processes the On-signal using SurroundInhibition
-        self.Opt = tm3Opt
-        return tm3Opt
+
+        L_ON = torch.clamp(iptMatrix, min=0)
+
+        self.output = self.spatial_inhibition.forward(L_ON)  # Processes the On-signal using SurroundInhibition
+  
+        return self.output
 
 
 class LaminaLateralInhibition(BaseCore):
     """ LAMINALATERALINHIBITION Lateral inhibition in the Lamina layer
     
     This class implements the lateral inhibition mechanism in the Lamina layer
-    of the ESTMD.
+    of the ESTMD using pure PyTorch operations.
 
     References:
     * S. D. Wiederman, P. A. Shoemarker, D. C. O'Carroll, A model
@@ -352,99 +252,101 @@ class LaminaLateralInhibition(BaseCore):
     * Wang H, Peng J, Yue S. A directionally selective small target
     motion detecting visual neural network in cluttered backgrounds[J].
     IEEE transactions on cybernetics, 2018, 50(4): 1541-1555.
-
-    Author: Mingshuo Xu
-    Date: 2022-04-26
-    LastEditTime: 2024-04-26
     """
 
     def __init__(self, 
                  sizeW1=[11, 11, 7], 
-                 lambda1=3, 
-                 lambda2=9, 
-                 sigma2=1.5, 
-                 sigma3=None,
-                 device='cpu'):
+                 lambda1=3.0, 
+                 lambda2=9.0, 
+                 sigma1=1.5, 
+                 sigma2=None):
         """
         Constructor
-        Initializes the LaminaLateralInhibition object
+        Initializes the LaminaLateralInhibition module
         """
-        super().__init__(device=device)
+        super().__init__()
         self.sizeW1 = sizeW1
         self.lambda1 = lambda1
         self.lambda2 = lambda2
-        self.sigma2 = sigma2
-        self.sigma3 = sigma3
+        self.sigma1 = sigma1
+        self.sigma2 = 2.0 * sigma1 if sigma2 is None else sigma2
+        self.T = sizeW1[2]  # Temporal length
 
-        # Positive part of the inhibition kernel W1
-        self.spatialPositiveKernel = []
-        # Negative part of the inhibition kernel W1
-        self.spatialNegativeKernel = []
-        # Temporal component for the positive part of W1
-        self.temporalPositiveKernel = []
-        # Temporal component for the negative part of W1
-        self.temporalNegativeKernel = []
-        # Cell array to store intermediate results for the positive part
-        self.cellSpatialPositive = []
-        # Cell array to store intermediate results for the negative part
-        self.cellSpatialNegative = []
+        self.register_buffer('spatial_pos_kernel', torch.empty(0))
+        self.register_buffer('spatial_neg_kernel', torch.empty(0))
+        self.register_buffer('temporal_pos_kernel', torch.empty(0))
+        self.register_buffer('temporal_neg_kernel', torch.empty(0))
 
-    def init_config(self):
+        self.setup()  # Initialize kernels and buffers
+
+    def _create_spatial_kernels(self):
+        """初始化 DoG (Difference of Gaussian) 空间感受野权重"""
+        g_sigma2 = create_2d_gaussian_kernel(self.sizeW1[:2], self.sigma1)
+        g_sigma3 = create_2d_gaussian_kernel(self.sizeW1[:2], self.sigma2)
+        diff_of_gaussian = g_sigma2 - g_sigma3
+
+        # W_{S}^{P} 和 W_{S}^{N}
+        pos_kernel = torch.clamp(diff_of_gaussian, min=0)
+        neg_kernel = torch.clamp(diff_of_gaussian, max=0)
+
+        # 调整形状为 (out_channels=1, in_channels=1, H, W) 以匹配 F.conv2d 的需求
+        pos_kernel = pos_kernel.view(1, 1, *self.sizeW1[:2])
+        neg_kernel = neg_kernel.view(1, 1, *self.sizeW1[:2])
+        
+        return pos_kernel, neg_kernel
+
+    def _create_temporal_kernels(self):
+        """初始化时间衰减权重"""
+        t = torch.arange(self.T, dtype=torch.float32)
+        
+        # W_{T}^{P} 和 W_{T}^{N}
+        w_t_pos = torch.exp(-t / self.lambda1) / self.lambda1
+        w_t_neg = torch.exp(-t / self.lambda2) / self.lambda2
+        
+        # 调整形状为 (T, 1, 1, 1) 方便后续与 (T, Batch, C, H, W) 张量进行广播乘法
+        return w_t_pos.view(-1, 1, 1, 1), w_t_neg.view(-1, 1, 1, 1)
+
+    def setup(self):
+        # 1. 预计算空间卷积核 (Spatial Kernels)
+        spatial_pos, spatial_neg = self._create_spatial_kernels()
+        # 使用 register_buffer，这样模型调用 .cuda() 或 .to(device) 时，核也会自动转移
+        self.spatial_pos_kernel.data = spatial_pos
+        self.spatial_neg_kernel.data = spatial_neg
+
+        # 2. 预计算时间卷积核 (Temporal Kernels)
+        temporal_pos, temporal_neg = self._create_temporal_kernels()
+        self.temporal_pos_kernel.data = temporal_pos
+        self.temporal_neg_kernel.data = temporal_neg
+
+        # 3. 初始化时序状态缓存区 (采用双端队列 deque 实现高效的滑动窗口)
+        self.pos_buffer = deque(maxlen=self.T)
+        self.neg_buffer = deque(maxlen=self.T)
+
+    def reset_buffer(self):
+        """重置时序状态缓存区"""
+        self.pos_buffer.clear()
+        self.neg_buffer.clear()
+
+    def forward(self, x):
         """
-        Initialization method
-        Initializes the inhibition kernel W1
+        输入: 
+            x: 形状为 (B, C, H, W) 或 (H, W) 的张量
         """
-        if self.sigma3 is None:
-            self.sigma3 = 2 * self.sigma2
 
-        G_sigma2 = create_gaussian_kernel(self.sizeW1[:2], self.sigma2)
-        G_sigma3 = create_gaussian_kernel(self.sizeW1[:2], self.sigma3)
-        diffOfGaussian = G_sigma2 - G_sigma3
-        if self.device != 'cpu':
-            diffOfGaussian = torch.from_numpy(diffOfGaussian).to(device=self.device)
-            # W_{S}^{P} in formulate (8) of DSTMD
-            self.spatialPositiveKernel = torch.clamp(diffOfGaussian, min=0)
-            self.spatialPositiveKernel = self.spatialPositiveKernel.unsqueeze(0).unsqueeze(0)
-            # W_{S}^{N} in formulate (9) of DSTMD
-            self.spatialNegativeKernel = torch.clamp(-diffOfGaussian, min=0)
-            self.spatialNegativeKernel = self.spatialNegativeKernel.unsqueeze(0).unsqueeze(0)
-        else:
-            # W_{S}^{P} in formulate (8) of DSTMD
-            self.spatialPositiveKernel = np.maximum(diffOfGaussian, 0) 
-            # W_{S}^{N} in formulate (9) of DSTMD
-            self.spatialNegativeKernel = np.maximum(-diffOfGaussian, 0) 
+        # === 1. 空间侧抑制 (Spatial Lateral Inhibition) ===
+        on_conv = F.conv2d(x, self.spatial_pos_kernel, padding='same')
+        off_conv = F.conv2d(x, self.spatial_neg_kernel, padding='same')
 
-        # W_{T}^{P} in formulate (10) of DSTMD
-        self.temporalPositiveKernel = [exp(-t / self.lambda1) / self.lambda1 for t in range(self.sizeW1[2])]
-        # W_{T}^{N} in formulate (11) of DSTMD
-        self.temporalNegativeKernel = [exp(-t / self.lambda2) / self.lambda2 for t in range(self.sizeW1[2])]
+        # 记录当前帧结果到时序缓存区 (新的帧在队列右侧)
+        self.pos_buffer.append(on_conv)
+        self.neg_buffer.append(off_conv)
 
-        self.cellSpatialPositive = CircularList(self.sizeW1[2])
-        self.cellSpatialNagetive = CircularList(self.sizeW1[2])
+        # === 2. 时序卷积 (Temporal Convolution) ===
 
-    def process(self, iptMatrix):
-        """
-        Processing method
-        Applies lateral inhibition to the input matrix
-        """
-        # Lateral inhibition
-        if self.device != 'cpu':
-            _on_conv = F.conv2d(iptMatrix, self.spatialPositiveKernel, padding='same')
-            _off_conv = F.conv2d(iptMatrix, self.spatialNegativeKernel, padding='same')
-        else:
-            _on_conv = filter2D(iptMatrix, -1, self.spatialPositiveKernel, borderType=BORDER_CONSTANT)
-            _off_conv = filter2D(iptMatrix, -1, self.spatialNegativeKernel, borderType=BORDER_CONSTANT)
-        self.cellSpatialPositive.record_next(_on_conv) 
-        self.cellSpatialNagetive.record_next(_off_conv) 
+        pos_out = compute_temporal_conv_inplace(self.pos_buffer, self.temporal_pos_kernel)
+        neg_out = compute_temporal_conv_inplace(self.neg_buffer, self.temporal_neg_kernel)
 
-        optMatrix \
-            = compute_circularlist_conv(self.cellSpatialPositive, self.temporalPositiveKernel) \
-            + compute_circularlist_conv(self.cellSpatialNagetive, self.temporalNegativeKernel)
-
-        if optMatrix.size == 0:
-            optMatrix = np.zeros_like(iptMatrix)
-
-        return optMatrix
+        return pos_out + neg_out
 
     
 

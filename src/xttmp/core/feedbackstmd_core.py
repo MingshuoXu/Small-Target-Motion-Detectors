@@ -1,70 +1,61 @@
-import numpy as np
-from cv2 import filter2D, BORDER_CONSTANT
 import torch
 import torch.nn.functional as F
 
 from .base_core import BaseCore
-from .math_operator import SurroundInhibition, GammaDelay
-from ..util.create_kernel import create_gaussian_kernel
+from .math_operator import SpatialInhibition, GammaDelay
+from ..util.create_kernel import create_2d_gaussian_kernel
 
 
 class Lobula(BaseCore):
     """ Lobula layer of the motion detection system."""
     
-    def __init__(self, device='cpu'):
+    def __init__(self):
         """Constructor method."""
         # Initializes the Lobula object
-        super().__init__(device=device)
-        self.hSubInhi = SurroundInhibition(device=device)  # SurroundInhibition component
+        super().__init__()
+        self.spatial_inhibition = SpatialInhibition()  # SpatialInhibition component
         self.alpha = 1  # Parameter alpha
-        self.paraGaussKernel = {'eta': 1.5, 'size': 3}  # Parameters for Gaussian kernel
-        self.gaussKernel = None  # Gaussian kernel
-        self.hGammaDelay = GammaDelay(10, 25)  # GammaDelay component
+        self.sigma = 1.5  # Parameters for Gaussian kernel
 
-    def init_config(self):
+        self.gamma_delay = GammaDelay(10, 25)  # GammaDelay component
+
+        self.register_buffer('gaussian_kernel', torch.empty(0))  # Buffer for Gaussian kernel
+
+        self.setup()
+
+    def setup(self):
         """ Initialization method."""
         # Initializes the Lobula layer component
-        self.hSubInhi.init_config()
-        self.hGammaDelay.init_config()
-        self.gaussKernel = create_gaussian_kernel(self.paraGaussKernel['size'], 
-                                                  self.paraGaussKernel['eta'])
-        if self.device != 'cpu':
-            self.gaussKernel = torch.from_numpy(self.gaussKernel).float().to(self.device).unsqueeze(0).unsqueeze(0)
+        self.spatial_inhibition.setup()
+        self.gamma_delay.setup()
 
-    def process(self, onSignal, offSignal):
+        self.gaussian_kernel.data = create_2d_gaussian_kernel(size=3, sigma=self.sigma)
+
+        self.reset_buffer()
+
+    def reset_buffer(self):
+        """ Resets the buffer of certain components. """
+        self.gamma_delay.reset_buffer()
+
+    def forward(self, medulla_ON, medulla_OFF):
         """ Processing method. """
         # Performs temporal convolution, correlation, and surround inhibition
 
         # Formula (9)
-        _temp = np.zeros_like(onSignal) if self.device == 'cpu' else torch.zeros_like(onSignal)
-        feedbackSignal = self.alpha * self.hGammaDelay.process(_temp)
+        feedback_output = self.alpha * self.gamma_delay.forward(torch.zeros_like(medulla_ON))
 
-        if self.device == 'cpu':
-            # Formula (8)
-            self.v_on = np.maximum(onSignal - feedbackSignal, 0)
-            self.v_off = np.maximum(offSignal - feedbackSignal, 0)
-            correlationD = self.v_on * self.v_off
+        # Formula (8)
+        ON_with_feedback = torch.clamp(medulla_ON - feedback_output, min=0) 
+        OFF_with_feedback = torch.clamp(medulla_OFF - feedback_output, min=0)
+        correlation_D = ON_with_feedback * OFF_with_feedback
 
-            # Formula (10)
-            correlationE = filter2D(onSignal * offSignal, -1, self.gaussKernel, borderType=BORDER_CONSTANT)
-        else:
-            # Formula (8)
-            self.v_on = torch.clamp(onSignal - feedbackSignal, min=0) 
-            self.v_off = torch.clamp(offSignal - feedbackSignal, min=0)
-            correlationD = self.v_on * self.v_off
-
-            # Formula (10)
-            correlationE = F.conv2d(onSignal * offSignal, 
-                                    self.gaussKernel, 
-                                    padding='same')
+        # Formula (10)
+        correlation_E = F.conv2d(medulla_ON * medulla_OFF, self.gaussian_kernel, padding='same')
 
         # Only record (correlationD + correlationE) for next delay in Formula (9)
-        self.hGammaDelay.listInput.cover(correlationD + correlationE)
+        self.gamma_delay.buffer[-1] = correlation_D + correlation_E
 
         # Formula (14)
-        lobulaOpt = self.hSubInhi.process(correlationD)
+        self.output = self.spatial_inhibition(correlation_D)
 
-        # Store the output in Opt property
-        self.Opt = lobulaOpt
-
-        return lobulaOpt
+        return self.output

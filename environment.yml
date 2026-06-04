@@ -1,0 +1,12 @@
+name: xttmp_dev_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pytorch::pytorch      # 从 conda 安装基础包
+  - pytorch::torchvision
+  - pytorch-cuda=12.4     # 显式指定 CUDA 版本
+  - pip:
+    - -e .                # 让 pip 读取 pyproject.toml 并安装本地包和剩余依赖

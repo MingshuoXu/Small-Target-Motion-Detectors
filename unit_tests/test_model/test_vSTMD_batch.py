@@ -10,8 +10,8 @@ filePath = os.path.realpath(__file__)
 project_path = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
 sys.path.append(os.path.join(project_path, 'src'))
 from xttmp.util.iostream import FrameIterator, FrameVisualizer
-from xttmp.api import (instancing_model, inference) # type: ignore
-from xttmp.util.compute_module import PostProcessing, AreaNMS, matrix_to_sparse_list # type: ignore
+from xttmp.api import instancing_model # type: ignore
+from xttmp.util.compute_module import PostProcessing # type: ignore
 
 
 # DEVICE = 'cpu' # 
@@ -20,51 +20,35 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 def test():
     # model
     model = instancing_model('vSTMD', device=DEVICE) 
+    model.to(device=DEVICE)
     # input
     # frame_reader = FrameIterator(os.path.join(project_path, 'example-data', 'RIST_GX010290_orignal_240Hz.mp4'), is_video=True)
     frame_reader = FrameIterator(os.path.join('D:/', 'STMD_Dataset', 'vSTMD_Panorama_Stimuli', 
                                               'Bgr_dire=Leftward_v=250', 
                                               'ET-Target_Num=1_W=5_H=5_V=1500_L=0-Traj=Ellipse_FPS=1000'),
-                                is_video=False)
-    # visualizer
-    visualizer = FrameVisualizer(window_name=model.__class__.__name__, 
-                                 result_index_type="dots",
-                                 win_height = frame_reader.img_height,
-                                 win_width = frame_reader.img_width)
-    post_processor = PostProcessing(device=DEVICE, nms_radio=8, get_top_num=100)
+                                device=DEVICE, is_video=False)
     
-    # Initialize
-    # set the parameter list
-    model.set_para()
-    # print the parameter list
-    model.print_para()
-    # init
-    model.setup()
 
     total_tunning_time = 0.0
     batch_size = 16
     i = 0
-    while True:
-        color_img, gray_img, ret = frame_reader.get_next_frame(device=DEVICE)
-        if not ret: break
+    for color_img, gray_tensor in frame_reader:
         
         if i < batch_size-1:
             if i == 0:
-                input_torch = gray_img
+                input_torch = gray_tensor
             else:
-                input_torch = torch.cat((input_torch, gray_img), dim=0)
+                input_torch = torch.cat((input_torch, gray_tensor), dim=0)
             i += 1
             continue
 
-        input_torch = torch.cat((input_torch, gray_img), dim=0)
+        input_torch = torch.cat((input_torch, gray_tensor), dim=0)
 
         # Perform inference using the model
         time_start = time.time()
         results = model.forward(input_torch)
         torch.cuda.synchronize() if DEVICE == 'cuda' else None
-        # dot_res = post_processor.process(result)
-        # ret = visualizer.update(color_img, dot_res, process_time=run_time)
-        # if not ret: break
+
         total_tunning_time += time.time() - time_start
 
         i = 0

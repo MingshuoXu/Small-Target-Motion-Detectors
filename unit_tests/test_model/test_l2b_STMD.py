@@ -1,0 +1,83 @@
+import os
+import sys
+import torch
+import time
+
+
+
+filePath = os.path.realpath(__file__)
+project_path = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
+sys.path.append(os.path.join(project_path, 'src'))
+from xttmp.util.iostream import FrameIterator, FrameVisualizer
+from xttmp.model.l2b_stmd_model import L2bSTMD
+from xttmp.model.vstmd import vSTMD
+from xttmp.core.l2b_stmd_core import vSTMD_motion_corp_fun
+
+# DEVICE = 'cpu' # 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+import logging
+logging.basicConfig(level=logging.INFO)
+
+def test():
+    # model
+    stmd_model = vSTMD().to(DEVICE)
+    model = L2bSTMD(stmd_model=stmd_model, motion_corp_fun=vSTMD_motion_corp_fun).to(DEVICE) 
+    # input
+    # frame_reader = FrameIterator(os.path.join(project_path, 'example-data', 'RIST_GX010290_orignal_240Hz.mp4'), is_video=True)
+    # frame_reader = FrameIterator(os.path.join('D:/', 'STMD_Dataset', 'vSTMD_Panorama_Stimuli', 
+    #                                           'Bgr_dire=Leftward_v=250', 
+    #                                           'ET-Target_Num=1_W=5_H=5_V=1500_L=0-Traj=Ellipse_FPS=1000'),
+    #                             is_video=False)
+    # frame_reader = FrameIterator(os.path.join('D:/', 'STMD_Dataset', 'XS-VID', 
+    #                                           'images', '13449-248520531_0'),
+                                # is_video=False)
+    # frame_reader = FrameIterator(os.path.join('C:/', 'Users', 'mings', 'OneDrive - University of Leicester', 
+    #                                           'P2CODE-Mingshuo', 'videos', 'demo1-SeaDronesSee-696-1410.mp4'),
+    #                             is_video=True)
+    # frame_reader = FrameIterator(os.path.join('D:/', 'STMD_Dataset', 'Real-World-Scence-Material', 'Chen', 'clean_GH010564.mp4'),
+    #                             is_video=True)
+    frame_reader = FrameIterator(os.path.join(project_path, 'example-data', 'RIST_GX010290_orignal_240Hz.mp4'),
+                                 device=DEVICE, is_video=True)
+    # visualizer
+    visualizer = FrameVisualizer(window_name=model.__class__.__name__, 
+                                 result_index_type="bbox",
+                                 win_height = frame_reader.img_height,
+                                 win_width = frame_reader.img_width,
+                                 conf_threshold=0)
+    
+
+    total_tunning_time = 0.0
+    for color_img, gray_tensor in frame_reader:
+            
+        # Perform inference using the model
+        if DEVICE == 'cuda':
+            torch.cuda.synchronize()  # 确保所有 CUDA 操作完成
+        time_start = time.perf_counter()
+
+        _, bboxes = model(gray_tensor)
+
+        if DEVICE == 'cuda':
+            torch.cuda.synchronize()  # 确保所有 CUDA 操作完成
+        time_end = time.perf_counter()
+
+        run_time = time_end - time_start
+
+        if len(bboxes) > 0:
+            bboxes = bboxes.cpu().numpy()  # 将结果移回 CPU 并转换为 NumPy 数组
+        else:
+            bboxes = None
+                
+        ret = visualizer.update(color_img, bboxes, process_time=run_time)
+        if not ret: break
+
+        total_tunning_time += run_time
+
+    print(f"Total time: {total_tunning_time:.4f} seconds, "\
+          f"FPS: {frame_reader.current_index / total_tunning_time :.4f} frames/second")
+
+
+if __name__ == "__main__":
+    test()
+
+    

@@ -12,12 +12,12 @@ class MushroomBody(stmdplus_core.MushroomBody):
         super().__init__()
 
 
-    def init_config(self):
+    def setup(self):
         # Initialization method
         # Initializes the non-maximum suppression
-        super().init_config()
+        super().setup()
 
-    def process(self, lobulaOpt, contrastOpt):
+    def forward(self, lobulaOpt, contrastOpt):
         # Processing method
         # Processes the input lobulaOpt and contrastOpt to generate mushroomBodyOpt
 

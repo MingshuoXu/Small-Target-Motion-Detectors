@@ -51,19 +51,8 @@ Neurocomputing, 126459.
 Bio-Inspired Small Target Motion Detection With Spatio-Temporal 
 Feedback in Natural Scenes. IEEE Transactions on Image Processing.
 
-## Backbonev2: 
-new version backbone for STMD-based models, in development
-
-## FeedbackSTMDv2: 
-FeedbackSTMD with Backbonev2
-
-## FSTMDv2:
-FSTMD with Backbonev2
-
-## STMDPlusv2:
-STMDPlus with Backbonev2
-
-## ApgSTMDv2: 
-ApgSTMD with Backbonev2
+## vSTMD, vSTMD_F:
+- Mingshuo Xu†, Hao Luan†, Zhou Daniel Hao, Jigen Peng, and Shigang Yue* (2025).
+arXiv preprint arXiv:2501.13054.
 
 

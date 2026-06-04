@@ -1,11 +1,8 @@
-import glob
 import os
 import re
-import sys
-import time
-from typing import List, Optional, Union
-
-
+from pathlib import Path
+import logging
+from typing import Optional, List, Union, Tuple, Any
 
 import cv2
 import numpy as np
@@ -13,7 +10,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import torch
 
-from .compute_module import AreaNMS
+
 from .. import model
 
 
@@ -25,7 +22,7 @@ IMG_DEFAULT_FOLDER = os.path.join(VID_DEFAULT_FOLDER, 'imgstream')
 # Add the path to the package containing the models
 ALL_MODEL = model.__all__
 
-
+logger = logging.getLogger(__name__)
 
 class FrameIterator:
     """
@@ -33,7 +30,7 @@ class FrameIterator:
     or from a sequence of numerically sorted image files.
     """
 
-    def __init__(self, input_path: str, is_video: bool = True, is_silence: bool = True):
+    def __init__(self, input_path: str, is_video: bool = True, is_silence: bool = True, device: str = 'cpu'):
         """
         Initialize the iterator.
 
@@ -42,172 +39,179 @@ class FrameIterator:
                 - If is_video is True: full path to the video file.
                 - If is_video is False: path to folder containing image sequence.
             is_video (bool): Specifies whether input is a video or image sequence.
+            is_silence (bool): If True, suppresses standard informational output.
+            device (str): Computation device for PyTorch tensors ('cpu', 'cuda', etc.).
         """
         self.input_path = input_path
         self.is_video = is_video
+        self.is_silence = is_silence
+        self.device = device  # 将 device 提升为类属性
+        
         self.current_index = 0
         self.total_frames = 0
         self.is_open = False
-        self.is_silence = is_silence  
 
         self.img_height, self.img_width = None, None
+        self.cap = None
+        self.image_files: List[str] = []
 
         if self.is_video:
             self._init_video_source()
         else:
             self._init_image_sequence_source()
 
+    def _log(self, message: str, level: int = logging.INFO):
+        """Helper to handle silenced logging"""
+        if not self.is_silence or level >= logging.WARNING:
+            logger.log(level, message)
+
     def _setup(self, current_index: int):
+        """Jump to a specific frame index."""
+        if current_index < 0 or (self.total_frames > 0 and current_index >= self.total_frames):
+            logger.warning(f"Index {current_index} is out of bounds (0 - {self.total_frames-1}).")
+            return
+
         self.current_index = current_index
-        if self.is_video:
+        if self.is_video and self.cap:
             success = self.cap.set(cv2.CAP_PROP_POS_FRAMES, current_index)
             if not success:
-                print(f"Warning: Unable to set video frame position to {current_index}.")
+                logger.warning(f"Unable to set video frame position to {current_index}.")
 
     # --- Video processing logic ---
     def _init_video_source(self):
-        """ Initialize video file reading. """
         if not os.path.isfile(self.input_path):
-            print(f"Error: Video file not found: {self.input_path}")
+            logger.error(f"Video file not found: {self.input_path}")
             return
 
         self.cap = cv2.VideoCapture(self.input_path)
         if not self.cap.isOpened():
-            print(f"Error: Unable to open video file: {self.input_path}")
+            logger.error(f"Unable to open video file: {self.input_path}")
             return
 
-        # Get total frame count
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.is_open = True
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-        if self.is_silence is False:
-            print(f"Successfully opened video file. Total frames: {self.total_frames}")
-
         self.img_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.img_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.is_open = True
+        
+        self._log(f"Successfully opened video file. Total frames: {self.total_frames}")
 
-    def _get_next_frame_from_video(self) -> Optional[cv2.typing.MatLike]:
-        """ Read next frame from video. """
-        if not self.is_open:
+    def _get_next_frame_from_video(self) -> Optional[np.ndarray]:
+        if not self.is_open or not self.cap:
             return None
         
         ret, frame = self.cap.read()
         if ret:
             self.current_index += 1
             return frame
-        else:
-            # Video reading completed or error occurred
-            self.release()
-            return None
+            
+        self.release()  # Video reading completed or error occurred
+        return None
 
     # --- Image sequence processing logic ---
     def _init_image_sequence_source(self):
-        """ Initialize image sequence folder reading. """
         if not os.path.isdir(self.input_path):
-            print(f"Error: Folder not found: {self.input_path}")
+            logger.error(f"Folder not found: {self.input_path}")
             return
 
-        # Find all image files and sort in numerical order
         self.image_files = self._get_sorted_image_files(self.input_path)
         
         if not self.image_files:
-            print(f"Error: No image files found in folder {self.input_path}")
+            logger.error(f"No image files found in folder: {self.input_path}")
             return
 
         self.total_frames = len(self.image_files)
         self.is_open = True
-        if self.is_silence is False:
-            print(f"Successfully loaded image sequence. Total images: {self.total_frames}")
+        self._log(f"Successfully loaded image sequence. Total images: {self.total_frames}")
 
-        # Read first image to get dimension information
+        # Read first image to get dimensions
         first_image = cv2.imread(self.image_files[0], cv2.IMREAD_COLOR)
-        self.img_height, self.img_width = first_image.shape[:2]
+        if first_image is not None:
+            self.img_height, self.img_width = first_image.shape[:2]
 
-    def _get_next_frame_from_sequence(self) -> Optional[cv2.typing.MatLike]:
-        """ Read next image from image sequence. """
-        if not self.is_open or self.current_index >= self.total_frames:
-            self.release()
-            return None
+    def _get_next_frame_from_sequence(self) -> Optional[np.ndarray]:
+        while self.is_open and self.current_index < self.total_frames:
+            file_path = self.image_files[self.current_index]
+            
+            # 【重要修复】无论是否读取成功，都必须 +1，否则读到坏图会死循环
+            self.current_index += 1 
+            
+            frame = cv2.imread(file_path, cv2.IMREAD_COLOR)
+            if frame is not None:
+                return frame
+            else:
+                logger.warning(f"Unable to read or decode image file: {file_path}")
 
-        file_path = self.image_files[self.current_index]
-        # cv2.IMREAD_COLOR ensures image is read in color mode
-        frame = cv2.imread(file_path, cv2.IMREAD_COLOR)
-        
-        if frame is None:
-             print(f"Warning: Unable to read image file: {file_path}")
-        else:
-            self.current_index += 1
+        self.release()
+        return None
 
-        return frame
-
-    # --- Core interfaces and helper functions ---
-    def get_next_frame(self, device='cpu') -> Optional[cv2.typing.MatLike]:
+    # --- Core interfaces ---
+    def get_next_frame(self) -> Tuple[Optional[np.ndarray], Optional[torch.Tensor], bool]:
         """
-        [Public interface] Get next image (or frame).
+        [Public interface] Get next image frame and its grayscale PyTorch tensor.
 
         Returns:
-            Optional[cv2.typing.MatLike]: Returns OpenCV image (NumPy array) if successful;
-                                       Returns None if end of sequence reached or error occurred.
+            Tuple[color_img, gray_tensor, is_valid]:
+                - color_img: BGR image (NumPy array) or None
+                - gray_tensor: Grayscale tensor shape (1, 1, H, W) or None
+                - is_valid: Boolean indicating if retrieval was successful
         """
-        if self.is_video:
-            color_img =  self._get_next_frame_from_video()
-        else:
-            color_img =  self._get_next_frame_from_sequence()
+        color_img = self._get_next_frame_from_video() if self.is_video else self._get_next_frame_from_sequence()
 
         if color_img is None:
             return None, None, False
-        else:
-            gray_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
-            if device != 'cpu':
-                gray_img = torch.from_numpy(gray_img).to(device=device).float().unsqueeze(0).unsqueeze(0)     
 
-            return color_img, gray_img, True
+        gray_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
+        # 移除了中间不必要的变量，直接构造 tensor
+        gray_tensor = torch.from_numpy(gray_img).to(device=self.device, dtype=torch.float32).unsqueeze(0).unsqueeze(0) / 255.0    
 
+        return color_img, gray_tensor, True
+
+    # --- Iterator & Context Manager Protocols ---
     def __iter__(self):
-        """Enable iterator protocol for FrameIterator."""
         return self
 
-    def __next__(self):
-        """Get next frame in iteration. Raises StopIteration when done."""
-        color_img, gray_img, ret = self.get_next_frame(device='cpu')
-        if not ret:
+    def __next__(self) -> Tuple[np.ndarray, torch.Tensor]:
+        color_img, gray_tensor, is_valid = self.get_next_frame()
+        if not is_valid:
             raise StopIteration
-        return color_img, gray_img
+        return color_img, gray_tensor
+
+    def __enter__(self):
+        """Enable context manager: `with FrameIterator(...) as it:`"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
     def release(self):
-        """ Release resources. """
         if self.is_open:
-            if self.is_video and hasattr(self, 'cap') and self.cap.isOpened():
+            if self.is_video and self.cap is not None:
                 self.cap.release()
             self.is_open = False
-        if self.is_silence is False:
-            print("\nResources released.")
+            self._log("Resources released.")
 
     def __del__(self):
-        """ Ensure resources are released when object is destroyed. """
         self.release()
         
-    # --- Natural sorting helper function ---
+    # --- Helpers ---
     @staticmethod
     def _natural_sort_key(s: str) -> List[Union[str, int]]:
-        """ Helper function: natural sorting for image sequence. """
-        return [
-            int(text) if text.isdigit() else text.lower()
-            for text in re.split(r'(\d+)', s)
-        ]
+        return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
     def _get_sorted_image_files(self, folder_path: str) -> List[str]:
-        """ Find and naturally sort image files. """
-        extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif')
-        all_files = []
-        for ext in extensions:
-            all_files.extend(glob.glob(os.path.join(folder_path, '*' + ext)))
+        """ Uses pathlib for faster and cleaner directory iteration. """
+        valid_exts = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif'}
+        path = Path(folder_path)
         
-        image_files = [f for f in all_files if os.path.isfile(f)]
+        # iterdir() 比多次调用 glob 性能好得多
+        files = [
+            str(f) for f in path.iterdir() 
+            if f.is_file() and f.suffix.lower() in valid_exts
+        ]
         
-        # Sort by filename using natural sort
-        return sorted(image_files, key=lambda f: self._natural_sort_key(os.path.basename(f)))
-
+        return sorted(files, key=lambda f: self._natural_sort_key(Path(f).name))
+    
 
 class FrameVisualizer:
     def __init__(self, window_name="Visualizer", 
@@ -401,6 +405,7 @@ class FrameVisualizer:
         if response.size == 0: return
 
         # 1. 提前过滤：先做 Mask 过滤，减少后续转换的数据量
+        response = response.cpu().numpy() if isinstance(response, torch.Tensor) else response
         mask = response[:, 4] > threshold
         filtered_res = response[mask]
         if filtered_res.size == 0: return
@@ -435,8 +440,6 @@ class FrameVisualizer:
                 c_xs = (v_boxes[:, 0] + v_boxes[:, 2]) // 2
                 c_ys = (v_boxes[:, 1] + v_boxes[:, 3]) // 2
                 FrameVisualizer._draw_arrows(frame, c_xs, c_ys, dirs[v_mask])
-
-
 
 
 class ModelSelectorGUI:

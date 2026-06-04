@@ -1,9 +1,12 @@
-import numpy as np
-from cv2 import filter2D, BORDER_CONSTANT
+from collections import deque
+
+import torch
+from torch.nn import functional as F
 
 from .base_core import BaseCore
 from ..util.create_kernel import create_attention_kernel, create_prediction_kernel
-from ..util.compute_module import compute_temporal_conv
+from ..core.math_operator import compute_temporal_conv_inplace
+
 
 class AttentionModule(BaseCore):
     """
@@ -21,70 +24,64 @@ class AttentionModule(BaseCore):
         super().__init__()
         self.kernal_size = 17
         self.zeta_list = [2, 2.5, 3, 3.5]
-        self.theta_list = [0, np.pi/4, np.pi/2, np.pi*3/4]
+        self.theta_list = torch.tensor([0, torch.pi/4, torch.pi/2, 3*torch.pi/4])
         self.alpha = 1
-        self.attention_kernel = None
+        self.register_buffer('attention_kernel', torch.empty(0))
+        self.setup()
     
-    def init_config(self):
+    def setup(self):
         """
         Initialization method.
         
         Initializes the attention kernel.
         """
-        self.attention_kernel = create_attention_kernel(
+
+        self.r = len(self.zeta_list)
+        self.s = len(self.theta_list)
+        _attention_kernel = create_attention_kernel(
             self.kernal_size,
             self.zeta_list,
             self.theta_list
         )
+        _stacked_kernel = torch.stack([torch.stack(row) for row in _attention_kernel])
+        self.attention_kernel.data = _stacked_kernel.reshape(self.r * self.s, 1, self.kernal_size, self.kernal_size)
     
-    def process(self, retina_opt, prediction_map):
+    def forward(self, retina_opt, prediction_map):
         """
-        Processing method.
+        Processing method (Optimized with F.conv2d).
         
         Processes the retina_opt and prediction_map to generate the
         attention-optimal output.
         """
-        r = len(self.attention_kernel)
-        s = len(self.attention_kernel[0])
-
         if prediction_map is None:
-            attention_opt = retina_opt
-        else:
-            map_retina_opt = retina_opt * prediction_map
-            attention_response = None
-            
-            for i in range(r):
-                for j in range(s):
-                    if j == 0:
-                        attention_response_with_j = filter2D(
-                            map_retina_opt,
-                            -1,
-                            self.attention_kernel[i][0],
-                            borderType=BORDER_CONSTANT,
-                        )
-                    else:
-                        attention_response_with_j = np.minimum(
-                            attention_response_with_j,
-                            filter2D(
-                                map_retina_opt,
-                                -1,
-                                self.attention_kernel[i][j],
-                                borderType=BORDER_CONSTANT,
-                            )
-                        )
-                
-                if i == 0:
-                    attention_response = attention_response_with_j
-                else:
-                    attention_response = np.maximum(
-                        attention_response,
-                        attention_response_with_j
-                    )
-            
-            attention_opt = retina_opt + self.alpha * attention_response
+            self.Opt = retina_opt
+            return self.Opt
+
+        # 1. 准备输入数据
+        map_retina_opt = retina_opt * prediction_map
+                    
+        B, C, H, W = map_retina_opt.shape
+
+        # 为了对每个 Channel 独立应用这 r*s 个卷积核，
+        # 我们把 Batch 和 Channel 维度合并，把输入变形为 (B*C, 1, H, W)
+        x = map_retina_opt.reshape(B * C, 1, H, W)
+
+        # 2. 单次并发计算所有的卷积
+        # 此时输出形状为 (B*C, r*s, H, W)
+        conv_out = F.conv2d(x, self.attention_kernel, padding='same')
+
+        # 3. 执行 Min 和 Max 聚合操作
+        # 将输出重塑为 (B*C, r, s, H, W) 以便按维度进行聚合
+        conv_out = conv_out.view(B * C, self.r, self.s, H, W)
+        min_out = torch.min(conv_out, dim=2)[0]  # shape: (B*C, r, H, W)
+        attention_response = torch.max(min_out, dim=1)[0]  # shape: (B*C, H, W)
+
+        # 4. 恢复原始形状并计算最终结果
+        attention_response = attention_response.view(B, C, H, W)
+
+        self.Opt = retina_opt + self.alpha * attention_response
         
-        self.Opt = attention_opt
-        return attention_opt
+        return self.Opt
 
 
 class PredictionModule(BaseCore):
@@ -110,24 +107,21 @@ class PredictionModule(BaseCore):
         self.kappa = 0.02
         self.mu = 0.75
         self.beta = 1
-        self.prediction_kernel = None
-        self.cell_prediction_gain = None
-        self.cell_prediction_map = None
-        self.time_attenuation_kernel = None
+        self.register_buffer('time_attenuation_kernel', torch.empty(0))
+        self.register_buffer('prediction_kernel', torch.empty(0))
+
+        self.setup()
     
-    def init_config(self):
+    def setup(self):
         """
         initiate config for prediction module.
         """        
-        if self.intDeltaT < 0:
-            self.intDeltaT = 0
-        elif not isinstance(self.intDeltaT, int):
-            self.intDeltaT = round(self.intDeltaT)
+        self.intDeltaT = max(int(self.intDeltaT), 1)
         
         if self.velocity is None:
             self.velocity = 25 / 4 / self.intDeltaT
         
-        self.prediction_kernel = create_prediction_kernel(
+        _prediction_kernel = create_prediction_kernel(
             self.velocity,
             self.intDeltaT,
             self.sizeFilter,
@@ -135,61 +129,60 @@ class PredictionModule(BaseCore):
             self.zeta,
             self.eta
         )
-        self.cell_prediction_gain = [[None]*self.numFilter for _ in range(self.intDeltaT + 1)]
-        self.cell_prediction_map = [None]*(self.intDeltaT + 1)
-        
-        self.time_attenuation_kernel = np.exp(self.kappa * np.arange(-self.intDeltaT, 1))
+        self.prediction_kernel.data = torch.stack(_prediction_kernel).unsqueeze(1)
+
+        self.time_attenuation_kernel = torch.exp(self.kappa * torch.arange(-self.intDeltaT, 1))
+
+        self.reset()  # 初始化历史帧缓存
+
+    def reset(self):
+        self.prediction_gain_buffer = deque(maxlen=self.intDeltaT)
+        self.prediction_map_buffer = deque(maxlen=self.intDeltaT)
     
-    def process(self, lobula_opt):
+    def forward(self, lobula_opt):
         """
-        Processing method.
+        Processing method (Highly Optimized with Vectorization).
         
         Processes the input lobula_opt to predict motion and update
         prediction map.
         """
-        num_dict = len(lobula_opt)
-        img_h, img_w = lobula_opt[0].shape
+        num_direction = lobula_opt.shape[1] 
         
-        # Prediction Gain
-        self.cell_prediction_gain = np.roll(self.cell_prediction_gain, shift=-1, axis=0)
-        prediction_gain = []
-        for idxD in range(num_dict):
-            if self.cell_prediction_gain[0][idxD] is None:
-                prediction_gain.append(filter2D(
-                    self.mu * lobula_opt[idxD],
-                    -1,
-                    self.prediction_kernel[idxD],
-                    borderType=BORDER_CONSTANT
-                ))
-            else:
-                prediction_gain.append(filter2D(
-                    self.mu * lobula_opt[idxD] + (1 - self.mu) * self.cell_prediction_gain[0][idxD],
-                    -1,
-                    self.prediction_kernel[idxD],
-                    borderType=BORDER_CONSTANT
-                ))
-        self.cell_prediction_gain[-1] = prediction_gain
+        if len(self.prediction_gain_buffer) > 0:
+            # 计算滤波器输入 (广播机制同时处理所有方向通道)
+            filter_input = self.mu * lobula_opt + (1 - self.mu) * self.prediction_gain_buffer[0] 
+        else:
+            filter_input = lobula_opt
         
-        # Prediction Map
-        tobe_prediction_map = np.zeros((img_h, img_w))
-        for idxD in range(num_dict):
-            tobe_prediction_map += prediction_gain[idxD]
+        # 分组卷积 (Depthwise Convolution)
+        # 一次 F.conv2d 计算出全部 num_direction 个通道的空间卷积，彻底消除 for 循环
+        prediction_gain = F.conv2d(filter_input, 
+                                   self.prediction_kernel, 
+                                   padding='same', 
+                                   groups=num_direction)
         
-        # Facilitated STMD Output
-        facilitated_opt = [np.copy(lobula_opt[idxD]) for idxD in range(num_dict)]
-        for idxD in range(num_dict):
-            if self.cell_prediction_gain[-1][idxD] is not None:
-                facilitated_opt[idxD] += self.beta * compute_temporal_conv(
-                    self.cell_prediction_gain[:, idxD],
-                    self.time_attenuation_kernel
-                )
+        # 更新最新一帧的历史
+        self.prediction_gain_buffer.append(prediction_gain)
+
+        # ==================== 2. Prediction Map =====================
+        # 在 num_direction (通道) 维度上求和 -> shape: (1, 1, H, W)
+        tobe_prediction_map = torch.sum(prediction_gain, dim=1, keepdim=True)
+
+        # ==================== 3. Facilitated STMD Output ============
+        temporal_conv_out = compute_temporal_conv_inplace(
+            self.prediction_gain_buffer,
+            self.time_attenuation_kernel
+        )
         
-        # Memorizer update
-        max_tobe_pre_map = np.max(tobe_prediction_map)
-        self.cell_prediction_map = np.roll(self.cell_prediction_map, shift=-1)
-        self.cell_prediction_map[-1] = (tobe_prediction_map > max_tobe_pre_map * 2e-1)
+        # 一步计算出所有特征通道的 facilitated_opt -> shape: (1, num_direction, H, W)
+        self.Opt = lobula_opt + self.beta * temporal_conv_out
+
+        # ==================== 4. Memorizer update ===================
+        max_tobe_pre_map = torch.max(tobe_prediction_map)
         
-        # Output
-        prediction_map = self.cell_prediction_map[0]
-        self.Opt = facilitated_opt
-        return facilitated_opt, prediction_map
+        self.prediction_map_buffer.append( (tobe_prediction_map > max_tobe_pre_map * 2e-1).squeeze())
+
+        # prediction_map = self.cell_prediction_map[0]
+        return self.Opt, self.prediction_map_buffer[0]
+
+

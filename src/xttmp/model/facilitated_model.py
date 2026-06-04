@@ -4,6 +4,7 @@ from .backbone import DSTMDBackbone
 from ..core import stmdplus_core, apgstmd_core
 from ..util.compute_module import compute_response, compute_direction
 
+
 class STMDPlus(DSTMDBackbone):
     """ STMDPlus: A facilitated model based on DSTMD with an additional contrast pathway.
 
@@ -40,76 +41,65 @@ class STMDPlus(DSTMDBackbone):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (1)
+        'sigma1'    : 'retina.sigma', # Eq. (1)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',  # Eq. (3)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+        'n1'        : 'lamina.order1',  # Eq. (3)
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
         # medulla
-        'n3'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (11)
-        'tau3'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n4'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau4'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n3'        : 'medulla.mi1_para4.order',  # Eq. (11)
+        'tau3'      : 'medulla.mi1_para4.tau',
+        'n4'        : 'medulla.tm1_para5.order',
+        'tau4'      : 'medulla.tm1_para5.tau',
+        'n5'        : 'medulla.tm1_para6.order',
+        'tau5'      : 'medulla.tm1_para6.tau',
         # lobula
-        'alpha1'    : 'self.hLobula.alpha1',  # Eq. (10)
-        'A'         : 'self.hLobula.hLateralInhi.A',  # Eq. (13)
-        'B'         : 'self.hLobula.hLateralInhi.B', 
-        'e'         : 'self.hLobula.hLateralInhi.e',  # Eq. (14)
-        'rho'       : 'self.hLobula.hLateralInhi.rho', 
-        'sigma4'    : 'self.hLobula.hLateralInhi.Sigma1', 
-        'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
+        'alpha1'    : 'lobula.alpha1',  # Eq. (10)
+        'A'         : 'lobula.hLateralInhi.A',  # Eq. (13)
+        'B'         : 'lobula.hLateralInhi.B', 
+        'e'         : 'lobula.hLateralInhi.e',  # Eq. (14)
+        'rho'       : 'lobula.hLateralInhi.rho', 
+        'sigma4'    : 'lobula.hLateralInhi.sigma1', 
+        'sigma5'    : 'lobula.hLateralInhi.sigma2', 
         # Contrast pathway
-        'eta'       : 'self.hContrastPathway.eta', # Eq. (15)
-        'alpha2'    : 'self.hContrastPathway.alpha2', # Eq. (17)
+        'eta'       : 'contrast_pathway.eta', # Eq. (15)
+        'alpha2'    : 'contrast_pathway.alpha2', # Eq. (17)
         } 
     
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """ Constructor method """
-        super().__init__(device=device)
+        super().__init__()
 
         # Initialize contrast pathway and mushroom body components
-        self.hContrastPathway = stmdplus_core.ContrastPathway()
-        self.hMushroomBody = stmdplus_core.MushroomBody()
-        
-    def init_config(self):
-        """
-        Initializes the STMDPlus components.
-        """
-        super().init_config()
+        self.contrast_pathway = stmdplus_core.ContrastPathway()
+        self.mushroom_body = stmdplus_core.MushroomBody()
 
-        # Initialize contrast pathway and mushroom body
-        self.hContrastPathway.init_config()
-        self.hMushroomBody.init_config()
-
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
-
-    def model_structure(self, iptMatrix):
+    def forward(self, iptMatrix):
         """ Defines the structure of the STMDPlus model. """      
 
         # A. Ommatidia (Retina)
-        self.retinaOpt = self.hRetina.process(iptMatrix)
+        retina_output = self.retina.forward(iptMatrix)
 
         # B. Motion Pathway (Lamina, Medulla, Lobula)
-        self.laminaOpt = self.hLamina.process(self.retinaOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
+        lamina_output = self.lamina.forward(retina_output)
+        medulla_tm3_output, medulla_mi1_p4_output, medulla_tm1_p5_output, medulla_tm1_p6_output = \
+            self.medulla.forward(lamina_output)
+        lobula_output = self.lobula.forward(medulla_tm3_output, medulla_mi1_p4_output, 
+                                            medulla_tm1_p5_output, medulla_tm1_p6_output)
 
         # C. Contrast Pathway
-        self.direContrastOpt = self.hContrastPathway.process(self.retinaOpt)
+        contrast_output = self.contrast_pathway.forward(retina_output)
 
         # D. Mushroom Body
-        self.mushroomBodyOpt = self.hMushroomBody.process(
-            self.lobulaOpt, self.direContrastOpt)
+        mushroom_body_output = self.mushroom_body.forward(
+            lobula_output, contrast_output)
 
         # Compute response and direction
-        self.modelOpt['response'] = compute_response(self.mushroomBodyOpt)
-        self.modelOpt['direction'] = compute_direction(self.mushroomBodyOpt)
+        self.model_output['response'] = compute_response(mushroom_body_output)
+        self.model_output['direction'] = compute_direction(mushroom_body_output)
+
+        return self.model_output
 
 
 class ApgSTMD(STMDPlus):
@@ -123,7 +113,7 @@ class ApgSTMD(STMDPlus):
 
     Parameters:            
         Retina:
-            - sigma1: Standard deviation of the Gaussian blur applied in the retina layer to pre-process input images by smoothing, reducing background noise. (Eq. 2)
+            - sigma1: Standard deviation of the Gaussian blur applied in the retina layer to pre-forward input images by smoothing, reducing background noise. (Eq. 2)
         
         Lamina:
             - n1, tau1: Order and time constant of the first gamma bandpass filter in the lamina. (Eq. 6)
@@ -151,98 +141,86 @@ class ApgSTMD(STMDPlus):
     # Bind model parameters and their corresponding parameter pointers.
     __paraMappingList = {
         # retina
-        'sigma1'    : 'self.hRetina.hGaussianBlur.sigma', # Eq. (2)
+        'sigma1'    : 'retina.sigma', # Eq. (2)
         # lamina
-        'n1'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.order',  # Eq. (6)
-        'tau1'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay1.tau',
-        'n2'        : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.order',
-        'tau2'      : 'self.hLamina.hGammaBandPassFilter.hGammaDelay2.tau',
+        'n1'        : 'lamina.order1',  # Eq. (6)
+        'tau1'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
         # medulla
-        'n3'        : 'self.hMedulla.hMi1Para4.hGammaDelay.order',  # Eq. (14)
-        'tau3'      : 'self.hMedulla.hMi1Para4.hGammaDelay.tau',
-        'n4'        : 'self.hMedulla.hTm1Para5.hGammaDelay.order',
-        'tau4'      : 'self.hMedulla.hTm1Para5.hGammaDelay.tau',
-        'n5'        : 'self.hMedulla.hTm1Para6.hGammaDelay.order',
-        'tau5'      : 'self.hMedulla.hTm1Para6.hGammaDelay.tau',
+        'n3'        : 'medulla.mi1_para4.order',  # Eq. (14)
+        'tau3'      : 'medulla.mi1_para4.tau',
+        'n4'        : 'medulla.tm1_para5.order',
+        'tau4'      : 'medulla.tm1_para5.tau',
+        'n5'        : 'medulla.tm1_para6.order',
+        'tau5'      : 'medulla.tm1_para6.tau',
         # lobula
-        'gamma'    : 'self.hLobula.alpha1',  # Eq. (13)
-        'A'         : 'self.hLobula.hLateralInhi.A',  # Eq. (15)
-        'B'         : 'self.hLobula.hLateralInhi.B', 
-        'e'         : 'self.hLobula.hLateralInhi.e',  # Eq. (16)
-        'rho'       : 'self.hLobula.hLateralInhi.rho', 
-        'sigma4'    : 'self.hLobula.hLateralInhi.Sigma1', 
-        'sigma5'    : 'self.hLobula.hLateralInhi.Sigma2', 
+        'gamma'    : 'lobula.alpha1',  # Eq. (13)
+        'A'         : 'lobula.hLateralInhi.A',  # Eq. (15)
+        'B'         : 'lobula.hLateralInhi.B', 
+        'e'         : 'lobula.hLateralInhi.e',  # Eq. (16)
+        'rho'       : 'lobula.hLateralInhi.rho', 
+        'sigma4'    : 'lobula.hLateralInhi.sigma1', 
+        'sigma5'    : 'lobula.hLateralInhi.sigma2', 
         # Attention Pathway
-        'zeta_list'  : 'self.hAttentionPathway.zeta_list', # Eq. (3)
-        'theta_list': 'self.hAttentionPathway.theta_list',
+        'zeta_list'  : 'attention_pathway.zeta_list', # Eq. (3)
+        'theta_list': 'attention_pathway.theta_list',
         # Prediction Pathway
-        'zeta'      : 'self.hPredictionPathway.zeta', # Eq. (20)
-        'eta'       : 'self.hPredictionPathway.eta', # Eq. (20)
-        'kappa'     : 'self.hPredictionPathway.kappa', # Eq. (23)
+        'zeta'      : 'prediction_pathway.zeta', # Eq. (20)
+        'eta'       : 'prediction_pathway.eta', # Eq. (20)
+        'kappa'     : 'prediction_pathway.kappa', # Eq. (23)
         } 
 
-    def __init__(self, device = 'cpu'):
+    def __init__(self):
         """
         Constructor method
         """
-        super().__init__(device=device)
+        super().__init__()
 
         # Initialize attention pathway and prediction pathway components
-        self.hAttentionPathway = apgstmd_core.AttentionModule()
-        self.hPredictionPathway = apgstmd_core.PredictionModule()
+        self.attention_pathway = apgstmd_core.AttentionModule()
+        self.prediction_pathway = apgstmd_core.PredictionModule()
 
         # Set properties of Lobula's LateralInhibition module
-        self.hLobula.hLateralInhi.B = 3.5
-        self.hLobula.hLateralInhi.Sigma1 = 1.25
-        self.hLobula.hLateralInhi.Sigma2 = 2.5
-        self.hLobula.hLateralInhi.e = 1.2
+        self.lobula.hLateralInhi.B = 3.5
+        self.lobula.hLateralInhi.sigma1 = 1.25
+        self.lobula.hLateralInhi.sigma2 = 2.5
+        self.lobula.hLateralInhi.e = 1.2
 
         self.predictionMap = None
 
-    def init_config(self):
-        """
-        Initializes the ApgSTMD components.
-        """
-        super().init_config()
-
-        # Initialize attention pathway and prediction pathway components
-        self.hAttentionPathway.init_config()
-        self.hPredictionPathway.init_config()
-
-        if self.device != 'cpu':
-            self.device = 'cpu'
-            warnings.warn('Currently, only CPU is supported. The device parameter will be ignored.', UserWarning)
-
-    def model_structure(self, iptMatrix):
+    def forward(self, x):
         """ Defines the structure of the ApgSTMD model. """
 
         # Preprocessing Module
-        self.retinaOpt = self.hRetina.process(iptMatrix)
+        retina_output = self.retina(x)
 
         # Attention Module
-        self.attentionOpt = self.hAttentionPathway.process(
-            self.retinaOpt, self.predictionMap)
+        attention_output = self.attention_pathway(
+            retina_output, self.predictionMap)
 
         # STMD-based Neural Network
-        self.laminaOpt = self.hLamina.process(self.attentionOpt)
-        self.hMedulla.process(self.laminaOpt)
-        self.medullaOpt = self.hMedulla.Opt
-        self.lobulaOpt = self.hLobula.process(self.medullaOpt)
+        lamina_output = self.lamina(attention_output)
+        medulla_tm3_output, medulla_mi1_p4_output, medulla_tm1_p5_output, medulla_tm1_p6_output = \
+            self.medulla(lamina_output)
+
+        lobula_output = self.lobula(medulla_tm3_output, medulla_mi1_p4_output, 
+                                    medulla_tm1_p5_output, medulla_tm1_p6_output)
 
         # STMDPlus
-        self.direContrastOpt = self.hContrastPathway.process(self.retinaOpt)
-        self.mushroomBodyOpt = self.hMushroomBody.process(
-            self.lobulaOpt, self.direContrastOpt)
+        contrast_output = self.contrast_pathway(retina_output)
+        mushroom_body_output = self.mushroom_body(
+            lobula_output, contrast_output)
 
         # Prediction Module
-        #   self.predictionOpt is the facilitated STMD output Q(x; y; t; theta) in Eq. (23)
-        self.predictionOpt, self.predictionMap = \
-            self.hPredictionPathway.process(self.mushroomBodyOpt)
+        #   prediction_output is the facilitated STMD output Q(x; y; t; theta) in Eq. (23)
+        prediction_output, self.predictionMap = self.prediction_pathway(mushroom_body_output)
 
         # Compute response and direction
-        self.modelOpt['response'] = compute_response(self.predictionOpt)
-        self.modelOpt['direction'] = compute_direction(self.predictionOpt)
+        self.model_output['response'] = compute_response(prediction_output)
+        self.model_output['direction'] = compute_direction(prediction_output)
 
+        return self.model_output
 
 
 

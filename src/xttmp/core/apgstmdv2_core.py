@@ -25,7 +25,7 @@ class PredictionModule(BaseCore):
         # Hidden properties
         self.predictionKernel = None  # Prediction kernel
 
-    def init_config(self):
+    def setup(self):
         """Initialization method."""
         # Initializes the prediction module
 
@@ -38,7 +38,7 @@ class PredictionModule(BaseCore):
             self.eta
         )
 
-    def process(self, lobulaOpt):
+    def forward(self, lobulaOpt):
         """Processing method."""
         # Processes the input lobulaOpt to predict motion and update prediction map
 

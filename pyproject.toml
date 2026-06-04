@@ -1,32 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "xttmp"
 version = "2.2.0"
 description = "eXtremely Tiny Target - Motion Perception"
 readme = "README.md"
+requires-python = ">=3.8"
 authors = [{name = "Shawn MX", email = "mingshuoxu@hotmail.com"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
 dependencies = [
     "matplotlib",
     "opencv-python",
     "scipy",
-    "torch>=2.5.0", 
-    "torchvision>=0.20.0"
+    "torch>=2.5.0",
+    "torchvision>=0.20.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/MingshuoXu/Small-Target-Motion-Detectors"
+Source = "https://github.com/MingshuoXu/Small-Target-Motion-Detectors"
+Issues = "https://github.com/MingshuoXu/Small-Target-Motion-Detectors/issues"
 
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cu124" },
-]
-torchvision = [
-  { index = "pytorch-cu124" },
-]
+[project.scripts]
+xttmp-gui = "xttmp.main:main"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
 
-[[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
-explicit = true
-
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [dependency-groups]
 dev = []

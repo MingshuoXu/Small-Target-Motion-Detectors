@@ -1,11 +1,6 @@
-from cv2 import filter2D, BORDER_CONSTANT
-import numpy as np
-from scipy.ndimage import gaussian_filter
-
 from .base_core import BaseCore
-from .math_operator import SurroundInhibition, GammaDelay
+from .math_operator import SpatialInhibition, GammaDelay
 from . import estmd_backbone 
-from ..util.datarecord import CircularList
 from ..util.create_kernel import *
 from ..util.compute_module import slice_matrix_holding_size
 
@@ -22,10 +17,10 @@ class Medulla(estmd_backbone.Medulla):
         self.hPara5Tm1 = None
         self.cellTm1Ipt = None
 
-    def init_config(self):
+    def setup(self):
         # Initialization method
         # This method initializes the Medulla layer components
-        super().init_config()
+        super().setup()
 
         self.hTm1 = GammaDelay(5, 25)
         self.hPara5Mi1 = GammaDelay(25, 30)
@@ -33,29 +28,29 @@ class Medulla(estmd_backbone.Medulla):
 
         self.cellTm1Ipt = CircularList()
 
-        self.hTm1.init_config(False)
-        self.hPara5Mi1.init_config()
-        self.hPara5Tm1.init_config(False)
+        self.hTm1.setup(False)
+        self.hPara5Mi1.setup()
+        self.hPara5Tm1.setup(False)
 
         if not self.cellTm1Ipt.initLen:
             self.cellTm1Ipt.initLen = max(self.hPara5Mi1.lenKernel, self.hPara5Tm1.lenKernel)
 
         self.cellTm1Ipt.reset()
 
-    def process(self, MedullaIpt):
+    def forward(self, MedullaIpt):
         # Processing method
         # Applies processing to the input and returns the output
         # Process Tm2 and Tm3 components
-        tm2Signal = self.hTm2.process(MedullaIpt)
-        tm3Signal = self.hTm3.process(MedullaIpt)
+        tm2Signal = self.hTm2.forward(MedullaIpt)
+        tm3Signal = self.hTm3.forward(MedullaIpt)
 
         # Process Tm1 component using output of Tm2
         self.cellTm1Ipt.record_next(tm3Signal)
-        tm1Para3Signal = self.hTm1.process(self.cellTm1Ipt)
-        tm1Para5Signal = self.hPara5Tm1.process(self.cellTm1Ipt)
+        tm1Para3Signal = self.hTm1.forward(self.cellTm1Ipt)
+        tm1Para5Signal = self.hPara5Tm1.forward(self.cellTm1Ipt)
 
         # Process Mi1 component using output of Tm3
-        mi1Para5Signal = self.hPara5Mi1.process(tm3Signal)
+        mi1Para5Signal = self.hPara5Mi1.forward(tm3Signal)
 
         # Store the output signals in Opt property
         varageout = [tm3Signal, tm1Para3Signal, mi1Para5Signal, tm2Signal, tm1Para5Signal, self.hPara5Mi1.tau]
@@ -74,15 +69,15 @@ class Lobula(BaseCore):
         self.hSTMD = None
         self.hLPTC = None
 
-    def init_config(self):
+    def setup(self):
         # Initialization method
         # This method initializes the Lobula layer component
         self.hSTMD = Stmdcell()
         self.hLPTC = Lptcell()
-        self.hSTMD.init_config()
-        self.hLPTC.init_config(self.hSTMD.hGammaDelay.lenKernel)
+        self.hSTMD.setup()
+        self.hLPTC.setup(self.hSTMD.hGammaDelay.lenKernel)
 
-    def process(self, varagein):
+    def forward(self, varagein):
         # Processing method
         # Performs a correlation operation on the ON and OFF channels
         # and then applies surround inhibition
@@ -90,9 +85,9 @@ class Lobula(BaseCore):
         # Extract ON and OFF channel signals from the input
         tm3Signal, tm1Para3Signal, mi1Para5Signal, tm2Signal, tm1Para5Signal, tau5 = varagein
 
-        psi, fai = self.hLPTC.process(tm3Signal, mi1Para5Signal, tm2Signal, tm1Para5Signal, tau5)
+        psi, fai = self.hLPTC.forward(tm3Signal, mi1Para5Signal, tm2Signal, tm1Para5Signal, tau5)
 
-        lobulaOpt = self.hSTMD.process(tm3Signal, tm1Para3Signal, psi, fai)
+        lobulaOpt = self.hSTMD.forward(tm3Signal, tm1Para3Signal, psi, fai)
 
         # Store the output in Opt property
         self.Opt = lobulaOpt
@@ -108,22 +103,22 @@ class Stmdcell(BaseCore):
         # Initializes the Lobula object
         super().__init__()
 
-        self.hSubInhi = None  # SurroundInhibition component
+        self.hSubInhi = None  # SpatialInhibition component
         self.alpha = 0.1  # Parameter alpha
         self.gaussKernel = None  # Gaussian kernel
         self.hGammaDelay = None
         self.cellDPlusE = None
         self.paraGaussKernel = {'size': 3, 'eta': 1.5}
 
-    def init_config(self):
+    def setup(self):
         # Initialization method
         # This method initializes the Lobula layer component
-        self.hSubInhi = SurroundInhibition()
+        self.hSubInhi = SpatialInhibition()
         self.hGammaDelay = GammaDelay(6, 12)
         self.cellDPlusE = CircularList()
 
-        self.hSubInhi.init_config()
-        self.hGammaDelay.init_config()
+        self.hSubInhi.setup()
+        self.hGammaDelay.setup()
 
         if not self.cellDPlusE.initLen:
             self.cellDPlusE.initLen = self.hGammaDelay.lenKernel
@@ -134,7 +129,7 @@ class Stmdcell(BaseCore):
             self.paraGaussKernel['eta']
         )
 
-    def process(self, tm3Signal, tm1Signal, faiList, psiList):
+    def forward(self, tm3Signal, tm1Signal, faiList, psiList):
         # Processing method
         # Performs temporal convolution, correlation, and surround inhibition
         convnIpt = [None] * self.cellDPlusE.initLen
@@ -147,7 +142,7 @@ class Stmdcell(BaseCore):
                 convnIpt[idxT] = slice_matrix_holding_size(self.cellDPlusE[pointer], psi, fai)
                 pointer = (pointer - 1) % self.cellDPlusE.initLen
 
-        feedbackSignal = self.hGammaDelay.process_list(convnIpt)         
+        feedbackSignal = self.hGammaDelay.forward_list(convnIpt)         
 
         if feedbackSignal is not None:
             feedbackSignal *= self.alpha 
@@ -157,7 +152,7 @@ class Stmdcell(BaseCore):
 
         correlationE = filter2D(tm3Signal * tm1Signal, -1, self.gaussKernel, borderType=BORDER_CONSTANT)
 
-        lateralInhiSTMDOpt = self.hSubInhi.process(correlationD)
+        lateralInhiSTMDOpt = self.hSubInhi.forward(correlationD)
 
         self.cellDPlusE.record_next(correlationD + correlationE)
 
@@ -179,7 +174,7 @@ class Lptcell(BaseCore):
         self.velocity = None
         self.tuningCurvef = None
 
-    def init_config(self, lenVelocity):
+    def setup(self, lenVelocity):
         self.velocity = np.zeros(lenVelocity)
 
         lenBataList = len(self.bataList)
@@ -196,7 +191,7 @@ class Lptcell(BaseCore):
             idRange = slice((id+1) * 100 - 200, (id+1) * 100 + 200)
             self.tuningCurvef[id, idRange] = gaussianDistribution
 
-    def process(self, tm1Signal, tm2Signal, tm3Signal, mi1Signal, tau5):
+    def forward(self, tm1Signal, tm2Signal, tm3Signal, mi1Signal, tau5):
         lenBataList = len(self.bataList)
         lenThetaList = len(self.thetaList)
         sumLplcOptR = np.zeros((lenBataList, lenThetaList))
