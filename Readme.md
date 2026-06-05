@@ -37,9 +37,19 @@ Built with modularity and extensibility in mind, XTT-MP provides a robust suite 
 - After `pip install xttmp`, use the installed code and bring your own input data, or run from a repository checkout to access the bundled examples.
 
 ### Via PyPI
+#### CPU
 ```bash
-pip install xttmp
-xttmp-gui
+pip install xttmp[torch]
+```
+
+#### NVIDIA GPU (CUDA 12.6)
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+```
+
+### Running the GUI Demo
+```bash
+xttmp_gui
 ```
 
 ### Citation

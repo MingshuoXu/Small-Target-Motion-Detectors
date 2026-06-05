@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 import logging
 from typing import Optional, List, Union, Tuple, Any
+from functools import partial
 
 import cv2
 import numpy as np
@@ -12,6 +13,7 @@ import torch
 
 
 from .. import model
+from .compute_module import PostProcessing, bbox_post_processing
 
 
 # Get the full path of this file
@@ -215,7 +217,6 @@ class FrameIterator:
 
 class FrameVisualizer:
     def __init__(self, window_name="Visualizer", 
-                 result_index_type="matrix",
                  win_width=None, win_height=None, 
                  is_headless=False,
                  conf_threshold=0.8 # 阈值参数
@@ -225,7 +226,6 @@ class FrameVisualizer:
         :param conf_threshold: 可视化过滤的相对阈值 (0.0 ~ 1.0)
         """
         self.window_name = window_name
-        self.result_index_type = result_index_type  # "matrix", "dots", "bbox"
         self.win_width = win_width or 800
         self.win_height = win_height or 600
         self.is_headless = is_headless
@@ -260,24 +260,26 @@ class FrameVisualizer:
         self.save_output = True
         print(f">>> Video writer initialized: {output_path}")
 
-    def update(self, frame, result=None, direction=None, annotation=None, process_time=None) -> bool:
+    def update(self, frame, result=None, direction=None, annotation=None, show_str=None) -> bool:
         if frame is None:
             return False
 
         # --- 绘制逻辑 ---
         # 即使 result 是空的，只要不为 None 也可以处理
         if result is not None:
-            if self.result_index_type == "matrix":
+            if result.dim() == 4:
                 self._draw_matrix(frame, result, direction, self.conf_threshold)
-            elif self.result_index_type == "dots": 
+            elif result.shape[1] == 4: 
                 result = result.cpu().numpy() if isinstance(result, torch.Tensor) else result
                 self._draw_dots(frame, result, self.conf_threshold)
-            elif self.result_index_type == "bbox": 
+            elif result.shape[1] == 5: 
                 self._draw_bbox(frame, result, self.conf_threshold, annotation)
-
+            device_str = f'{result.device}'
+        else:
+            device_str = 'Time'
         # --- 信息显示 ---
-        if process_time is not None:
-            cv2.putText(frame, f'Time: {process_time*1000:.1f} ms',
+        if show_str is not None and show_str != '':
+            cv2.putText(frame, str(show_str),
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                         (0, 255, 0), 2, cv2.LINE_AA)
             
@@ -344,10 +346,12 @@ class FrameVisualizer:
     @staticmethod
     def _draw_matrix(frame, matrix, direction_map, threshold):
         """处理 Matrix 格式 (Heatmap)"""
-        if np.max(matrix) <= 0: return
+        if torch.max(matrix) <= 0: return
 
         # np.where 返回 (rows, cols) 即 (y, x)
-        rows, cols = np.where(matrix > threshold)
+        _, _, rows, cols = torch.where(matrix > threshold)
+        rows = rows.cpu().numpy()
+        cols = cols.cpu().numpy()
         
         # 画点
         for r, c in zip(rows, cols):
@@ -358,7 +362,7 @@ class FrameVisualizer:
         # 画箭头
         if direction_map is not None and len(rows) > 0:
             # 确保 direction_map 维度匹配，这里假设是同样大小的矩阵
-            valid_dirs = direction_map[rows, cols]
+            valid_dirs = direction_map[0, 0, rows, cols]
             
             # 过滤 NaN
             valid_mask = ~np.isnan(valid_dirs)
@@ -450,9 +454,9 @@ class ModelSelectorGUI:
         self.modelLabel = ttk.Label(self.root, text="Select a model:", width = 15)
         self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
 
-        self.modelCombobox = ttk.Combobox(self.root, values=modelList, width = 30)
+        self.modelCombobox = ttk.Combobox(self.root, values=modelList, width = 25)
         self.modelCombobox.current(11)
-        self.modelCombobox.grid(row=0, column=1, columnspan=2, padx=10, pady=10)
+        self.modelCombobox.grid(row=0, column=1, columnspan=2, pady=10, sticky='w')
         
 
 class InputSelectorGUI:
@@ -476,25 +480,24 @@ class InputSelectorGUI:
         self.endImgName = None
 
     def create_gui(self):
-        self.inputTypeLabel = ttk.Label(self.root, text="Select input from:", width = 15)
-        self.inputTypeLabel.grid(row=1, column=0, padx=10, pady=10)
+        self.inputTypeLabel = ttk.Label(self.root, text="Input Type:", width = 15)
+        self.inputTypeLabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
 
         self.selectedOption = tk.IntVar(value=0)
 
-
-        self.vidLabel = ttk.Radiobutton(self.root, 
-                                        text='Video stream', 
-                                        variable=self.selectedOption,
-                                        value=1, 
-                                        command=self.select_vidstream)
-        self.vidLabel.grid(row=1, column=2, padx=10, pady=10)
-        
         self.imgLabel = ttk.Radiobutton(self.root, 
-                                        text='Image stream', 
+                                        text='Image Sequence', 
                                         variable=self.selectedOption,
                                         value=2, 
                                         command=self.select_imgstream)
-        self.imgLabel.grid(row=1, column=1, padx=10, pady=10)
+        self.imgLabel.grid(row=1, column=2, padx=10, pady=10, sticky="w")
+        
+        self.vidLabel = ttk.Radiobutton(self.root, 
+                                        text='Video', 
+                                        variable=self.selectedOption,
+                                        value=1, 
+                                        command=self.select_vidstream)
+        self.vidLabel.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
     def select_vidstream(self):
         self.imgSelectFolder = None
@@ -503,16 +506,16 @@ class InputSelectorGUI:
         for element in self.imgElement.values():
             element.destroy()
 
-        self.vidElement['lblVidIndicate'] = ttk.Label(self.root, text= 'Video\'s path:',  width = 15)
-        self.vidElement['lblVidIndicate'].grid(row=2, column=0, padx=10, pady=30)
+        self.vidElement['lblVidIndicate'] = ttk.Label(self.root, text= 'Video\'s path:')
+        self.vidElement['lblVidIndicate'].grid(row=2, column=1, padx=10, pady=30, sticky='w')
         self.vidElement['lblVidPath'] = ttk.Label(self.root, 
                                            text="Waiting for the selection",
                                            wraplength=220
                                            )
-        self.vidElement['lblVidPath'].grid(row=2, column=1, columnspan=2, padx=10, pady=10)
+        self.vidElement['lblVidPath'].grid(row=2, column=2, padx=10, pady=10, sticky='w')
         
         self.vidElement['btn'] = ttk.Button(self.root, text="Select a video", command=self._clicked_vid)
-        self.vidElement['btn'].grid(row=3, column=2, padx=10, pady=10)
+        self.vidElement['btn'].grid(row=3, column=2, padx=10, pady=10, sticky='w')
         
     def _clicked_vid(self):
         self.vidName = filedialog.askopenfilenames(initialdir=VID_DEFAULT_FOLDER)
@@ -524,15 +527,20 @@ class InputSelectorGUI:
         for element in self.vidElement.values():
             element.destroy()
 
-        self.imgElement['lblFolder'] = ttk.Label(self.root, text="Image's folder: ",  width = 15)
-        self.imgElement['lblFolder'].grid(row=2, column=0, padx=10, pady=10)
+        self.imgElement['lblFolder'] = ttk.Label(self.root, text="Image's folder: ")
+        self.imgElement['lblFolder'].grid(row=2, column=1, padx=10, pady=10, sticky='w')
         self.imgElement['lblFolderName'] = ttk.Label(self.root, text="Waiting for the selection", wraplength=220)
-        self.imgElement['lblFolderName'].grid(row=2, column=1, columnspan=2, padx=10, pady=30)
+        self.imgElement['lblFolderName'].grid(row=2, column=2, padx=10, pady=30, sticky='w')
 
         self.imgElement['btnStart'] = ttk.Button(self.root, text="Select start frame", command=self._clicked_start_img)
-        self.imgElement['btnStart'].grid(row=3, column=1,  padx=10, pady=10)
+        self.imgElement['btnStart'].grid(row=3, column=1,  padx=10, pady=10, sticky='w')
+        self.imgElement['lblStartImg'] = ttk.Label(self.root, text=self.startImgName)
+        self.imgElement['lblStartImg'].grid(row=3, column=2, padx=10, pady=10, sticky='w')
+
         self.imgElement['btnEnd'] = ttk.Button(self.root, text="Select end frame", command=self._clicked_end_img)
-        self.imgElement['btnEnd'].grid(row=4, column=1,  padx=10, pady=10)
+        self.imgElement['btnEnd'].grid(row=4, column=1,  padx=10, pady=10, sticky='w')
+        self.imgElement['lblEndImg'] = ttk.Label(self.root, text=self.endImgName)
+        self.imgElement['lblEndImg'].grid(row=4, column=2, padx=10, pady=10, sticky='w')
         
     def _clicked_start_img(self):
         startImgFullPath = filedialog.askopenfilenames(
@@ -551,8 +559,7 @@ class InputSelectorGUI:
         self.imgSelectFolder = self.startFolder
         self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
-        self.imgElement['lblStartImg'] = ttk.Label(self.root, text=self.startImgName)
-        self.imgElement['lblStartImg'].grid(row=3, column=2, padx=10, pady=10)
+        self.imgElement['lblStartImg'].config(text=self.startImgName)
 
     def _clicked_end_img(self):
         endImgFullPath = filedialog.askopenfilenames(
@@ -573,32 +580,146 @@ class InputSelectorGUI:
         self.imgSelectFolder = self.endFolder
         self.imgElement['lblFolderName'].config(text=self.imgSelectFolder)
 
-        self.imgElement['lblEndImg'] = ttk.Label(self.root, text=self.endImgName)
-        self.imgElement['lblEndImg'].grid(row=4, column=2, padx=10, pady=10)
+        self.imgElement['lblEndImg'].config(text=self.endImgName)
 
 
-class ModelAndInputSelectorGUI:
+class PostProcessingSelectorGUI:
+    def __init__(self, root):
+        self.root = root
+        self.output_type = "dot"
+        self.show_threshold = 0.0
+        self.top_num = 1
+
+        self.outputTypeLabel = ttk.Label(self.root, text="Output Type:", width = 15)
+        self.outputTypeLabel.grid(row=5, column=0, padx=10, pady=10)
+
+        self.selectedOption = tk.IntVar(value=2)
+
+        self.dotLabel = ttk.Radiobutton(self.root, 
+                                        text='dot output', 
+                                        variable=self.selectedOption,
+                                        value=2, 
+                                        command=self.select_dot)
+        self.dotLabel.grid(row=5, column=1, padx=10, pady=10, sticky="w")
+        
+        self.bboxLabel = ttk.Radiobutton(self.root, 
+                                        text='bbox output', 
+                                        variable=self.selectedOption,
+                                        value=1, 
+                                        command=self.select_bbox)
+        self.bboxLabel.grid(row=5, column=2, padx=10, pady=10, sticky="w")
+
+        self.showThresholdLabel = ttk.Label(self.root, text="Threshold:", width=10)
+        self.showThresholdLabel.grid(row=6, column=1, padx=10, pady=10, sticky='w')
+
+        self.showThresholdVar = tk.StringVar(value="0")
+        self.showThresholdVar.trace_add('write', self.update_show_threshold)
+        self.showThresholdEntry = ttk.Entry(self.root, textvariable=self.showThresholdVar, width=5)
+        self.showThresholdEntry.grid(row=6, column=2, padx=10, pady=10, sticky='w')
+
+        self.getTopNumLabel = ttk.Label(self.root, text="Top Num:", width=10)
+        self.getTopNumLabel.grid(row=7, column=1, padx=10, pady=10, sticky='w')
+
+        self.getTopNumVar = tk.StringVar(value="1")
+        self.getTopNumVar.trace_add('write', self.update_top_num)
+        self.getTopNumEntry = ttk.Entry(self.root, textvariable=self.getTopNumVar, width=5)
+        self.getTopNumEntry.grid(row=7, column=2, padx=10, pady=10, sticky='w')
+        
+        self.select_dot()
+
+    def select_dot(self):
+        self.selectedOption.set(2)
+        self.output_type = "dot"
+
+    def select_bbox(self):
+        self.selectedOption.set(1)
+        self.output_type = "bbox"
+
+    def get_post_processing(self):
+        if self.output_type == "dot":
+            return PostProcessing(get_top_num = self.top_num)
+        elif self.output_type == "bbox":
+            return bbox_post_processing(self.top_num)
+        else:
+            raise ValueError(f"Unknown output type: {self.output_type}")
+
+    def update_show_threshold(self, *args):
+        value = float(self.showThresholdVar.get())
+        self.show_threshold = min(max(value, 0.0), 1.0)  # 确保在 [0.0, 1.0] 范围内
+        
+    def update_top_num(self, *args):
+        value = int(self.getTopNumVar.get())
+        self.top_num = max(value, 1)  # 确保 top_num 至少为 1
+
+
+
+
+class DeviceSelectorGUI:
+    def __init__(self, root):
+        self.root = root
+        self.device = "cpu"
+
+        self.deviceLabel = ttk.Label(self.root, text="Select Device:", width=15)
+        self.deviceLabel.grid(row=8, column=0, padx=10, pady=10)
+
+        self.selectedOption = tk.IntVar(value=1)
+
+        if torch.cuda.is_available():
+            self.selectedOption.set(2)
+            self.device = "cuda"
+
+        self.cpuLabel = ttk.Radiobutton(self.root, 
+                                        text='CPU', 
+                                        variable=self.selectedOption,
+                                        value=1, 
+                                        command=self.select_cpu)
+        self.cpuLabel.grid(row=8, column=1, padx=10, pady=10, sticky="w")
+        
+        self.gpuLabel = ttk.Radiobutton(self.root, 
+                                        text='GPU', 
+                                        variable=self.selectedOption,
+                                        value=2, 
+                                        command=self.select_gpu)
+        self.gpuLabel.grid(row=8, column=2, padx=10, pady=10, sticky="w")
+
+    def select_cpu(self):
+        self.selectedOption.set(1)
+        self.device = "cpu"
+
+    def select_gpu(self):
+        if torch.cuda.is_available():
+            self.selectedOption.set(2)
+            self.device = "cuda"
+        else:
+            messagebox.showinfo("Message title", "CUDA is not available. Please select CPU.")
+            self.select_cpu()
+
+
+class XTTMP_GUI:
     def __init__(self, root):
         self.root = root
 
-        windowHeight = 350
-        windowWidth = 400
+        windowHeight = 550
+        windowWidth = 510
         
         startHeight = (root.winfo_screenheight() - windowHeight) // 2
         startWidth = (root.winfo_screenwidth() - windowWidth) // 2
 
         self.root.geometry('{}x{}+{}+{}'.format(windowWidth, windowHeight, startWidth, startHeight))
         self.root.title("Small target motion detector - Runner")
-        self.root.iconbitmap(os.path.join(os.path.dirname(filePath), 'stmd.ico'))
+        self._set_window_icon()
         
         self.objModelSelector = ModelSelectorGUI(root)
+        self.objPostProcessingSelector = PostProcessingSelectorGUI(root)
         self.objInputSelector = InputSelectorGUI(root)
+        self.objDeviceSelector = DeviceSelectorGUI(root)
         
-        self.btnRun = ttk.Button(self.root, text="Run", command=self._run)
-        self.btnRun.place(x = 20, y=300)
+        
         self.btnStepping = ttk.Button(self.root, text="Stepping", command=self._stepping)
-        self.btnStepping.place(x = 20, y=270)
         self.isStepping = False
+        self.btnStepping.grid(row=9, column=2, padx=10, pady=10, sticky='e')
+        self.btnRun = ttk.Button(self.root, text="Run", command=self._run)
+        self.btnRun.grid(row=10, column=2, padx=10, pady=10, sticky='e')
 
     def create_gui(self):
         self.objModelSelector.create_gui(ALL_MODEL)
@@ -607,9 +728,13 @@ class ModelAndInputSelectorGUI:
         self.root.mainloop()
 
         if self.objInputSelector.selectedOption.get() == 1:  
-            return self.modelName, self.vidName, None, self.isStepping
+            return (self.modelName, self.vidName, None, self.isStepping, 
+                    self.objDeviceSelector.device, self.objPostProcessingSelector.get_post_processing(),
+                    self.objPostProcessingSelector.show_threshold)
         elif self.objInputSelector.selectedOption.get() == 2:
-            return self.modelName, self.startImgName, self.endImgName, self.isStepping
+            return (self.modelName, self.startImgName, self.endImgName, self.isStepping,
+                     self.objDeviceSelector.device, self.objPostProcessingSelector.get_post_processing(),
+                    self.objPostProcessingSelector.show_threshold)
 
     def _run(self):
         self.modelName = self.objModelSelector.modelCombobox.get()
@@ -646,6 +771,17 @@ class ModelAndInputSelectorGUI:
     def _stepping(self):
         self.isStepping = True
         self._run()
+
+    def _set_window_icon(self):
+        icon_path = Path(__file__).resolve().with_name('stmd.ico')
+        if not icon_path.is_file():
+            logger.warning('Window icon not found: %s', icon_path)
+            return
+
+        try:
+            self.root.iconbitmap(str(icon_path))
+        except tk.TclError as exc:
+            logger.warning('Unable to set window icon %s: %s', icon_path, exc)
 
 
 def check_same_ext_name(startImgName, endImgName):

@@ -12,19 +12,14 @@ file_path = os.path.realpath(__file__)
 py_pkg_path = os.path.dirname(os.path.dirname(os.path.dirname(file_path)))
 sys.path.append(py_pkg_path)
 
-try:
-    from xttmp.util.iostream import ( # type: ignore
-                    ModelAndInputSelectorGUI,
-                    FrameIterator,
-                    FrameVisualizer,
-                )
-    from xttmp.util.compute_module import PostProcessing # type: ignore
-    from xttmp.api import ( # type: ignore
-        instancing_model,
-    ) 
-except ImportError as e:
-    raise ImportError("Failed to import required modules. "
-                      "Ensure that the 'xttmp' package is correctly installed.") from e
+
+from xttmp.util.iostream import ( # type: ignore
+                XTTMP_GUI,
+                FrameIterator,
+                FrameVisualizer,
+            )
+from xttmp.api import instancing_model
+
 
 # configure logging
 logging.basicConfig(level=logging.INFO,
@@ -32,17 +27,14 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 class StmdGui:
-    def __init__(self, device='cpu', show_threshold: float = 0.8, get_top_num: int = 1):
+    def __init__(self):
         """ Initialize STMD GUI """
-        self.device = device
-        self.show_threshold = show_threshold
-        self.get_top_num = get_top_num
-        self.ModelAndInputSelectorGUI = ModelAndInputSelectorGUI
+        self.device = None
+        self.ModelAndInputSelectorGUI = XTTMP_GUI
         self.FrameIterator = FrameIterator
         self.FrameVisualizer = FrameVisualizer
-        self.PostProcessing = PostProcessing
+        self.post_processor = None
         self.instancing_model = instancing_model
-
 
     def _get_user_input(self) -> tuple:
         """ get user input """
@@ -93,21 +85,17 @@ class StmdGui:
                 logger.info("User cancelled input.")
                 return 
 
-            model_name, opt1, opt2, is_stepping = user_input
+            model_name, opt1, opt2, is_stepping, device, post_processor, show_threshold = user_input
+            self.post_processor = post_processor
+            self.device = device
             reader = self._create_frame_reader(opt1, opt2)
-            model = self.instancing_model(model_name, device=self.device)
-            post_processor = self.PostProcessing(
-                device=self.device,
-                nms_radio=8,
-                get_top_num=self.get_top_num,
-            )
+            model = self.instancing_model(model_name, device)
 
             visualizer = self.FrameVisualizer(
                 window_name=model_name,
-                result_index_type="dots",
                 win_width=reader.img_width,
                 win_height=reader.img_height,
-                conf_threshold=self.show_threshold,
+                conf_threshold=show_threshold,
             )
             if is_stepping:
                 visualizer.paused = True
@@ -117,16 +105,17 @@ class StmdGui:
                 if not is_valid:
                     break
 
-                if self.device != 'cpu' and torch.cuda.is_available():
+                if self.device == 'cuda':
                     torch.cuda.synchronize()
                 time_start = time.perf_counter()
                 result = model(gray_tensor)
-                if self.device != 'cpu' and torch.cuda.is_available():
+                if self.device == 'cuda':
                     torch.cuda.synchronize()
                 run_time = time.perf_counter() - time_start
 
-                dots = post_processor(result['response'], result.get('direction'))
-                if not visualizer.update(color_img, result=dots, process_time=run_time):
+                post_res = post_processor(result['response'], result.get('direction'))
+                show_str = f'{self.device} : {run_time*1000:.1f} ms'
+                if not visualizer.update(color_img, result=post_res, show_str=show_str):
                     break
 
         except Exception as e:
@@ -139,10 +128,7 @@ class StmdGui:
                 reader.release()
             logger.info("Shutdown completed")
 
-def main(show_threshold: float = 0, get_top_num: int = 10):
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-    obj = StmdGui(DEVICE, show_threshold = show_threshold, get_top_num = get_top_num)
-    obj.run()
 
 if __name__ == "__main__":
-    main(get_top_num = 20)
+    obj = StmdGui()
+    obj.run()

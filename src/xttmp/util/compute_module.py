@@ -6,67 +6,6 @@ import torch
 import torch.nn.functional as F
 
 
-def compute_temporal_conv(iptCell, kernel, pointer=None):
-    """
-    Computes temporal convolution.
-
-    Parameters:
-    - iptCell: A list of arrays where each element has the same dimension.
-    - kernel: A vector representing the convolution kernel.
-    - headPointer: Head pointer of the input cell array (optional).
-
-    Returns:
-    - optMatrix: The result of the temporal convolution.
-    """
-
-    # Default value for headPointer
-    if pointer is None:
-        pointer = len(iptCell) - 1
-
-    # Initialize output matrix
-    if iptCell[pointer] is None:
-        return None
-
-    # Ensure kernel is a vector
-    kernel = np.squeeze(kernel)
-    if not np.ndim(kernel) == 1:
-        raise ValueError('The kernel must be a vector.')
-
-    # Determine the lengths of input cell array and kernel
-    k1 = len(iptCell)
-    k2 = len(kernel)
-    length = min(k1, k2)
-
-    if isinstance(iptCell[pointer], np.ndarray):
-        optMatrix = np.zeros_like(iptCell[pointer])
-    elif isinstance(iptCell[pointer], torch.Tensor):
-        optMatrix = torch.zeros_like(iptCell[pointer])
-    # Perform temporal convolution
-    for t in range(length):
-        j = (pointer - t) % k1
-        if abs(kernel[t]) > 1e-16 and iptCell[j] is not None:
-            optMatrix += iptCell[j] * kernel[t]
-
-    return optMatrix
-
-
-def compute_circularlist_conv(circularCell, temporalKernel):
-    """
-    Compute the convolution of a circular cell with a temporal kernel.
-    
-    Args:
-    - circularCell: The circular cell data.
-    - temporalKernel: The temporal kernel data.
-    
-    Returns:
-    - opt_matrix: The result of the convolution.
-    """
-    optMatrix = compute_temporal_conv(circularCell, 
-                                      temporalKernel, 
-                                      circularCell.pointer )
-    return optMatrix
-
-
 def compute_response(ipt):
     """
     Computes the maximum response from multiple inputs.
@@ -233,139 +172,17 @@ class AreaNMS:
         return matrix * (matrix == local_max)
     
 
-def get_top_k_torch(response_tensor, direction_tensor, k=1000):
-    """
-    输入: 
-        response_tensor: (..., H, W) 任意维度的 Tensor
-        direction_tensor: (..., H, W) 形状需与 response 匹配 (可选)
-    输出: 
-        torch.Tensor: shape=(M, 4), dtype=float32, 其中 M <= k
-        格式: [[x, y, response, direction], ...]
-    """
-    # 1. 获取维度
-    H, W = response_tensor.shape[-2:]
-    k = min(k, H * W)
-
-    # 2. 展平 (Flatten)
-    # view(-1) 零拷贝，极快
-    flat_response = response_tensor.view(-1)
-
-    # 3. TopK (GPU 上极速排序)
-    top_vals, top_indices = torch.topk(flat_response, k=k)
-
-    # 4. 过滤掉 <= 0 的值 ---
-    # 创建掩码：只保留大于 0 的值
-    mask = top_vals > 0
-    
-    # 如果全都是 0，直接返回空数组，避免后续报错
-    if not mask.any():
-        return torch.empty((0, 4))
-
-    # 应用掩码，缩减 tensor 长度
-    top_vals = top_vals[mask]
-    top_indices = top_indices[mask]
-    # ------------------------------------
-
-    # 5. 计算坐标 (x, y)
-    # 此时计算量已经减少，只计算非零点
-    top_y = top_indices.div(W, rounding_mode='floor').float() 
-    top_x = (top_indices % W).float()                        
-
-    # 6. 获取 Direction
-    if direction_tensor is not None and direction_tensor.numel() > 0:
-        flat_direction = direction_tensor.view(-1)
-        # 注意：这里使用过滤后的 top_indices
-        top_dirs = flat_direction[top_indices]
-    else:
-        top_dirs = torch.empty_like(top_vals).fill_(float('nan'))
-
-    # 7. 堆叠 (Stack) -> (M, 4)
-    result_tensor = torch.stack([top_x, top_y, top_vals, top_dirs], dim=1)
-
-    return result_tensor
-
-
-def get_top_k_numpy(response_array, direction_array=None, k=1000):
-    """
-    输入: 
-        response_array: (..., H, W) numpy.ndarray
-        direction_array: (..., H, W) (可选)
-    输出: 
-        numpy.ndarray: shape=(M, 4), dtype=float32, 其中 M <= k
-        格式: [[x, y, response, direction], ...]
-    """
-    # 1. 获取维度
-    shape = response_array.shape
-    H, W = shape[-2:]
-    
-    # 零拷贝展平
-    flat_response = response_array.ravel()
-    k = min(k, flat_response.size)
-
-    # 2. TopK 核心优化 (O(N))
-    # argpartition 找出最大的 k 个 (无序)
-    unsorted_top_indices = np.argpartition(flat_response, -k)[-k:]
-    unsorted_top_vals = flat_response[unsorted_top_indices]
-    
-    # 3. 局部排序 (O(k log k))
-    # argsort 默认升序，[::-1] 翻转为降序
-    sort_idx = np.argsort(unsorted_top_vals)[::-1]
-    
-    # 获取排序后的 Top K 索引和值
-    top_indices = unsorted_top_indices[sort_idx]
-    top_vals = unsorted_top_vals[sort_idx]
-
-    # --- [关键修改] 4. 过滤掉 <= 0 的值 ---
-    # 创建掩码
-    mask = top_vals > 0
-    
-    # 极速判断：如果没有有效值，直接返回空数组
-    # np.any() 很快
-    if not np.any(mask):
-        return np.empty((0, 4), dtype=np.float32)
-        
-    # 应用掩码 (切片操作，只保留有效值)
-    # 因为 k 通常不大 (比如 1000)，这里的拷贝开销可忽略不计
-    top_vals = top_vals[mask]
-    top_indices = top_indices[mask]
-    
-    # 更新实际数量 M
-    M = top_vals.size
-    # ------------------------------------
-
-    # 5. 计算坐标 (x, y)
-    # 只对过滤后的索引计算，节省算力
-    top_y, top_x = np.unravel_index(top_indices, (H, W))
-
-    # 6. 获取 Direction
-    if direction_array is not None and direction_array.size > 0:
-        flat_direction = direction_array.ravel()
-        top_dirs = flat_direction[top_indices]
-    else:
-        top_dirs = np.full(M, np.nan, dtype=np.float32)
-
-    # 7. 堆叠结果
-    # 分配恰好大小为 M 的内存
-    result = np.empty((M, 4), dtype=np.float32)
-    result[:, 0] = top_x       # x
-    result[:, 1] = top_y       # y
-    result[:, 2] = top_vals    # response
-    result[:, 3] = top_dirs    # direction
-
-    return result
-
-
 class PostProcessing:
     """
     Post-processing class to apply AreaNMS, get top K, and return list format.
     """
 
-    def __init__(self, device='cpu', nms_radio = 8, get_top_num=1000):
+    def __init__(self, nms_radio = 8, get_top_num=1000):
         """
         Args:
-            device (str): Computing device ('cpu' or 'cuda').
+            nms_radio (int): Radius for AreaNMS.
+            get_top_num (int): Number of top points to extract.
         """
-        self.device = device
         self.area_nms = AreaNMS(radio=nms_radio)
         self.get_top_num = get_top_num
 
@@ -389,7 +206,7 @@ class PostProcessing:
         """
         nms_response = self.area_nms(response)
 
-        res = get_top_k_torch(nms_response, 
+        res, _ = get_top_k_torch(nms_response, 
                                 direction, 
                                 k=self.get_top_num)
         if res.shape[0] == 0:
@@ -400,3 +217,144 @@ class PostProcessing:
                 res[:, 2] /= max_score
 
         return res
+
+
+@torch.no_grad()
+def gen_bboxes_around_points(results, box_size=16, shift_ratio=0.3):
+    """Generate initial bboxes around detected motion points.
+    
+    Args:
+        results: (N, 4) -> [x, y, response, direction]
+        box_size: int, box size
+        
+    Returns:
+        [[x1, y1, x2, y2], ... ] (N, 4) tensors
+    """
+    N = results.shape[0]
+
+    if N == 0:
+        return torch.empty((0, 4), device=results.device, dtype=torch.int)
+    
+    rear_x, rear_y, direction = results[:, 0], results[:, 1], results[:, 3]
+
+    radius = box_size * 0.5
+    shift_mag = box_size * shift_ratio
+
+    # 1. 计算偏移量 (dx, dy)，根据方向和预设的 shift_mag
+    dx = torch.cos(direction) * shift_mag
+    dy = -torch.sin(direction) * shift_mag
+
+    # 2. 一次性将 NaN 偏移量替换为 0.0
+    dx = torch.nan_to_num(dx, nan=0.0)
+    dy = torch.nan_to_num(dy, nan=0.0)
+
+    # 3. 计算中心点
+    center_x = rear_x + dx
+    center_y = rear_y + dy
+
+    x1 = (center_x - radius)
+    y1 = (center_y - radius)
+    x2 = (center_x + radius)
+    y2 = (center_y + radius)
+
+    # Stack as (N, 4) -> [x1, y1, x2, y2]
+    return torch.stack([x1, y1, x2, y2], dim=1)
+
+
+@torch.no_grad()
+def get_top_k_torch(response_tensor, direction_tensor=None, k=100):
+    """
+    Extract the top-k points with highest responses from feature maps, filtering out non-positive values.
+    
+    Args:
+        response_tensor (torch.Tensor): The response map tensor of shape (B, 1, H, W) or (B, H, W).
+        direction_tensor (torch.Tensor, optional): The corresponding direction map tensor of 
+            shape (B, 1, H, W) or (B, H, W). Must match response_tensor's shape. Defaults to None.
+        k (int, optional): The maximum number of top points to extract per batch. Defaults to 100.
+        
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: 
+            - results (torch.Tensor): A tensor of shape (M, 4) containing the valid extracted points 
+            across the entire batch. M <= B * k. Each row is formatted as [x, y, response, direction].
+            - batch_ids (torch.Tensor): A 1D tensor of shape (M,) containing the corresponding 
+            batch index (from 0 to B-1) for each point in `results`. dtype is torch.long.
+    """
+    B, _, H, W = response_tensor.shape
+    k = min(k, H * W)
+    device = response_tensor.device
+
+    # 1. Flatten -> (B, H*W)
+    flat_response = response_tensor.reshape(B, -1)
+
+    # 2. TopK -> top_vals and top_indices are both (B, k)
+    top_vals, top_indices = torch.topk(flat_response, k=k, dim=-1)
+
+    # 3. Get Direction -> (B, k)
+    if direction_tensor is not None and direction_tensor.numel() > 0:
+        flat_direction = direction_tensor.reshape(B, -1)
+        top_dirs = torch.gather(flat_direction, dim=-1, index=top_indices)
+    else:
+        top_dirs = torch.full_like(top_vals, float('nan'))
+
+    # 4. Calculate coordinates (x, y) -> (B, k)
+    top_y = top_indices.div(W, rounding_mode='floor').float() 
+    top_x = (top_indices % W).float()                        
+
+    # 5. Stack -> merge on the last dimension, shape becomes (B, k, 4)
+    stacked = torch.stack([top_x, top_y, top_vals, top_dirs], dim=-1)
+
+    # 6. Generate Mask -> (B, k)
+    mask = top_vals > 0
+
+    # 7. Split and filter by Batch
+    result_list = []
+    batch_id_list = []
+    
+    for i in range(B):
+        batch_mask = mask[i] # Get the mask for the i-th batch
+        
+        # Apply mask: [k, 4] -> [M_i, 4]
+        valid_stacked = stacked[i][batch_mask] 
+        result_list.append(valid_stacked)
+        
+        # Create a batch index tensor of shape (M_i,) filled with the current batch index 'i'
+        batch_id_list.append(torch.full((valid_stacked.shape[0],), i, device=device, dtype=torch.long))
+    
+    # Concatenate all valid items into continuous tensors
+    return torch.cat(result_list, dim=0), torch.cat(batch_id_list, dim=0)
+
+
+@torch.no_grad()
+def get_STMD_region_proposal(response_tensor, direction_tensor=None, top_k=1, box_size=16, spatial_scale=1.0, shift_ratio=0.3):
+    nms_win = int(box_size * spatial_scale) | 1  # 确保是奇数
+    score_mask = F.max_pool2d(response_tensor, kernel_size=nms_win, stride=1, padding=nms_win//2)
+    
+    nms_response_tensor = torch.where(response_tensor == score_mask, response_tensor, 0.0)
+
+    vSTMD_res, batch_id = get_top_k_torch(nms_response_tensor, direction_tensor, k=top_k)
+
+    if spatial_scale > 1:
+        vSTMD_res[:, :2] *= spatial_scale   # 将坐标放大回原图尺度
+
+    bboxes = gen_bboxes_around_points(vSTMD_res, box_size, shift_ratio)
+
+    return vSTMD_res, bboxes, batch_id
+
+
+@torch.no_grad()
+def bbox_post_processing(top_k=1, box_size=16, spatial_scale=1.0, shift_ratio=0.3):
+
+    def post_process_func(
+        response_tensor,
+        direction_tensor=None
+    ):
+        vSTMD_res, bboxes, _ =  get_STMD_region_proposal(response_tensor,
+                                                        direction_tensor,
+                                                        top_k=top_k,
+                                                        box_size=box_size,
+                                                        spatial_scale=spatial_scale,
+                                                        shift_ratio=shift_ratio )
+        return torch.cat([bboxes, vSTMD_res[..., 2:3]], dim=1)
+    
+    return post_process_func
+

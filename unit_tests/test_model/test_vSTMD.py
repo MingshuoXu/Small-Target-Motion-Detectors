@@ -10,7 +10,7 @@ project_path = os.path.dirname(os.path.dirname(os.path.dirname(filePath)))
 sys.path.append(os.path.join(project_path, 'src'))
 from xttmp.util.iostream import FrameIterator, FrameVisualizer
 from xttmp.api import instancing_model
-from xttmp.util.compute_module import PostProcessing # type: ignore
+from xttmp.util.compute_module import PostProcessing, bbox_post_processing # type: ignore
 
 
 # DEVICE = 'cpu' # 
@@ -49,11 +49,11 @@ def test():
     
     # visualizer
     visualizer = FrameVisualizer(window_name=model.__class__.__name__, 
-                                    result_index_type="dots",
                                     win_height = frame_reader.img_height,
                                     win_width = frame_reader.img_width,
                                     conf_threshold=0)
-    post_processor = PostProcessing(device=DEVICE, nms_radio=8, get_top_num=1)   
+    post_processor = PostProcessing(nms_radio=8, get_top_num=1)  
+    # post_processor = bbox_post_processing(top_k=1)
 
 
     total_tunning_time = 0.0
@@ -71,8 +71,9 @@ def test():
             torch.cuda.synchronize()  # Ensure all CUDA operations are complete before stopping the timer
         run_time = time.time() - time_start
 
-        dot_res = post_processor(result['response'], result['direction'])
-        ret = visualizer.update(color_img, dot_res, process_time=run_time)
+        post_res = post_processor(result['response'], result['direction'])
+        ret = visualizer.update(color_img, post_res, process_time=run_time)
+
         if not ret: break
 
         total_tunning_time += run_time

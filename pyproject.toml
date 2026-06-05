@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xttmp"
-version = "2.2.0"
+version = "2.3.0.3"
 description = "eXtremely Tiny Target - Motion Perception"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -20,14 +20,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
     "matplotlib",
     "opencv-python",
     "scipy",
-    "torch>=2.5.0",
-    "torchvision>=0.20.0",
 ]
 
 [project.urls]
@@ -36,13 +34,22 @@ Source = "https://github.com/MingshuoXu/Small-Target-Motion-Detectors"
 Issues = "https://github.com/MingshuoXu/Small-Target-Motion-Detectors/issues"
 
 [project.scripts]
-xttmp-gui = "xttmp.main:main"
+xttmp_gui = "xttmp.main:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"xttmp" = ["util/*.ico"]
+
+[project.optional-dependencies]
+torch = [
+    "torch>=2.5.0",
+    "torchvision>=0.20.0"
+]
 
 [dependency-groups]
 dev = []
