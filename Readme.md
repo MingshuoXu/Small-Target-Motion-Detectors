@@ -37,7 +37,7 @@ Built with modularity and extensibility in mind, XTT-MP provides a robust suite 
 - After `pip install xttmp`, use the installed code and bring your own input data, or run from a repository checkout to access the bundled examples.
 
 ### Via PyPI
-#### CPU
+#### CPU / MPS
 ```bash
 pip install xttmp[torch]
 ```

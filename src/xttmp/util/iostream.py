@@ -644,14 +644,20 @@ class PostProcessingSelectorGUI:
             raise ValueError(f"Unknown output type: {self.output_type}")
 
     def update_show_threshold(self, *args):
-        value = float(self.showThresholdVar.get())
+        try:
+            value = float(self.showThresholdVar.get())
+        except ValueError:
+            value = 0.0
         self.show_threshold = min(max(value, 0.0), 1.0)  # 确保在 [0.0, 1.0] 范围内
         
     def update_top_num(self, *args):
-        value = int(self.getTopNumVar.get())
+        try:
+            value = int(self.getTopNumVar.get())
+        except ValueError:
+            # 如果输入为空或者包含非数字字符，赋予一个默认值
+            value = 0
+
         self.top_num = max(value, 1)  # 确保 top_num 至少为 1
-
-
 
 
 class DeviceSelectorGUI:
@@ -667,31 +673,50 @@ class DeviceSelectorGUI:
         if torch.cuda.is_available():
             self.selectedOption.set(2)
             self.device = "cuda"
-
-        self.cpuLabel = ttk.Radiobutton(self.root, 
-                                        text='CPU', 
-                                        variable=self.selectedOption,
-                                        value=1, 
-                                        command=self.select_cpu)
-        self.cpuLabel.grid(row=8, column=1, padx=10, pady=10, sticky="w")
         
-        self.gpuLabel = ttk.Radiobutton(self.root, 
-                                        text='GPU', 
+        self.device_frame = ttk.Frame(self.root)
+        self.device_frame.grid(row=8, column=1, columnspan=2, padx=10, pady=10, sticky="w")
+
+        self.cpuLabel = ttk.Radiobutton(self.device_frame, 
+                                text='CPU', 
+                                variable=self.selectedOption,
+                                value=1, 
+                                command=self.select_cpu)
+        # 使用 pack(side="left") 可以让它们在 frame 内从左到右水平挨着排列
+        self.cpuLabel.pack(side="left", padx=(0, 20)) # 右侧留 20px 间距
+
+        self.cudaLabel = ttk.Radiobutton(self.device_frame, 
+                                        text='CUDA', 
                                         variable=self.selectedOption,
                                         value=2, 
-                                        command=self.select_gpu)
-        self.gpuLabel.grid(row=8, column=2, padx=10, pady=10, sticky="w")
+                                        command=self.select_cuda)
+        self.cudaLabel.pack(side="left", padx=(0, 20))
+
+        self.mpsLabel = ttk.Radiobutton(self.device_frame, 
+                                        text='MPS', 
+                                        variable=self.selectedOption,
+                                        value=3, 
+                                        command=self.select_mps)
+        self.mpsLabel.pack(side="left")
 
     def select_cpu(self):
         self.selectedOption.set(1)
         self.device = "cpu"
 
-    def select_gpu(self):
+    def select_cuda(self):
         if torch.cuda.is_available():
             self.selectedOption.set(2)
             self.device = "cuda"
         else:
             messagebox.showinfo("Message title", "CUDA is not available. Please select CPU.")
+            self.select_cpu()
+
+    def select_mps(self):
+        if torch.backends.mps.is_available():
+            self.selectedOption.set(3)
+            self.device = "mps"
+        else:
+            messagebox.showinfo("Message title", "Metal Performance Shaders (MPS) is not available. Please select CPU.")
             self.select_cpu()
 
 
