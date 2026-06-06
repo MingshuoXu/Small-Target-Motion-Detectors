@@ -1,6 +1,6 @@
 # Small Target Motion Detectors, Version 2.3 (XTT-MP: Extremely Tiny Target - Motion Perception)
 
-[![PyPI version](https://img.shields.io/pypi/v/XTT-MP.svg)](https://pypi.org/project/XTT-MP/) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/) [![PyTorch](https://img.shields.io/badge/pytorch-1.10%2B-ee4c2c)](https://pytorch.org/)
+[![PyPI version](https://img.shields.io/pypi/v/XTT-MP.svg)](https://pypi.org/project/xttmp/) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/) [![PyTorch](https://img.shields.io/badge/pytorch-1.10%2B-ee4c2c)](https://pytorch.org/)
 
 
 **XTT-MP** (Extremely Tiny Target - Motion Perception) is a natural architecture-based framework specifically designed for detecting and perceiving the motion of **extremely small targets** in complex environments.
@@ -44,6 +44,7 @@ pip install xttmp[torch]
 
 #### NVIDIA GPU (CUDA 12.6)
 ```bash
+pip install xttmp
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 ```
 
