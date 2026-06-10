@@ -102,7 +102,9 @@ class GaussianBlur(BaseCore):
         weight = self.blur_kernel.expand(C, 1, self.kernel_size, self.kernel_size)
 
         # 使用深度可分离卷积（groups=C），每个通道独立进行高斯模糊
-        return F.conv2d(x, weight, padding='same', groups=C)
+        self.output = F.conv2d(x, weight, padding='same', groups=C)
+
+        return self.output
     
 
 class GammaDelay(BaseCore):
@@ -161,7 +163,9 @@ class GammaDelay(BaseCore):
         else:
             self.buffer.append(x)
 
-        return compute_temporal_conv_inplace(self.buffer, self.gamma_kernel)
+        self.output = compute_temporal_conv_inplace(self.buffer, self.gamma_kernel)
+
+        return self.output
 
 
 class GammaBandPassFilter(BaseCore):
@@ -236,7 +240,9 @@ class GammaBandPassFilter(BaseCore):
         else:
             self.buffer.append(x)
 
-        return compute_temporal_conv_inplace(self.buffer, self.bandpass_kernel) 
+        self.output = compute_temporal_conv_inplace(self.buffer, self.bandpass_kernel)
+
+        return self.output
 
 
 class SpatialInhibition(BaseCore):
@@ -304,4 +310,6 @@ class SpatialInhibition(BaseCore):
         weight = self.kernel.expand(C, 1, self.kernel_size, self.kernel_size)
 
         # groups=C 表示进行深度可分离卷积（Depthwise Convolution），每个通道独立滤波        
-        return F.relu(F.conv2d(x, weight, padding='same', groups=C))
+        self.output = F.relu(F.conv2d(x, weight, padding='same', groups=C))
+
+        return self.output

@@ -18,9 +18,6 @@ from xttmp.util.iostream import ( # type: ignore
                 FrameIterator,
                 FrameVisualizer,
             )
-from xttmp.api import instancing_model
-
-
 # configure logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -34,7 +31,6 @@ class StmdGui:
         self.FrameIterator = FrameIterator
         self.FrameVisualizer = FrameVisualizer
         self.post_processor = None
-        self.instancing_model = instancing_model
 
     def _get_user_input(self) -> tuple:
         """ get user input """
@@ -89,7 +85,9 @@ class StmdGui:
             self.post_processor = post_processor
             self.device = device
             reader = self._create_frame_reader(opt1, opt2)
-            model = self.instancing_model(model_name, device)
+            
+            from xttmp.api import instancing_model
+            model = instancing_model(model_name, device)
 
             visualizer = self.FrameVisualizer(
                 window_name=model_name,
@@ -114,7 +112,7 @@ class StmdGui:
                 run_time = time.perf_counter() - time_start
 
                 post_res = post_processor(result['response'], result.get('direction'))
-                show_str = f'{self.device} : {run_time*1000:.1f} ms'
+                show_str = f'{self.device.upper()} : {run_time*1000:.1f} ms'
                 if not visualizer.update(color_img, result=post_res, show_str=show_str):
                     break
 

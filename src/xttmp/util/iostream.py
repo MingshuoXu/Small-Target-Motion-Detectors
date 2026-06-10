@@ -451,7 +451,7 @@ class ModelSelectorGUI:
         self.root = root
 
     def create_gui(self, modelList):
-        self.modelLabel = ttk.Label(self.root, text="Select a model:", width = 15)
+        self.modelLabel = ttk.Label(self.root, text="Select A Model:", width = 15)
         self.modelLabel.grid(row=0, column=0, padx=10, pady=10)
 
         self.modelCombobox = ttk.Combobox(self.root, values=modelList, width = 25)
@@ -596,14 +596,14 @@ class PostProcessingSelectorGUI:
         self.selectedOption = tk.IntVar(value=2)
 
         self.dotLabel = ttk.Radiobutton(self.root, 
-                                        text='dot output', 
+                                        text='STMD Output', 
                                         variable=self.selectedOption,
                                         value=2, 
                                         command=self.select_dot)
         self.dotLabel.grid(row=5, column=1, padx=10, pady=10, sticky="w")
         
         self.bboxLabel = ttk.Radiobutton(self.root, 
-                                        text='bbox output', 
+                                        text='Bbox Output', 
                                         variable=self.selectedOption,
                                         value=1, 
                                         command=self.select_bbox)
