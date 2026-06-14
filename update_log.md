@@ -2,6 +2,20 @@
 
 ---
 
+## Update Log - Version 2.3.0.7 (Jun 14, 2026)
+
+1. corrected FSTMD default parameters: `Medulla` now explicitly passes `order=12, tau=25` to its `Tm1` and `Mi1` components, and FSTMD applies `n3=5` via `set_para` instead of directly mutating `tm1.order`.
+
+---
+
+## Update Log - Version 2.3.0.6 (Jun 14, 2026)
+
+1. fixed `BaseModel.print_para`: replaced `eval()` with `getattr()` to safely access the private `__paraMappingList` attribute.
+
+2. fixed `BaseModel.set_para`: removed a spurious `self.` prefix in the `getattr` key string (`f'self._…'` → `f'_…'`), which previously caused `set_para` to silently fall back to an empty mapping and skip all parameter updates.
+
+---
+
 ## Update Log - Version 2.3.0.5 (Jun 10, 2026)
 
 1. all math operators (`GaussianBlur`, `GammaDelay`, `GammaBandPassFilter`, `SpatialInhibition`) now cache their last forward result in `self.output`, allowing downstream code to read the operator's output without capturing the return value.

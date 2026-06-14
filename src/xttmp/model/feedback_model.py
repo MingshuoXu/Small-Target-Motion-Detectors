@@ -159,8 +159,7 @@ class FSTMD(ESTMDBackbone):
         self.maxIterationNum = 10
         self.iterationThreshold = 1e-3
 
-        # Customize Medulla's Tm1 component properties
-        self.medulla.tm1.order = 5
+        self.set_para(n3=5)
 
     def forward(self, x):
         """ MODEL_STRUCTURE Method

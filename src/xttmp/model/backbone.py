@@ -103,7 +103,7 @@ class BaseModel(ABC, torch.nn.Module):
     def print_para(self) -> None:
         logger = logging.getLogger(__name__)
 
-        para_list = eval(f'self._{self.__class__.__name__}__paraMappingList')
+        para_list = getattr(self, f'_{self.__class__.__name__}__paraMappingList', {})
 
         if not para_list:
             logger.info(f'The parameters of <{self.__class__.__name__}> is empty.')
@@ -149,7 +149,7 @@ class BaseModel(ABC, torch.nn.Module):
         Raises:
         - None directly, but issues a warning if the parameter does not exist.
         """
-        para_list = getattr(self, f'self._{self.__class__.__name__}__paraMappingList', {})
+        para_list = getattr(self, f'_{self.__class__.__name__}__paraMappingList', {})
         
         for key, value in kwargs.items():
             if key in para_list.keys():

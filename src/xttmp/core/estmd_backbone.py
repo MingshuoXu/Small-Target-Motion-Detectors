@@ -17,8 +17,8 @@ class Medulla(BaseCore):
         # Initializes the Medulla object
         super().__init__()
         # Initialize components
-        self.tm1 = estmd_core.Tm1()
-        self.mi1 = estmd_core.Mi1()
+        self.tm1 = estmd_core.Tm1(order=12, tau=25)
+        self.mi1 = estmd_core.Mi1(order=12, tau=25)
         self.tm2 = Tm2()
         self.tm3 = Tm3()
 

@@ -2,6 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/xttmp.svg)](https://pypi.org/project/xttmp/) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/) [![PyTorch](https://img.shields.io/badge/pytorch-1.10%2B-ee4c2c)](https://pytorch.org/)
 
+> See [update_log.md](update_log.md) for the full version history.
 
 **XTT-MP** (Extremely Tiny Target - Motion Perception) is a natural architecture-based framework specifically designed for detecting and perceiving the motion of **extremely small targets** in complex environments.
 
