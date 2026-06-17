@@ -114,31 +114,30 @@ class GammaDelay(BaseCore):
     Implements a gamma filter used in the lamina layer of the ESTMD neural network
     using pure PyTorch and collections.deque for efficient temporal sliding windows.
     """
-    def __init__(self, order=1, tau=1.0, kernel_len=None):
+    def __init__(self, order=1, tau=1.0):
         """
         Constructor method.
         
         Parameters:
             order (int): Order of the gamma filter (n). Default is 1.
             tau (float): Time constant of the filter (\tau).
-            kernel_len (int): Length of the filter kernel (T). 
         """
         super().__init__()
         self.order = max(1, int(order))
         self.tau = tau
-        # 如果未指定长度，默认使用 3 * tau (覆盖大部分有效权重)
-        self.kernel_len = int(3 * tau) if kernel_len is None else kernel_len
+
 
         self.setup()
 
     def setup(self):
+        _kernel_len = int(3 * self.tau)
         # 1. 预计算 Gamma 滤波器的时域权重
-        kernel = create_gamma_kernel(self.order, self.tau, self.kernel_len)
+        kernel = create_gamma_kernel(self.order, self.tau, _kernel_len)
         # 注册为 buffer，随模型自动转移设备 (如 .cuda())
         self.register_buffer('gamma_kernel', kernel)
 
         # 2. 初始化双端队列作为时序状态缓存区
-        self.buffer = deque(maxlen=self.kernel_len)
+        self.buffer = deque(maxlen=_kernel_len)
 
     def reset_buffer(self):
         """
@@ -179,15 +178,13 @@ class GammaBandPassFilter(BaseCore):
 
     def __init__(self, 
                  order1=2, tau1=3.0, 
-                 order2=6, tau2=9.0, 
-                 kernel_len=None):
+                 order2=6, tau2=9.0):
         """
         Constructor method.
         
         Parameters:
         - order1, tau1: Parameters for the excitatory (positive) Gamma filter.
         - order2, tau2: Parameters for the inhibitory (negative) Gamma filter.
-        - kernel_len: Temporal length of the filter. If None, auto-calculated.
         """
         super().__init__()
 
@@ -196,17 +193,15 @@ class GammaBandPassFilter(BaseCore):
         self.order2 = max(1, int(order2))
         self.tau2 = tau2
         
-        # 自动计算所需的历史帧缓存最大长度
-        self.kernel_len = kernel_len if kernel_len is not None else max(int(3 * tau1), int(3 * tau2))
-
         self.in_loop = False  # 默认不覆盖历史帧，直接追加
 
         self.setup()
 
     def setup(self):
+        _kernel_len = max(int(3 * self.tau1), int(3 * self.tau2))
         # 1. 预计算两个 Gamma 滤波器的权重，并补齐到相同的长度 self.T
-        k1 = create_gamma_kernel(self.order1, self.tau1, self.kernel_len)
-        k2 = create_gamma_kernel(self.order2, self.tau2, self.kernel_len)
+        k1 = create_gamma_kernel(self.order1, self.tau1, _kernel_len)
+        k2 = create_gamma_kernel(self.order2, self.tau2, _kernel_len)
 
         # 2. 算子融合 (Operator Fusion)：W_bandpass = W1 - W2
         # 直接将差值注册为模型的 buffer，前向传播只需计算一次
@@ -214,7 +209,7 @@ class GammaBandPassFilter(BaseCore):
         self.register_buffer('bandpass_kernel', bandpass_kernel)
 
         # 3. 初始化单一的高效时序状态缓存区
-        self.buffer = deque(maxlen=self.kernel_len)
+        self.buffer = deque(maxlen=_kernel_len)
 
     def reset_buffer(self):
         """

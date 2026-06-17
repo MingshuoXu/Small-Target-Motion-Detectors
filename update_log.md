@@ -2,6 +2,12 @@
 
 ---
 
+## Update Log - Version 2.3.0.8 (Jun 17, 2026)
+
+1. corrected FeedbackSTMD bug
+
+---
+
 ## Update Log - Version 2.3.0.7 (Jun 14, 2026)
 
 1. corrected FSTMD default parameters: `Medulla` now explicitly passes `order=12, tau=25` to its `Tm1` and `Mi1` components, and FSTMD applies `n3=5` via `set_para` instead of directly mutating `tm1.order`.

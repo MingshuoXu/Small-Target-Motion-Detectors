@@ -41,8 +41,8 @@ class FeedbackSTMD(ESTMDBackbone):
         # lamina
         'n1'        : 'lamina.order1', # Eq. (3)
         'tau1'      : 'lamina.tau1',
-        'n2'        : 'lamina.order1',
-        'tau2'      : 'lamina.tau1',
+        'n2'        : 'lamina.order2',
+        'tau2'      : 'lamina.tau2',
         # medulla
         'n3'        : ('medulla.tm1.order', 'medulla.mi1.order'), # Eq. (7)
         'tau3'      : ('medulla.tm1.tau', 'medulla.mi1.tau'), 
@@ -70,15 +70,11 @@ class FeedbackSTMD(ESTMDBackbone):
         # Customize Lobula component
         self.lobula = feedbackstmd_core.Lobula()
         
-        # Customize Lamina's GammaBankPassFilter properties
-        self.lamina.order1 = 4
-        self.lamina.tau1 = 8
-        self.lamina.order2 = 16
-        self.lamina.tau2 = 32
-
-        # Customize Medulla's Tm1 component properties
-        self.medulla.tm1.order = 9
-        self.medulla.tm1.tau = 45
+        self.set_para(n1=4, tau1=8,
+                      n2=16, tau2=32,
+                      n3=9, tau3=45)
+        
+        self.setup()
 
     def forward(self, x):
         """ MODEL_STRUCTURE Method
