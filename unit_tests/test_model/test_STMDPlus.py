@@ -48,11 +48,10 @@ def test():
     
     # visualizer
     visualizer = FrameVisualizer(window_name=model.__class__.__name__, 
-                                    result_index_type="dots",
                                     win_height = frame_reader.img_height,
                                     win_width = frame_reader.img_width,
                                     conf_threshold=0)
-    post_processor = PostProcessing(device=DEVICE, nms_radio=8, get_top_num=5)   
+    post_processor = PostProcessing(nms_radio=8, get_top_num=5)   
 
 
     total_tunning_time = 0.0
@@ -70,7 +69,8 @@ def test():
         run_time = time.time() - time_start
 
         dot_res = post_processor(result['response'], result['direction'])
-        ret = visualizer.update(color_img, dot_res, process_time=run_time)
+        _show_str = f"{DEVICE.upper()}: {run_time*1000:.1f} ms"
+        ret = visualizer.update(color_img, dot_res, show_str=_show_str)
         if not ret: break
 
         total_tunning_time += run_time

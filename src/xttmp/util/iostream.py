@@ -282,6 +282,8 @@ class FrameVisualizer:
             cv2.putText(frame, str(show_str),
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                         (0, 255, 0), 2, cv2.LINE_AA)
+
+        self.showed_frame = frame  # 保存当前帧，便于后续处理或保存
             
         # --- 视频保存 (安全检查) ---
         if self.save_output and self.video_writer is not None:

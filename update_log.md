@@ -2,6 +2,13 @@
 
 ---
 
+## Update Log - Version 2.3.0.9 (Aug 27, 2026)
+
+1. perfected `vstmd_core.py`: added `reset_buffer` method to reset internal buffers of both ON and OFF pathways, ensuring consistent state across multiple forward passes.
+2. added `setup` function into `stmdplus_core.py`
+
+---
+
 ## Update Log - Version 2.3.0.8 (Jun 17, 2026)
 
 1. corrected FeedbackSTMD bug

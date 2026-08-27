@@ -73,6 +73,11 @@ class Medulla(BaseCore):
         self.on_pathway.setup()
         self.off_pathway.setup()
 
+    def reset_buffer(self):
+        # Reset buffers for both pathways
+        self.on_pathway.reset_buffer()
+        self.off_pathway.reset_buffer()
+
     def forward(self, lamina_ON, lamina_OFF):
         """
         Process the input through the Medulla layer.

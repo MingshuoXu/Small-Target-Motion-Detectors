@@ -21,6 +21,8 @@ class ContrastPathway(BaseCore):
         
         self.register_buffer('T1_kernel', torch.empty(0))
 
+        self.setup()
+
     def setup(self):
         """Initialization method."""
         # 假设 create_T1_kernels 返回的是 4 个 kernel 的 List 或 NumPy array
@@ -34,9 +36,9 @@ class ContrastPathway(BaseCore):
         """
         
         # out 的形状是 (1, 4, H, W)
-        self.Opt = F.conv2d(x, self.T1_kernel, padding='same')
+        self.output = F.conv2d(x, self.T1_kernel, padding='same')
 
-        return self.Opt
+        return self.output
     
 
 class MushroomBody(BaseCore):
@@ -59,6 +61,8 @@ class MushroomBody(BaseCore):
         self.trackLens = None   # 张量: [N] (记录当前轨迹有效长度)
         self.trackPtr = None    # 张量: [N] (记录环形缓冲区的写入指针)
 
+        self.setup()
+
     def setup(self):
         self.torch_nms = AreaNMS(self.nms_size)
 
@@ -69,18 +73,18 @@ class MushroomBody(BaseCore):
         nmsLobulaOpt = self.torch_nms(maxLobulaOpt)
 
         mask_not_nms = (nmsLobulaOpt == 0)
-        mushroomBodyOpt = lobulaOpt * mask_not_nms
+        self.output = lobulaOpt * mask_not_nms
 
         maxNumber = torch.max(nmsLobulaOpt)
         if maxNumber <= 0:
             self.trackID = None
-            return mushroomBodyOpt
+            return self.output
 
         # --- 获取新检测点 ---
         newID = torch.nonzero(nmsLobulaOpt > 0).float() 
         if len(newID) == 0:
             self.trackID = None
-            return mushroomBodyOpt
+            return self.output
 
         curr_y, curr_x = newID[:, -2].long(), newID[:, -1].long()
         # all_new_contrasts 形状 [C, M], M是新目标数
@@ -180,8 +184,7 @@ class MushroomBody(BaseCore):
                     e_y = erase_coords[:, -2].long()
                     e_x = erase_coords[:, -1].long()
                     # 终极一键批量擦除
-                    mushroomBodyOpt[..., e_y, e_x] = 0
+                    self.output[..., e_y, e_x] = 0
 
-        self.Opt = mushroomBodyOpt
-        return mushroomBodyOpt
+        return self.output
 
