@@ -270,7 +270,8 @@ class Lobula_with_Feedback(BaseCore):
 
     def forward_localization(self, medulla_ON, medulla_OFF):
 
-        self.feedback_signal = torch.zeros_like(medulla_ON)   
+        if self.feedback_signal is None:
+            self.feedback_signal = torch.zeros_like(medulla_ON)   
 
         # Formula (8)
         self.v_on = torch.clamp(medulla_ON - self.feedback_signal, min=0) 
